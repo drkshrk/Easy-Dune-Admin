@@ -172,6 +172,45 @@ If some items fail to overrepair, empty extra inventory, move failed items highe
 
     <button type="submit">Overrepair Gear</button>
 </form>
+
+<h3>Single Item Overrepair</h3>
+<div class="warning">
+Use this for uniques or stubborn items the bulk pass misses. Pick a character, then choose one of that character's discovered inventory rows and item rows, including main or equipped inventory rows when the database exposes them. Items must have current durability; missing max durability can be created by this repair pass. Inventory labels come from the database when present; otherwise the tool falls back to inventory ID and item count.
+</div>
+
+<form id="overrepairItemForm">
+
+    <label>Character</label>
+    <select id="overrepairItemCharacterSelect" onchange="fillOverrepairItemCharacterFields()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <div class="field-grid">
+    <div>
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="overrepairItemActorId" placeholder="Example: 6" onchange="loadOverrepairInventories()" required>
+    </div>
+
+    <div>
+    <label>Inventory</label>
+    <select name="inventory_id" id="overrepairItemInventorySelect" onchange="loadOverrepairInventoryItems()" required>
+        <option value="">Select a character first...</option>
+    </select>
+    </div>
+
+    <div>
+    <label>Durability Value</label>
+    <input type="text" name="durability" value="{{ default_overrepair_durability }}" required>
+    </div>
+    </div>
+
+    <label>Item</label>
+    <select name="item_row_id" id="overrepairItemSelect" required>
+        <option value="">Select an inventory first...</option>
+    </select>
+
+    <button type="submit">Overrepair Selected Item</button>
+</form>
 </div>
 
 <div class="box">
@@ -551,6 +590,7 @@ Experimental admin-only tool.<br><br>
 <b>Map restart required:</b> vehicle actors already loaded by the server keep their old in-memory location until the affected map/server instance is restarted.<br><br>
 Ownership is not confirmed in the current schema, so this tool can move any detected supported vehicle actor. Use a database backup and test with a low-risk vehicle first.<br><br>
 This updates <b>dune.actors.map</b>, <b>partition_id</b>, and XYZ position while preserving the current rotation.<br><br>
+Partition IDs are server-specific and can differ between multiple Survival or Deep Desert instances. Verify the target instance partition before moving vehicles on another server.<br><br>
 Aim high on <b>Z</b>. A value below terrain can place the vehicle underground, so overestimate altitude first and lower it only after confirming in-game.
 </div>
 
@@ -566,12 +606,13 @@ Aim high on <b>Z</b>. A value below terrain can place the vehicle underground, s
 
     <label>Map</label>
     <select name="map_key" id="ornithopterMapKey" onchange="fillOrnithopterPartitionDefault()">
-        <option value="HaggaBasin">Arrakis - Hagga Basin</option>
-        <option value="DeepDesert">The Deep Desert</option>
+        {% for key, cfg in map_configs.items() %}
+        <option value="{{ key }}">{{ cfg.label }}</option>
+        {% endfor %}
     </select>
 
     <label>Partition ID</label>
-    <input type="text" name="partition_id" id="ornithopterPartitionId" value="1" required>
+    <input type="text" name="partition_id" id="ornithopterPartitionId" value="{{ map_configs[default_map_key].default_partition_id }}" required>
 
     <label>X</label>
     <input type="text" name="x" id="ornithopterX" required>
@@ -590,13 +631,14 @@ Aim high on <b>Z</b>. A value below terrain can place the vehicle underground, s
 <h2>Vehicle Live Map</h2>
 
 <div class="warning">
-Only supported vehicle actors are shown here. Click a marker to select the vehicle, drag the map to pan, then double-click the map to set the destination X/Y in the teleport form. Ownership is not confirmed, so use actor ID/class/location to identify the vehicle before moving it.
+Only supported vehicle actors are shown here. Click a marker to select the vehicle, drag the map to pan, then double-click the map to set the destination X/Y in the teleport form. Ownership is not confirmed, so use actor ID/class/location to identify the vehicle before moving it. Multi-instance maps depend on verified partition IDs.
 </div>
 
 <label>Map</label>
 <select id="ornithopterMapView" onchange="renderOrnithopterAdminMap()">
-    <option value="HaggaBasin">Arrakis - Hagga Basin</option>
-    <option value="DeepDesert">The Deep Desert</option>
+    {% for key, cfg in map_configs.items() %}
+    <option value="{{ key }}">{{ cfg.label }}</option>
+    {% endfor %}
 </select>
 
 <label>Zoom</label>
@@ -639,6 +681,19 @@ overrepairForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/overrepair", overrepairForm);
+});
+
+const overrepairItemForm = document.getElementById("overrepairItemForm");
+overrepairItemForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const itemSelect = document.getElementById("overrepairItemSelect");
+    const itemLabel = itemSelect && itemSelect.selectedOptions.length ? itemSelect.selectedOptions[0].textContent : "selected item";
+    if (!confirm(`Overrepair only this item row?\n\n${itemLabel}\n\nCharacter should be offline before editing inventory rows. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/overrepair-item", overrepairItemForm);
 });
 
 const lasgunBundleForm = document.getElementById("lasgunBundleForm");

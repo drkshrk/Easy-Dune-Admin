@@ -168,7 +168,8 @@
 Map assets expected:<br>
 - <b>/static/arrakis_hb.webp</b> for Hagga Basin<br>
 - <b>/static/deep_desert.webp</b> for Deep Desert<br><br>
-Markers come from <b>dune.actors.transform</b>. Teleport uses <b>dune.admin_move_offline_player_to_partition</b> and is admin-only/offline-player oriented.<br><br>
+Markers come from <b>dune.actors.transform</b> and are filtered by the selected configured map/partition when a partition is set. Teleport uses <b>dune.admin_move_offline_player_to_partition</b> and is admin-only/offline-player oriented.<br><br>
+Partition IDs are server-specific and can differ between multiple Survival sietches or Deep Desert instances. Verify each configured instance before using teleport tools on another server.<br><br>
 Scroll normally to move down the page. Hold <b>Ctrl</b> on Windows/Linux or <b>Command</b> on macOS while using the mouse wheel to zoom the map.
 </div>
 
@@ -192,8 +193,8 @@ Scroll normally to move down the page. Hold <b>Ctrl</b> on Windows/Linux or <b>C
     {% if session.role == "operator" or session.role == "admin" %}
     <h2>Offline Teleport</h2>
     <div class="warning">
-        Use only for offline characters. Click a player marker to fill this form, or enter values manually.
-        Deep Desert partition ID is not prefilled until confirmed. Click anywhere on the map to populate target X/Y coordinates.
+        Use only for offline characters. Click a player marker to fill this form, or enter values manually.<br><br>
+        <b>Experimental:</b> multi-partition map/teleport support is currently untested until additional Survival or Deep Desert instances are available. The partition picker reads observed map names and partition IDs from the database, and map markers are filtered by the selected partition. Click anywhere on the map to populate target X/Y coordinates.
     </div>
 
     <form id="teleportForm">
@@ -207,8 +208,10 @@ Scroll normally to move down the page. Hold <b>Ctrl</b> on Windows/Linux or <b>C
         <label>FLS ID</label>
         <input type="text" name="fls_id" id="teleportFlsId" placeholder="EA... / player FLS">
 
-        <label>Partition ID</label>
-        <input type="text" name="partition_id" id="teleportPartitionId">
+        <label>Map Partition</label>
+        <select name="partition_id" id="teleportPartitionId" onchange="refreshMapMarkers()">
+            <option value="">Loading partitions...</option>
+        </select>
 
         <label>X</label>
         <input type="text" name="x" id="teleportX">
@@ -252,6 +255,7 @@ let mapConfig = mapConfigs[selectedMapKey];
 let mapMarkers = [];
 let currentZoom = 0.14;
 let teleportCharacters = [];
+let mapPartitions = [];
 let isDraggingMap = false;
 let dragStartX = 0;
 let dragStartY = 0;
@@ -293,7 +297,70 @@ function fillTeleportTargetFromMapClick(event) {
     if (yInput) yInput.value = world.y.toFixed(2);
     if (zInput && !zInput.value) zInput.value = "1000";
     if (mapKeyInput) mapKeyInput.value = selectedMapKey;
-    if (partitionInput && !partitionInput.value) partitionInput.value = mapConfig.default_partition_id || "";
+    if (partitionInput && !partitionInput.value) populateTeleportPartitionSelect();
+}
+
+function partitionRowsForMap(mapKey) {
+    const cfg = mapConfigs[mapKey] || mapConfigs.HaggaBasin || {};
+    const actorMap = String(cfg.actor_map || mapKey);
+    return mapPartitions.filter(row => String(row.map || "") === actorMap);
+}
+
+function partitionOptionLabel(row) {
+    return [
+        row.label || `${row.map || "Unknown map"} - Partition ${row.partition_id || ""}`,
+        `${row.actor_count || 0} actors`,
+        `${row.player_count || 0} players`,
+        `${row.vehicle_count || 0} vehicles`,
+        `${row.base_count || 0} bases`
+    ].join(" | ");
+}
+
+function populateTeleportPartitionSelect() {
+    const select = document.getElementById("teleportPartitionId");
+    if (!select) return;
+
+    const cfg = mapConfigs[selectedMapKey] || mapConfigs.HaggaBasin || {};
+    const rows = partitionRowsForMap(selectedMapKey);
+    const configuredDefault = cfg.default_partition_id || "";
+
+    select.innerHTML = "";
+
+    if (rows.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = configuredDefault;
+        opt.textContent = configuredDefault
+            ? `${cfg.label || selectedMapKey} - Configured default partition ${configuredDefault}`
+            : "No observed partitions for this map";
+        select.appendChild(opt);
+        return;
+    }
+
+    rows.forEach(row => {
+        const opt = document.createElement("option");
+        opt.value = row.partition_id || "";
+        opt.textContent = partitionOptionLabel(row);
+        if (configuredDefault && String(row.partition_id || "") === String(configuredDefault)) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    });
+}
+
+async function loadMapPartitions() {
+    const select = document.getElementById("teleportPartitionId");
+    if (select) select.innerHTML = `<option value="">Loading partitions...</option>`;
+
+    try {
+        const response = await fetch("/api/map-partitions");
+        const data = await response.json();
+        mapPartitions = data.ok ? (data.partitions || []) : [];
+    } catch (err) {
+        mapPartitions = [];
+    }
+
+    populateTeleportPartitionSelect();
+    refreshMapMarkers();
 }
 
 async function loadTeleportCharacters() {
@@ -349,11 +416,10 @@ function switchMap(key) {
     document.querySelectorAll(".map-tab").forEach(btn => btn.classList.remove("active"));
     initMapTabs();
 
-    const partitionInput = document.getElementById("teleportPartitionId");
     const mapKeyInput = document.getElementById("teleportMapKey");
 
-    if (partitionInput) partitionInput.value = mapConfig.default_partition_id || "";
     if (mapKeyInput) mapKeyInput.value = selectedMapKey;
+    populateTeleportPartitionSelect();
 
     initMapCanvas();
     refreshMapMarkers();
@@ -512,6 +578,10 @@ function renderMapMarkers() {
     const layer = document.getElementById("markerLayer");
     const list = document.getElementById("markerList");
     const summary = document.getElementById("mapSummary");
+    const partition = document.getElementById("teleportPartitionId");
+    const partitionLabel = partition && partition.selectedOptions.length
+        ? partition.selectedOptions[0].textContent
+        : "";
 
     layer.innerHTML = "";
     list.innerHTML = "";
@@ -520,6 +590,7 @@ function renderMapMarkers() {
 
     summary.innerHTML = `
         Map: ${escapeHtml(mapConfig.key)}<br>
+        Partition: ${escapeHtml(partitionLabel || "Not selected")}<br>
         Players: ${visible.filter(m => m.type === "player").length}<br>
         Vehicles: ${visible.filter(m => m.type === "vehicle").length}<br>
         Bases: ${visible.filter(m => m.type === "base").length}<br>
@@ -573,7 +644,12 @@ function renderMapMarkers() {
 }
 
 async function refreshMapMarkers() {
-    const response = await fetch(`/api/map-markers?map=${encodeURIComponent(selectedMapKey)}`);
+    const partition = document.getElementById("teleportPartitionId");
+    const partitionId = partition ? partition.value : "";
+    const url =
+        `/api/map-markers?map=${encodeURIComponent(selectedMapKey)}`
+        + `&partition_id=${encodeURIComponent(partitionId)}`;
+    const response = await fetch(url);
     const data = await response.json();
 
     if (!data.ok) {
@@ -630,6 +706,7 @@ if (teleportForm) {
 
 wireMapMouseControls();
 loadTeleportCharacters();
+loadMapPartitions();
 initMapTabs();
 switchMap(selectedMapKey);
 setInterval(refreshMapMarkers, 10000);

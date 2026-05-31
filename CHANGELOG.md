@@ -2,18 +2,22 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.7.0-beta
+## 0.7.1-beta
 
 ### Changed
 
 - Split the former `app.py` monolith into a small launcher, `eda_core.py` for shared configuration/helpers/services, and `eda_routes.py` for Flask and Socket.IO route registrations.
 - Kept existing routes, templates, and admin workflows behavior-compatible while reducing future app.py bloat.
+- Added an admin single-item overrepair picker that discovers inventories and item rows per selected character, for uniques or other items missed by the bulk overrepair pass.
+- Updated VIP self-overrepair to cover every inventory row owned by the linked character while still requiring item CurrentDurability.
+- Added configurable map instance plumbing for future multi-sietch and dual Deep Desert setups, plus an admin map partition discovery endpoint and server-specific partition warnings in teleport/map docs and placards.
+- Replaced raw partition entry on Live Map and VIP self teleport with a DB-observed map partition picker, marked as experimental/untested until additional instances are available.
 - Marked Specialization XP as WIP/unconfirmed in the Admin UI and documentation. The tool appears to create/update the expected database entries, but persistence and in-game behavior still need confirmation after reaching the required progression/faction access.
 - Documented that progression edits may require relogging, restarting the affected map, or restarting the battlegroup. Restarts can appear slow, and login may briefly show an error before recovering.
 
 ### Planned
 
-- `0.7.1` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
+- `0.7.2` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
 
 ## 0.6.6-rc2
 

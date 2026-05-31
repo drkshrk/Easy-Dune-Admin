@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.0-beta
+Panel version: 0.7.1-beta
 RedBlink stack compatibility target: v1.3.2
 
-0.7.0-beta RedBlink v1.3.2 support:
+0.7.1-beta RedBlink v1.3.2 support:
 - Updates RedBlink stack target to v1.3.2.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -55,7 +55,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.0-beta"
+PANEL_VERSION = "0.7.1-beta"
 REDBLINK_STACK_VERSION = "v1.3.2"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -391,17 +391,27 @@ DEFAULT_OVERREPAIR_DURABILITY = "1000"
 # more exact per-module max durability values are confirmed.
 DEFAULT_VEHICLE_REPAIR_DURABILITY = "3500"
 
-# Live map configuration.
+# Live map / teleport instance configuration.
 # Put your downloaded Hagga Basin / Arrakis image here:
 #
 #   ~/dune-admin-web/static/arrakis_hb.webp
 #
 # These bounds come from the working Dune dashboard calibration.
 # The map image is expected to be 8000x8000 for cleanest alignment.
-MAP_CONFIGS = {
+#
+# Each entry is a visible map instance in Easy Dune Admin. The "key" is the UI
+# value, while "actor_map" is the value written in dune.actors.map. Multiple
+# visible instances can share the same actor_map and image but use different
+# default_partition_id values once your server has multiple sietches/deserts.
+#
+# Partition IDs are server/runtime specific. Do not assume another user's
+# Survival/Deep Desert partitions match yours; verify them before publishing a
+# preset or telling an admin to teleport into a second instance.
+DEFAULT_MAP_CONFIGS = {
     "HaggaBasin": {
         "key": "HaggaBasin",
         "label": "Arrakis - Hagga Basin",
+        "actor_map": "HaggaBasin",
         "image": "arrakis_hb.webp",
         "width": 8000,
         "height": 8000,
@@ -410,12 +420,13 @@ MAP_CONFIGS = {
         "min_y": -450630.14,
         "max_y": 353821.95,
         "flip_y": False,
-        # Confirmed from existing dashboard examples.
+        # Server-specific default. Confirm before using on another install.
         "default_partition_id": 1,
     },
     "DeepDesert": {
         "key": "DeepDesert",
         "label": "The Deep Desert",
+        "actor_map": "DeepDesert",
         "image": "deep_desert.webp",
         "width": 8000,
         "height": 8000,
@@ -424,21 +435,77 @@ MAP_CONFIGS = {
         "min_y": -1266548.17,
         "max_y": 1162416.13,
         "flip_y": False,
-        # Unknown on this server until tested. Leave blank in the UI
-        # unless you confirm the correct partition id.
+        # Server-specific default. Confirm before using on another install.
         "default_partition_id": "8",
     },
 }
 
-DEFAULT_MAP_KEY = "HaggaBasin"
+MAP_CONFIG_REQUIRED_FIELDS = {
+    "image",
+    "width",
+    "height",
+    "min_x",
+    "max_x",
+    "min_y",
+    "max_y",
+}
 
-# Vehicle relocation does not use MAP_CONFIGS default_partition_id
-# because those map defaults are tuned for marker/teleport UI behavior and
-# Hagga Basin's marker partition differs from the known safe gameplay partition.
-# If your stack uses different vehicle partitions, adjust these two values.
+
+def load_map_configs():
+    """
+    Load map/teleport instances.
+
+    Advanced admins running multiple Survival or Deep Desert instances can set
+    EASY_DUNE_MAP_CONFIGS_JSON to a JSON object keyed by UI map key. Start by
+    copying DEFAULT_MAP_CONFIGS, then add entries like "HaggaBasinPvP" or
+    "DeepDesertPvE" with the same image/bounds and the verified partition id.
+
+    Example shape:
+    {
+      "HaggaBasin": {"label": "Hagga 1", "actor_map": "HaggaBasin", ...},
+      "HaggaBasin2": {"label": "Hagga 2", "actor_map": "HaggaBasin", "default_partition_id": 12, ...}
+    }
+    """
+    raw = os.environ.get("EASY_DUNE_MAP_CONFIGS_JSON", "").strip()
+    if not raw:
+        return DEFAULT_MAP_CONFIGS
+
+    try:
+        loaded = json.loads(raw)
+    except Exception:
+        return DEFAULT_MAP_CONFIGS
+
+    if not isinstance(loaded, dict):
+        return DEFAULT_MAP_CONFIGS
+
+    configs = {}
+    for key, cfg in loaded.items():
+        if not isinstance(cfg, dict):
+            continue
+
+        merged = dict(DEFAULT_MAP_CONFIGS.get(cfg.get("base_key", key), {}))
+        merged.update(cfg)
+        merged["key"] = key
+        merged.setdefault("label", key)
+        merged.setdefault("actor_map", merged.get("key", key))
+        merged.setdefault("default_partition_id", "")
+        merged.setdefault("flip_y", False)
+
+        if MAP_CONFIG_REQUIRED_FIELDS.issubset(merged.keys()):
+            configs[key] = merged
+
+    return configs or DEFAULT_MAP_CONFIGS
+
+
+MAP_CONFIGS = load_map_configs()
+DEFAULT_MAP_KEY = "HaggaBasin" if "HaggaBasin" in MAP_CONFIGS else next(iter(MAP_CONFIGS))
+
+# Backward-compatible lookup for older helper code. New code reads the selected
+# instance's default_partition_id from MAP_CONFIGS so multi-instance servers can
+# use different Survival/Deep Desert partitions.
 ORNITHOPTER_PARTITION_DEFAULTS = {
-    "HaggaBasin": 1,
-    "DeepDesert": 8,
+    key: cfg.get("default_partition_id", "")
+    for key, cfg in MAP_CONFIGS.items()
 }
 
 # Vehicle actor class patterns confirmed from exported dune.actors rows.
@@ -1203,6 +1270,148 @@ def get_characters(include_offline=True):
         return []
 
 
+def _run_psql_tsv(sql, timeout=15):
+    """
+    Run a read-only-ish psql query and return tab-separated output rows.
+
+    Keep this helper small and explicit for UI pickers that need live database
+    choices but should not expose full SQL output to the browser.
+    """
+    cmd = [
+        "docker",
+        "exec",
+        POSTGRES_CONTAINER,
+        "psql",
+        "-U",
+        "dune",
+        "-d",
+        "dune",
+        "-At",
+        "-F",
+        "\t",
+        "-c",
+        sql,
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or "psql query failed")
+
+    return proc.stdout.strip().splitlines()
+
+
+def get_character_inventories(character_actor_id):
+    """
+    Return every inventory row owned by a character actor.
+
+    Dune DB builds have not been perfectly consistent about inventory label
+    columns, so this uses to_jsonb(inv)->>'column_name' lookups. Those are safe
+    even when a possible label column does not exist, unlike direct column
+    references such as inv.type.
+    """
+    actor_id = int(character_actor_id)
+
+    sql = f"""
+    SELECT
+        inv.id,
+        COALESCE(
+            NULLIF(to_jsonb(inv)->>'name', ''),
+            NULLIF(to_jsonb(inv)->>'inventory_name', ''),
+            NULLIF(to_jsonb(inv)->>'display_name', ''),
+            NULLIF(to_jsonb(inv)->>'label', ''),
+            NULLIF(to_jsonb(inv)->>'inventory_type', ''),
+            NULLIF(to_jsonb(inv)->>'type', ''),
+            NULLIF(to_jsonb(inv)->>'slot_type', ''),
+            NULLIF(to_jsonb(inv)->>'container_type', ''),
+            'Inventory ' || inv.id::text
+        ) AS inventory_label,
+        (
+            SELECT COUNT(*)
+            FROM dune.items i
+            WHERE i.inventory_id = inv.id
+        ) AS item_count
+    FROM dune.inventories inv
+    WHERE inv.actor_id = {actor_id}
+    ORDER BY inv.id;
+    """
+
+    inventories = []
+    for line in _run_psql_tsv(sql):
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+
+        inventories.append(
+            {
+                "inventory_id": parts[0],
+                "inventory_label": parts[1] or f"Inventory {parts[0]}",
+                "item_count": parts[2] or "0",
+            }
+        )
+
+    return inventories
+
+
+def get_character_inventory_items(character_actor_id, inventory_id):
+    """
+    Return selectable item rows for one character-owned inventory.
+
+    The item row id is the unique database row we update for single-item
+    overrepair. The template id is shown to admins because it is usually the
+    most recognizable item identifier available in the server database.
+    """
+    actor_id = int(character_actor_id)
+    inv_id = int(inventory_id)
+
+    sql = f"""
+    SELECT
+        i.id,
+        COALESCE(i.template_id, ''),
+        COALESCE(i.position_index::text, ''),
+        COALESCE(i.stack_size::text, ''),
+        COALESCE(i.quality_level::text, ''),
+        COALESCE(i.stats #>> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}', ''),
+        COALESCE(i.stats #>> '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}', ''),
+        COALESCE(i.stats #>> '{{FItemStackAndDurabilityStats,1,MaxDurability}}', '')
+    FROM dune.items i
+    JOIN dune.inventories inv
+        ON inv.id = i.inventory_id
+    WHERE inv.actor_id = {actor_id}
+      AND inv.id = {inv_id}
+    ORDER BY
+        i.position_index NULLS LAST,
+        i.id;
+    """
+
+    items = []
+    for line in _run_psql_tsv(sql):
+        parts = line.split("\t")
+        if len(parts) < 8:
+            continue
+
+        items.append(
+            {
+                "item_row_id": parts[0],
+                "template_id": parts[1],
+                "position_index": parts[2],
+                "stack_size": parts[3],
+                "quality_level": parts[4],
+                "current_durability": parts[5],
+                "decayed_max_durability": parts[6],
+                "max_durability": parts[7],
+            }
+        )
+
+    return items
+
+
 def get_user_character_name(username):
     """
     Return the exact in-game character name bound to a local web account.
@@ -1438,6 +1647,13 @@ ORDER BY module_id;
 """
 
 def build_overrepair_sql(character_actor_id, inventory_id, durability_value):
+    """
+    Build SQL to overrepair every durability-bearing item in one inventory.
+
+    Some unique tools/weapons have CurrentDurability but no MaxDurability key
+    until we create it. CurrentDurability is still required so stackables and
+    utility items without durability are not accidentally converted.
+    """
     actor_id = int(character_actor_id)
     inv_id = int(inventory_id)
     durability = float(durability_value)
@@ -1471,6 +1687,152 @@ updated_items AS (
     FROM dune.inventories inv
     CROSS JOIN settings s
     WHERE i.inventory_id = inv.id
+      AND inv.id = s.target_inventory_id
+      AND inv.actor_id = s.character_actor_id
+      AND i.stats #> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}' IS NOT NULL
+    RETURNING
+        i.inventory_id,
+        i.id AS item_id,
+        i.template_id,
+        i.position_index,
+        i.quality_level,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}'
+            AS current_durability,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}'
+            AS decayed_max_durability,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,MaxDurability}}'
+            AS max_durability
+)
+SELECT
+    inventory_id,
+    item_id,
+    template_id,
+    position_index,
+    quality_level,
+    current_durability,
+    decayed_max_durability,
+    max_durability
+FROM updated_items
+ORDER BY inventory_id, position_index, item_id;
+"""
+
+
+def build_overrepair_all_inventories_sql(character_actor_id, durability_value):
+    """
+    Build SQL to overrepair all durability-bearing items owned by one character.
+
+    This is used for VIP self-repair so equipped/hotbar inventories and main
+    bag inventories are covered together. CurrentDurability remains required;
+    items without current durability are intentionally ignored.
+    """
+    actor_id = int(character_actor_id)
+    durability = float(durability_value)
+
+    return f"""
+WITH settings AS (
+    SELECT
+        {actor_id}::bigint AS character_actor_id,
+        {durability}::numeric AS durability_value
+),
+updated_items AS (
+    UPDATE dune.items i
+    SET stats =
+        jsonb_set(
+            jsonb_set(
+                jsonb_set(
+                    i.stats,
+                    '{{FItemStackAndDurabilityStats,1,CurrentDurability}}',
+                    to_jsonb(s.durability_value),
+                    true
+                ),
+                '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}',
+                to_jsonb(s.durability_value),
+                true
+            ),
+            '{{FItemStackAndDurabilityStats,1,MaxDurability}}',
+            to_jsonb(s.durability_value),
+            true
+        )
+    FROM dune.inventories inv
+    CROSS JOIN settings s
+    WHERE i.inventory_id = inv.id
+      AND inv.actor_id = s.character_actor_id
+      AND i.stats #> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}' IS NOT NULL
+    RETURNING
+        i.inventory_id,
+        i.id AS item_id,
+        i.template_id,
+        i.position_index,
+        i.quality_level,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}'
+            AS current_durability,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}'
+            AS decayed_max_durability,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,MaxDurability}}'
+            AS max_durability
+)
+SELECT
+    inventory_id,
+    item_id,
+    template_id,
+    position_index,
+    quality_level,
+    current_durability,
+    decayed_max_durability,
+    max_durability
+FROM updated_items
+ORDER BY inventory_id, position_index, item_id;
+"""
+
+
+def build_overrepair_item_sql(character_actor_id, inventory_id, item_row_id, durability_value):
+    """
+    Build admin-only SQL for repairing exactly one item row.
+
+    The character actor and inventory checks are intentionally kept in the
+    UPDATE, not just in the browser picker, so a stale or hand-edited form
+    cannot overrepair an item belonging to another character.
+
+    Some uniques expose CurrentDurability while MaxDurability is missing. This
+    still treats the item as repairable and creates the missing max keys, but
+    CurrentDurability remains required.
+    """
+    actor_id = int(character_actor_id)
+    inv_id = int(inventory_id)
+    row_id = int(item_row_id)
+    durability = float(durability_value)
+
+    return f"""
+WITH settings AS (
+    SELECT
+        {actor_id}::bigint AS character_actor_id,
+        {inv_id}::bigint AS target_inventory_id,
+        {row_id}::bigint AS target_item_row_id,
+        {durability}::numeric AS durability_value
+),
+updated_items AS (
+    UPDATE dune.items i
+    SET stats =
+        jsonb_set(
+            jsonb_set(
+                jsonb_set(
+                    i.stats,
+                    '{{FItemStackAndDurabilityStats,1,CurrentDurability}}',
+                    to_jsonb(s.durability_value),
+                    true
+                ),
+                '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}',
+                to_jsonb(s.durability_value),
+                true
+            ),
+            '{{FItemStackAndDurabilityStats,1,MaxDurability}}',
+            to_jsonb(s.durability_value),
+            true
+        )
+    FROM dune.inventories inv
+    CROSS JOIN settings s
+    WHERE i.inventory_id = inv.id
+      AND i.id = s.target_item_row_id
       AND inv.id = s.target_inventory_id
       AND inv.actor_id = s.character_actor_id
       AND i.stats #> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}' IS NOT NULL
@@ -2537,7 +2899,7 @@ def world_to_map_pixels(x, y, map_cfg):
     }
 
 
-def get_map_markers(map_key=None):
+def get_map_markers(map_key=None, partition_id_override=None):
     """
     Pull live actors with transform data for the selected map.
 
@@ -2546,7 +2908,18 @@ def get_map_markers(map_key=None):
     """
     map_key = map_key or DEFAULT_MAP_KEY
     map_cfg = MAP_CONFIGS.get(map_key, MAP_CONFIGS[DEFAULT_MAP_KEY])
-    map_key = map_cfg["key"]
+    actor_map = str(map_cfg.get("actor_map", map_cfg["key"])).replace("'", "''")
+    partition_id = str(
+        partition_id_override
+        if partition_id_override not in (None, "")
+        else map_cfg.get("default_partition_id", "")
+    ).strip()
+    partition_filter = ""
+    if partition_id:
+        try:
+            partition_filter = f"AND a.partition_id = {int(partition_id)}"
+        except ValueError:
+            partition_filter = ""
 
     players_sql = f"""
     SELECT
@@ -2555,6 +2928,7 @@ def get_map_markers(map_key=None):
         ps.online_status::text AS online_status,
         acc."user" AS fls_id,
         a.map,
+        COALESCE(a.partition_id::text, '') AS partition_id,
         a.transform::text
     FROM dune.actors a
     JOIN dune.player_state ps
@@ -2562,7 +2936,8 @@ def get_map_markers(map_key=None):
     LEFT JOIN dune.accounts acc
         ON ps.account_id = acc.id
     WHERE a.transform IS NOT NULL
-      AND a.map = '{map_key}'
+      AND a.map = '{actor_map}'
+      {partition_filter}
     ORDER BY ps.character_name;
     """
 
@@ -2571,12 +2946,14 @@ def get_map_markers(map_key=None):
         v.id,
         a.class,
         a.map,
+        COALESCE(a.partition_id::text, '') AS partition_id,
         a.transform::text
     FROM dune.vehicles v
     JOIN dune.actors a
         ON v.id = a.id
     WHERE a.transform IS NOT NULL
-      AND a.map = '{map_key}'
+      AND a.map = '{actor_map}'
+      {partition_filter}
     ORDER BY a.class;
     """
 
@@ -2585,12 +2962,14 @@ def get_map_markers(map_key=None):
         b.id,
         a.class,
         a.map,
+        COALESCE(a.partition_id::text, '') AS partition_id,
         a.transform::text
     FROM dune.buildings b
     JOIN dune.actors a
         ON b.id = a.id
     WHERE a.transform IS NOT NULL
-      AND a.map = '{map_key}'
+      AND a.map = '{actor_map}'
+      {partition_filter}
     ORDER BY b.id
     LIMIT 500;
     """
@@ -2620,10 +2999,10 @@ def get_map_markers(map_key=None):
     # Players
     for line in run_tab_query(players_sql):
         parts = line.split("\t")
-        if len(parts) < 6:
+        if len(parts) < 7:
             continue
 
-        coords = parse_transform(parts[5])
+        coords = parse_transform(parts[6])
         if not coords:
             continue
 
@@ -2637,6 +3016,7 @@ def get_map_markers(map_key=None):
             "online_status": parts[2],
             "fls_id": parts[3],
             "map": parts[4],
+            "partition_id": parts[5],
             "type": "player",
             **coords,
             **pixel,
@@ -2645,10 +3025,10 @@ def get_map_markers(map_key=None):
     # Vehicles
     for line in run_tab_query(vehicles_sql):
         parts = line.split("\t")
-        if len(parts) < 4:
+        if len(parts) < 5:
             continue
 
-        coords = parse_transform(parts[3])
+        coords = parse_transform(parts[4])
         if not coords:
             continue
 
@@ -2662,6 +3042,7 @@ def get_map_markers(map_key=None):
             "id": parts[0],
             "name": short_class,
             "map": parts[2],
+            "partition_id": parts[3],
             "type": "vehicle",
             **coords,
             **pixel,
@@ -2671,10 +3052,10 @@ def get_map_markers(map_key=None):
     # run_tab_query returns no rows and the map still works.
     for line in run_tab_query(buildings_sql):
         parts = line.split("\t")
-        if len(parts) < 4:
+        if len(parts) < 5:
             continue
 
-        coords = parse_transform(parts[3])
+        coords = parse_transform(parts[4])
         if not coords:
             continue
 
@@ -2688,12 +3069,63 @@ def get_map_markers(map_key=None):
             "id": parts[0],
             "name": short_class,
             "map": parts[2],
+            "partition_id": parts[3],
             "type": "base",
             **coords,
             **pixel,
         })
 
     return markers
+
+
+def get_map_partition_candidates():
+    """
+    Summarize observed actor map/partition pairs for multi-instance setup.
+
+    Use this after starting extra Survival or Deep Desert instances to discover
+    which partition ids the server actually assigned. Partition ids are not
+    portable between users or servers.
+    """
+    sql = """
+    SELECT
+        COALESCE(a.map, '') AS map,
+        COALESCE(a.partition_id::text, '') AS partition_id,
+        COUNT(*) AS actor_count,
+        COUNT(*) FILTER (WHERE ps.player_pawn_id IS NOT NULL) AS player_count,
+        COUNT(*) FILTER (WHERE v.id IS NOT NULL) AS vehicle_count,
+        COUNT(*) FILTER (WHERE b.id IS NOT NULL) AS base_count
+    FROM dune.actors a
+    LEFT JOIN dune.player_state ps
+        ON ps.player_pawn_id = a.id
+    LEFT JOIN dune.vehicles v
+        ON v.id = a.id
+    LEFT JOIN dune.buildings b
+        ON b.id = a.id
+    WHERE a.transform IS NOT NULL
+      AND COALESCE(a.map, '') <> ''
+    GROUP BY a.map, a.partition_id
+    ORDER BY a.map, a.partition_id;
+    """
+
+    rows = []
+    for line in _run_psql_tsv(sql, timeout=20):
+        parts = line.split("\t")
+        if len(parts) < 6:
+            continue
+
+        rows.append(
+            {
+                "map": parts[0],
+                "partition_id": parts[1],
+                "label": f"{parts[0]} - Partition {parts[1]}",
+                "actor_count": parts[2],
+                "player_count": parts[3],
+                "vehicle_count": parts[4],
+                "base_count": parts[5],
+            }
+        )
+
+    return rows
 
 
 def teleport_offline_player(fls_id, partition_id, x, y, z):

@@ -331,6 +331,43 @@ def api_characters():
     return jsonify({"ok": True, "characters": chars})
 
 
+@app.route("/api/character-inventories")
+def api_character_inventories():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.args.get("character_actor_id", "").strip()
+    if not character_actor_id:
+        return jsonify({"ok": False, "error": "missing character actor ID"}), 400
+
+    try:
+        inventories = get_character_inventories(character_actor_id)
+        return jsonify({"ok": True, "inventories": inventories})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Inventory lookup failed: {exc}"}), 500
+
+
+@app.route("/api/character-inventory-items")
+def api_character_inventory_items():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.args.get("character_actor_id", "").strip()
+    inventory_id = request.args.get("inventory_id", "").strip()
+    if not character_actor_id or not inventory_id:
+        return jsonify({"ok": False, "error": "missing character actor ID or inventory ID"}), 400
+
+    try:
+        items = get_character_inventory_items(character_actor_id, inventory_id)
+        return jsonify({"ok": True, "items": items})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Inventory item lookup failed: {exc}"}), 500
+
+
 @app.route("/api/online-players")
 def api_online_players():
     if not logged_in():
@@ -374,8 +411,9 @@ def api_map_markers():
         return jsonify({"ok": False, "error": "not logged in"}), 401
 
     requested_map = request.args.get("map", DEFAULT_MAP_KEY).strip()
+    requested_partition = request.args.get("partition_id", "").strip()
     map_cfg = MAP_CONFIGS.get(requested_map, MAP_CONFIGS[DEFAULT_MAP_KEY])
-    markers = get_map_markers(map_cfg["key"])
+    markers = get_map_markers(map_cfg["key"], requested_partition)
 
     # Viewer/VIP privacy: map markers may show names/dots, but not FLS IDs.
     if current_role() in ("viewer", "vip"):
@@ -391,6 +429,19 @@ def api_map_markers():
     })
 
 
+@app.route("/api/map-partitions")
+def api_map_partitions():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not (is_operator_or_admin() or can_use_vip_tools()):
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    try:
+        return jsonify({"ok": True, "partitions": get_map_partition_candidates()})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Map partition lookup failed: {exc}"}), 500
+
+
 @app.route("/api/teleport-offline", methods=["POST"])
 def api_teleport_offline():
     if not logged_in():
@@ -402,7 +453,7 @@ def api_teleport_offline():
     fls_id = request.form.get("fls_id", "").strip()
     map_key = request.form.get("map_key", DEFAULT_MAP_KEY).strip()
     map_cfg = MAP_CONFIGS.get(map_key, MAP_CONFIGS[DEFAULT_MAP_KEY])
-    partition_default = ORNITHOPTER_PARTITION_DEFAULTS.get(map_cfg["key"], "")
+    partition_default = map_cfg.get("default_partition_id", "")
     partition_id = request.form.get("partition_id", str(partition_default)).strip()
     x = request.form.get("x", "0").strip()
     y = request.form.get("y", "0").strip()
@@ -457,19 +508,18 @@ def api_vip_overrepair():
 
     try:
         character = get_self_character_for_user(session["user"])
-        if not character.get("character_actor_id") or not character.get("inventory_id"):
-            return jsonify({"ok": False, "error": "linked character actor/inventory not found"}), 400
+        if not character.get("character_actor_id"):
+            return jsonify({"ok": False, "error": "linked character actor not found"}), 400
 
-        sql = build_overrepair_sql(
+        sql = build_overrepair_all_inventories_sql(
             character["character_actor_id"],
-            character["inventory_id"],
             durability,
         )
         output = run_psql(sql, timeout=60)
 
         log_action(
             session["user"],
-            f"vip overrepair own character {character['character_name']} durability {durability}",
+            f"vip overrepair all inventories for own character {character['character_name']} durability {durability}",
         )
 
         return jsonify({"ok": True, "output": output})
@@ -488,7 +538,7 @@ def api_vip_teleport_offline():
 
     map_key = request.form.get("map_key", DEFAULT_MAP_KEY).strip()
     map_cfg = MAP_CONFIGS.get(map_key, MAP_CONFIGS[DEFAULT_MAP_KEY])
-    partition_default = ORNITHOPTER_PARTITION_DEFAULTS.get(map_cfg["key"], "")
+    partition_default = map_cfg.get("default_partition_id", "")
     partition_id = request.form.get("partition_id", str(partition_default)).strip()
     x = request.form.get("x", "0").strip()
     y = request.form.get("y", "0").strip()
@@ -1186,7 +1236,7 @@ def api_teleport_vehicle():
         sql = build_vehicle_teleport_sql(
             actor_id,
             actor["transform"],
-            map_cfg["key"],
+            map_cfg.get("actor_map", map_cfg["key"]),
             partition_id,
             x,
             y,
@@ -1235,6 +1285,35 @@ def api_overrepair():
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Overrepair failed: {exc}"}), 500
+
+
+@app.route("/api/overrepair-item", methods=["POST"])
+def api_overrepair_item():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    inventory_id = request.form.get("inventory_id", "").strip()
+    item_row_id = request.form.get("item_row_id", "").strip()
+    durability = request.form.get("durability", DEFAULT_OVERREPAIR_DURABILITY).strip()
+
+    try:
+        sql = build_overrepair_item_sql(
+            character_actor_id,
+            inventory_id,
+            item_row_id,
+            durability,
+        )
+        output = run_psql(sql, timeout=60)
+        log_action(
+            session["user"],
+            f"overrepair one item actor {character_actor_id} inventory {inventory_id} item row {item_row_id} durability {durability}",
+        )
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Single item overrepair failed: {exc}"}), 500
 
 
 @app.route("/api/spawn-map", methods=["POST"])

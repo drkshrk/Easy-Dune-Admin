@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.0--beta-blue">
+  <img src="https://img.shields.io/badge/version-0.7.1--beta-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.2-blue">
   <img src="https://img.shields.io/badge/status-beta-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.0-beta`
+Current panel version: `0.7.1-beta`
 
 Target RedBlink Stack: `v1.3.2`
 
@@ -73,6 +73,7 @@ and contributors credited where they are used or targeted.
 
 - Hagga Basin live map
 - Deep Desert map support
+- Configurable map instances for multi-sietch / dual Deep Desert setups
 - Player, vehicle, and base markers
 - Mouse-wheel zoom
 - Drag panning
@@ -83,8 +84,11 @@ and contributors credited where they are used or targeted.
 - Offline teleportation
 - Character dropdown targeting
 - Emergency return to safe Hagga Basin point
-- Hagga Basin partition: `1`
-- Deep Desert partition: `8`
+- Live map and VIP self teleport use a DB-observed map partition picker instead of raw partition entry
+- Multi-partition map/teleport support is experimental and currently untested until additional Survival or Deep Desert instances are available
+- Default Hagga Basin partition: `1`
+- Default Deep Desert partition: `8`
+- Partition IDs are server-specific and may differ between multiple Survival or Deep Desert instances
 
 ### Vehicle Teleport
 
@@ -108,6 +112,7 @@ and contributors credited where they are used or targeted.
 - Admin-only character XP grant for the actual displayed character level
 - Admin-only set character level tool using the same level XP curve
 - Admin-only skill point grant that adds usable skill points without changing character level XP
+- Item grants target the selected player/account inventory path and do not use map partition IDs
 - WIP/unconfirmed admin-only specialization XP grant for Combat, Crafting, Gathering, Exploration, and Sabotage tracks. It appears to create/update the expected database entries, but persistence and in-game behavior still need confirmation after reaching the required progression/faction access.
 - Admin-only specialization reset for one track or all tracks plus keystones
 - Experimental admin-only progression preset apply/reset tools for curated journey roots
@@ -133,6 +138,7 @@ and contributors credited where they are used or targeted.
 ### Repair Tools
 
 - Admin-only gear overrepair
+- Admin-only single item overrepair picker for character-owned inventories, useful for uniques or items missed by the bulk pass
 - Admin-only vehicle module repair
 - Sane default repair values with editable durability fields
 
@@ -140,7 +146,7 @@ and contributors credited where they are used or targeted.
 
 - VIP role with viewer-safe access plus self-service tools
 - Admin-managed exact character-name link for each VIP web account
-- Self-only overrepair for the linked character inventory
+- Self-only overrepair across all inventories owned by the linked character, including equipped/hotbar rows with current durability
 - Self-only offline teleport using the linked character account/FLS ID
 - Self-only Mk6 Scout and Mk6 Medium Ornithopter grants
 
@@ -280,6 +286,16 @@ Optional RedBlink installer target override:
 export REDBLINK_INSTALL_DIR=/path/to/dune-awakening-selfhost-docker
 ```
 
+Optional multi-instance map/teleport override:
+
+```bash
+export EASY_DUNE_MAP_CONFIGS_JSON='{"HaggaBasin":{"key":"HaggaBasin","label":"Hagga Basin 1","actor_map":"HaggaBasin","image":"arrakis_hb.webp","width":8000,"height":8000,"min_x":-456752.21,"max_x":354547.46,"min_y":-450630.14,"max_y":353821.95,"flip_y":false,"default_partition_id":1},"HaggaBasin2":{"key":"HaggaBasin2","label":"Hagga Basin 2","actor_map":"HaggaBasin","image":"arrakis_hb.webp","width":8000,"height":8000,"min_x":-456752.21,"max_x":354547.46,"min_y":-450630.14,"max_y":353821.95,"flip_y":false,"default_partition_id":12}}'
+```
+
+Use verified partition IDs from your own database/runtime state. Do not assume another server's Survival or Deep Desert partition IDs match yours.
+
+Teleport-capable roles can query `/api/map-partitions` after logging in to see observed `dune.actors.map` / `partition_id` pairs with actor, player, vehicle, and base counts.
+
 ---
 
 ## Upgrading
@@ -287,7 +303,7 @@ export REDBLINK_INSTALL_DIR=/path/to/dune-awakening-selfhost-docker
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.0-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.1-beta
 ```
 
 Preserve local runtime data:
@@ -367,7 +383,8 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 - Vehicle repair writes directly to `dune.vehicle_modules` stats JSON.
 - Vehicle teleport writes to `dune.actors`, but loaded vehicle actors do not reload their transform until the affected map/server instance restarts.
 - Gear overrepair requires items to be unequipped and in inventory.
-- Deep Desert teleport partition should be verified on each stack/server setup.
+- Single item overrepair discovers inventory rows per selected character, so inventory IDs do not need to match between players.
+- Teleport partition IDs should be verified on each stack/server setup, especially when running multiple Survival or Deep Desert instances.
 
 ---
 
@@ -385,7 +402,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.0-beta`: the former `app.py` monolith is split into a small launcher, shared core helpers, and route registrations so future admin tools are easier to maintain.
+Current highlight for `0.7.1-beta`: the former `app.py` monolith is split into a small launcher, shared core helpers, and route registrations so future admin tools are easier to maintain.
 
 Looking ahead: faction manipulation tools are a likely `0.7.1` focus after faction membership and the related database state can be captured and tested safely.
 

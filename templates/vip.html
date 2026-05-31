@@ -99,14 +99,14 @@ These tools only act on the in-game character linked to this web account by an a
 <div class="box">
 <h2>Self Overrepair</h2>
 <div class="warning">
-The character must be logged off. Items must be unequipped and in the character inventory.<br><br>
+The character must be logged off. This repairs all inventories owned by your linked character, including equipped/hotbar inventory rows, but only items with a current durability field are touched.<br><br>
 If some items fail to overrepair, empty extra inventory, move failed items higher in the bag, equip items that worked, retry, and verify the SQL output.
 </div>
 
 <form id="vipOverrepairForm">
     <label>Durability Value</label>
     <input type="text" name="durability" value="{{ default_overrepair_durability }}" required>
-    <button type="submit">Overrepair My Inventory</button>
+    <button type="submit">Overrepair My Inventories</button>
 </form>
 </div>
 
@@ -147,15 +147,17 @@ Make sure you have at least 21 free inventory slots; 25+ is recommended to reduc
 <div class="box">
 <h2>Self Offline Teleport</h2>
 <div class="warning">
-Use only while your character is offline. Drag the map to pan, hold Ctrl/Command while using the mouse wheel to zoom, then double-click the map to confirm and fill X/Y. Set a safe Z before teleporting. The server uses your linked character automatically; no player IDs are accepted from the browser.
+Use only while your character is offline. Drag the map to pan, hold Ctrl/Command while using the mouse wheel to zoom, then double-click the map to confirm and fill X/Y. Set a safe Z before teleporting.<br><br>
+<b>Experimental:</b> multi-partition map/teleport support is currently untested until additional Survival or Deep Desert instances are available. The partition picker reads observed map names and partition IDs from the database, and map markers are filtered by the selected partition. The server uses your linked character automatically; no player IDs are accepted from the browser.
 </div>
 
 <div class="vip-teleport-workbench">
 <div>
 <label>Map</label>
 <select id="vipMapSelect" onchange="switchVipMap()">
-    <option value="HaggaBasin">Arrakis - Hagga Basin</option>
-    <option value="DeepDesert">The Deep Desert</option>
+    {% for key, cfg in map_configs.items() %}
+    <option value="{{ key }}">{{ cfg.label }}</option>
+    {% endfor %}
 </select>
 
 <label>Zoom</label>
@@ -169,8 +171,10 @@ Use only while your character is offline. Drag the map to pan, hold Ctrl/Command
 <form id="vipTeleportForm">
     <input type="hidden" name="map_key" id="vipTeleportMapKey" value="{{ default_map_key }}">
 
-    <label>Partition ID</label>
-    <input type="text" name="partition_id" id="vipTeleportPartitionId" value="1" required>
+    <label>Map Partition</label>
+    <select name="partition_id" id="vipTeleportPartitionId" onchange="refreshVipMapMarkers()" required>
+        <option value="">Loading partitions...</option>
+    </select>
 
     <label>X</label>
     <input type="text" name="x" id="vipTeleportX" required>
@@ -207,10 +211,74 @@ let vipMapDragStartX = 0;
 let vipMapDragStartY = 0;
 let vipMapDragScrollLeft = 0;
 let vipMapDragScrollTop = 0;
+let vipMapPartitions = [];
 
 function vipPartitionForMap(mapKey) {
-    if (mapKey === "DeepDesert") return "8";
-    return "1";
+    const cfg = vipMapConfigs[mapKey] || vipMapConfigs.HaggaBasin || {};
+    return cfg.default_partition_id || "";
+}
+
+function vipPartitionRowsForMap(mapKey) {
+    const cfg = vipMapConfigs[mapKey] || vipMapConfigs.HaggaBasin || {};
+    const actorMap = String(cfg.actor_map || mapKey);
+    return vipMapPartitions.filter(row => String(row.map || "") === actorMap);
+}
+
+function vipPartitionOptionLabel(row) {
+    return [
+        row.label || `${row.map || "Unknown map"} - Partition ${row.partition_id || ""}`,
+        `${row.actor_count || 0} actors`,
+        `${row.player_count || 0} players`,
+        `${row.vehicle_count || 0} vehicles`,
+        `${row.base_count || 0} bases`
+    ].join(" | ");
+}
+
+function populateVipPartitionSelect() {
+    const select = document.getElementById("vipTeleportPartitionId");
+    if (!select) return;
+
+    const cfg = vipMapConfigs[vipSelectedMapKey] || vipMapConfigs.HaggaBasin || {};
+    const rows = vipPartitionRowsForMap(vipSelectedMapKey);
+    const configuredDefault = cfg.default_partition_id || "";
+
+    select.innerHTML = "";
+
+    if (rows.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = configuredDefault;
+        opt.textContent = configuredDefault
+            ? `${cfg.label || vipSelectedMapKey} - Configured default partition ${configuredDefault}`
+            : "No observed partitions for this map";
+        select.appendChild(opt);
+        return;
+    }
+
+    rows.forEach(row => {
+        const opt = document.createElement("option");
+        opt.value = row.partition_id || "";
+        opt.textContent = vipPartitionOptionLabel(row);
+        if (configuredDefault && String(row.partition_id || "") === String(configuredDefault)) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    });
+}
+
+async function loadVipMapPartitions() {
+    const select = document.getElementById("vipTeleportPartitionId");
+    if (select) select.innerHTML = `<option value="">Loading partitions...</option>`;
+
+    try {
+        const response = await fetch("/api/map-partitions");
+        const data = await response.json();
+        vipMapPartitions = data.ok ? (data.partitions || []) : [];
+    } catch (err) {
+        vipMapPartitions = [];
+    }
+
+    populateVipPartitionSelect();
+    refreshVipMapMarkers();
 }
 
 function vipPixelToWorld(px, py) {
@@ -254,7 +322,7 @@ function switchVipMap() {
     vipSelectedMapKey = select.value || "HaggaBasin";
     vipMapConfig = vipMapConfigs[vipSelectedMapKey] || vipMapConfigs.HaggaBasin;
     document.getElementById("vipTeleportMapKey").value = vipSelectedMapKey;
-    document.getElementById("vipTeleportPartitionId").value = vipPartitionForMap(vipSelectedMapKey);
+    populateVipPartitionSelect();
     refreshVipMapMarkers();
 }
 
@@ -270,7 +338,7 @@ function vipMapEventToWorld(event) {
         x: world.x.toFixed(2),
         y: world.y.toFixed(2),
         mapKey: vipSelectedMapKey,
-        partitionId: vipPartitionForMap(vipSelectedMapKey)
+        partitionId: document.getElementById("vipTeleportPartitionId").value || vipPartitionForMap(vipSelectedMapKey)
     };
 }
 
@@ -370,7 +438,12 @@ async function refreshVipMapMarkers() {
     const layer = document.getElementById("vipMarkerLayer");
     layer.innerHTML = "";
 
-    const response = await fetch(`/api/map-markers?map=${encodeURIComponent(vipSelectedMapKey)}`);
+    const partition = document.getElementById("vipTeleportPartitionId");
+    const partitionId = partition ? partition.value : "";
+    const url =
+        `/api/map-markers?map=${encodeURIComponent(vipSelectedMapKey)}`
+        + `&partition_id=${encodeURIComponent(partitionId)}`;
+    const response = await fetch(url);
     const data = await response.json();
     if (!data.ok) {
         summary.textContent = data.error || "Unable to load map markers.";
@@ -378,7 +451,10 @@ async function refreshVipMapMarkers() {
     }
 
     const visible = (data.markers || []).filter(m => m.in_bounds);
-    summary.textContent = `${vipMapConfig.label}: ${visible.length} visible marker(s)`;
+    const partitionLabel = partition && partition.selectedOptions.length
+        ? partition.selectedOptions[0].textContent
+        : "No partition selected";
+    summary.textContent = `${vipMapConfig.label}: ${visible.length} visible marker(s) on ${partitionLabel}`;
 
     visible.forEach(marker => {
         const node = document.createElement("div");
@@ -394,7 +470,7 @@ wireVipMapControls();
 
 document.getElementById("vipOverrepairForm").addEventListener("submit", async function(event) {
     event.preventDefault();
-    if (!confirm("Overrepair your linked character inventory? Character must be offline and items unequipped.")) return;
+    if (!confirm("Overrepair all inventories owned by your linked character? Character must be offline. Only items with current durability are touched.")) return;
     await postForm("/api/vip-overrepair", this);
 });
 
@@ -417,6 +493,7 @@ document.getElementById("vipMediumThopterForm").addEventListener("submit", async
 });
 
 loadVipCharacter();
+loadVipMapPartitions();
 switchVipMap();
 </script>
 {% endblock %}

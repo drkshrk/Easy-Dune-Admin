@@ -147,6 +147,7 @@ async function loadCharactersForGrantPage() {
 async function loadCharactersForAdminPage() {
     const chars = await fetchCharacters(true);
     fillCharacterSelect("overrepairCharacterSelect", chars);
+    fillCharacterSelect("overrepairItemCharacterSelect", chars);
     fillCharacterSelect("lasgunCharacterSelect", chars);
     fillCharacterSelect("researchCharacterSelect", chars);
     fillCharacterSelect("characterXpCharacterSelect", chars);
@@ -189,6 +190,121 @@ function fillOverrepairFields() {
 
     if (actorInput) actorInput.value = c.character_actor_id || "";
     if (inventoryInput) inventoryInput.value = c.inventory_id || "";
+}
+
+function resetOverrepairItemPickers(inventoryMessage = "Select a character first...", itemMessage = "Select an inventory first...") {
+    const inventorySelect = document.getElementById("overrepairItemInventorySelect");
+    const itemSelect = document.getElementById("overrepairItemSelect");
+
+    if (inventorySelect) {
+        inventorySelect.innerHTML = `<option value="">${escapeHtml(inventoryMessage)}</option>`;
+    }
+
+    if (itemSelect) {
+        itemSelect.innerHTML = `<option value="">${escapeHtml(itemMessage)}</option>`;
+    }
+}
+
+async function fillOverrepairItemCharacterFields() {
+    const sel = document.getElementById("overrepairItemCharacterSelect");
+    const c = latestCharacters[Number(sel.value)];
+    const actorInput = document.getElementById("overrepairItemActorId");
+
+    if (!c) {
+        if (actorInput) actorInput.value = "";
+        resetOverrepairItemPickers();
+        return;
+    }
+
+    if (actorInput) actorInput.value = c.character_actor_id || "";
+    await loadOverrepairInventories();
+}
+
+async function loadOverrepairInventories() {
+    const actorInput = document.getElementById("overrepairItemActorId");
+    const inventorySelect = document.getElementById("overrepairItemInventorySelect");
+    const itemSelect = document.getElementById("overrepairItemSelect");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+
+    if (!inventorySelect || !actorId) {
+        resetOverrepairItemPickers();
+        return;
+    }
+
+    inventorySelect.innerHTML = `<option value="">Loading inventories...</option>`;
+    if (itemSelect) itemSelect.innerHTML = `<option value="">Select an inventory first...</option>`;
+
+    try {
+        const response = await fetch(`/api/character-inventories?character_actor_id=${encodeURIComponent(actorId)}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            inventorySelect.innerHTML = `<option value="">${escapeHtml(data.error || "Inventory lookup failed.")}</option>`;
+            return;
+        }
+
+        const inventories = data.inventories || [];
+        if (inventories.length === 0) {
+            inventorySelect.innerHTML = `<option value="">No inventories found.</option>`;
+            return;
+        }
+
+        inventorySelect.innerHTML = `<option value="">Select an inventory...</option>`;
+        inventories.forEach(inv => {
+            const opt = document.createElement("option");
+            opt.value = inv.inventory_id || "";
+            opt.textContent = `${inv.inventory_label || "Inventory"} | ID ${inv.inventory_id || ""} | Items ${inv.item_count || "0"}`;
+            inventorySelect.appendChild(opt);
+        });
+    } catch (err) {
+        inventorySelect.innerHTML = `<option value="">Inventory lookup failed.</option>`;
+    }
+}
+
+async function loadOverrepairInventoryItems() {
+    const actorInput = document.getElementById("overrepairItemActorId");
+    const inventorySelect = document.getElementById("overrepairItemInventorySelect");
+    const itemSelect = document.getElementById("overrepairItemSelect");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+    const inventoryId = inventorySelect ? inventorySelect.value.trim() : "";
+
+    if (!itemSelect || !actorId || !inventoryId) {
+        if (itemSelect) itemSelect.innerHTML = `<option value="">Select an inventory first...</option>`;
+        return;
+    }
+
+    itemSelect.innerHTML = `<option value="">Loading items...</option>`;
+
+    try {
+        const url = `/api/character-inventory-items?character_actor_id=${encodeURIComponent(actorId)}&inventory_id=${encodeURIComponent(inventoryId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.ok) {
+            itemSelect.innerHTML = `<option value="">${escapeHtml(data.error || "Item lookup failed.")}</option>`;
+            return;
+        }
+
+        const items = data.items || [];
+        if (items.length === 0) {
+            itemSelect.innerHTML = `<option value="">No items found.</option>`;
+            return;
+        }
+
+        itemSelect.innerHTML = `<option value="">Select an item...</option>`;
+        items.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.item_row_id || "";
+            const durability = item.current_durability
+                ? ` | Dur ${item.current_durability}/${item.max_durability || "missing max"}`
+                : " | No current durability";
+            opt.textContent =
+                `Pos ${item.position_index || "?"} | Row ${item.item_row_id || ""} | ${item.template_id || "Unknown item"} | QL ${item.quality_level || "?"} | Stack ${item.stack_size || "?"}${durability}`;
+            itemSelect.appendChild(opt);
+        });
+    } catch (err) {
+        itemSelect.innerHTML = `<option value="">Item lookup failed.</option>`;
+    }
 }
 
 function fillLasgunPlayerId() {
@@ -460,10 +576,12 @@ async function loadOrnithoptersForAdminPage() {
 }
 
 function ornithopterPartitionForMap(mapKey) {
-    // These are the known gameplay partition IDs for vehicle relocation.
-    // Change them here if your RedBlink stack/database uses different IDs.
-    if (mapKey === "DeepDesert") return "8";
-    return "1";
+    // Partition IDs are configured per visible map instance because private
+    // servers can run multiple Survival/Deep Desert instances with different
+    // partition ids. Keep EASY_DUNE_MAP_CONFIGS_JSON in sync on such servers.
+    if (typeof adminMapConfigs === "undefined") return "";
+    const cfg = adminMapConfigs[mapKey] || adminMapConfigs.HaggaBasin || {};
+    return cfg.default_partition_id || "";
 }
 
 function fillOrnithopterPartitionDefault() {
@@ -478,14 +596,21 @@ function fillOrnithopterPartitionDefault() {
 function ornithopterMapKeyForActor(t, fallbackMapKey) {
     // Some actor rows have a blank/nonstandard map field. For form safety, only
     // put map keys into the dropdown that the backend route accepts.
-    if (typeof adminMapConfigs !== "undefined" && t.map && adminMapConfigs[t.map]) {
-        return t.map;
-    }
-    if (String(t.partition_id || "") === ornithopterPartitionForMap("DeepDesert")) {
-        return "DeepDesert";
-    }
-    if (String(t.partition_id || "") === ornithopterPartitionForMap("HaggaBasin")) {
-        return "HaggaBasin";
+    if (typeof adminMapConfigs !== "undefined") {
+        const actorMap = String(t.map || "");
+        const partition = String(t.partition_id || "");
+
+        for (const [key, cfg] of Object.entries(adminMapConfigs)) {
+            const cfgActorMap = String(cfg.actor_map || key);
+            const cfgPartition = String(cfg.default_partition_id || "");
+            if (actorMap === cfgActorMap && (!cfgPartition || partition === cfgPartition)) {
+                return key;
+            }
+        }
+
+        if (t.map && adminMapConfigs[t.map]) {
+            return t.map;
+        }
     }
     return fallbackMapKey || "HaggaBasin";
 }
@@ -554,13 +679,13 @@ function adminMapPixelsToWorld(px, py, mapConfig) {
 }
 
 function ornithopterBelongsOnMap(t, mapKey) {
-    // Prefer exact actor map matches, but still allow the known partition IDs.
-    // Some actor rows can have empty or nonstandard map labels while their
-    // partition/transform still place them on the expected map.
-    const partitionMatches =
-        String(t.partition_id || "") === ornithopterPartitionForMap(mapKey);
+    const cfg = typeof adminMapConfigs !== "undefined" ? adminMapConfigs[mapKey] : null;
+    const actorMap = cfg ? String(cfg.actor_map || mapKey) : mapKey;
+    const cfgPartition = cfg ? String(cfg.default_partition_id || "") : ornithopterPartitionForMap(mapKey);
+    const actorMatches = String(t.map || "") === actorMap || String(t.map || "") === mapKey;
+    const partitionMatches = !cfgPartition || String(t.partition_id || "") === cfgPartition;
 
-    return t.map === mapKey || partitionMatches;
+    return actorMatches && partitionMatches;
 }
 
 function fillOrnithopterTeleportFromActor(t) {
