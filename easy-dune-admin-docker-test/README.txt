@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.2-beta
+Panel version: 0.7.3-beta
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -386,7 +386,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.2-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.3-beta
 
 Preserve local runtime data:
 
@@ -432,7 +432,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.2-beta: RedBlink v1.3.3 support expands Server
+Current highlight for 0.7.3-beta: RedBlink v1.3.3 support expands Server
 Management with battlegroup readiness, autoscaler, Sietches, memory, update
 checks, restart schedule status, selected dune admin helpers, Admin Panel
 water-container refill/player-location/vehicle-spawn utilities, and VIP

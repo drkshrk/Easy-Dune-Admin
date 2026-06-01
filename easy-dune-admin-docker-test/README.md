@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.2--beta-blue">
+  <img src="https://img.shields.io/badge/version-0.7.3--beta-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-beta-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.2-beta`
+Current panel version: `0.7.3-beta`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -339,7 +339,7 @@ Teleport-capable roles can query `/api/map-partitions` after logging in to see o
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.2-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.3-beta
 ```
 
 Preserve local runtime data:
@@ -438,7 +438,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.2-beta`: RedBlink `v1.3.3` support expands Server Management with battlegroup readiness, autoscaler, Sietches, memory, update checks, restart schedule status, selected `dune admin` helpers, Admin Panel water-container refill/player-location/vehicle-spawn utilities, and VIP self-only water-container refill.
+Current highlight for `0.7.3-beta`: RedBlink `v1.3.3` support expands Server Management with battlegroup readiness, autoscaler, Sietches, memory, update checks, restart schedule status, selected `dune admin` helpers, Admin Panel water-container refill/player-location/vehicle-spawn utilities, and VIP self-only water-container refill.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

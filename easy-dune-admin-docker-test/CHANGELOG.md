@@ -2,7 +2,7 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.7.2-beta
+## 0.7.3-beta
 
 ### Changed
 
@@ -33,7 +33,7 @@ All notable changes to Easy Dune Admin are documented here.
 
 ### Planned
 
-- `0.7.3` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
+- `0.7.4` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
 
 ## 0.6.6-rc2
 
