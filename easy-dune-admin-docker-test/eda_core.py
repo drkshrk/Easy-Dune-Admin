@@ -95,7 +95,13 @@ REDBLINK_VEHICLE_SPAWN_TEMPLATES = {
 DEFAULT_WATER_REFILL_AMOUNT = int(os.environ.get("DEFAULT_WATER_REFILL_AMOUNT", "1000000"))
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_FILE = BASE_DIR / "users.db"
+
+# Docker/test packaging can mount a persistent data directory so user accounts,
+# local logs, and lightweight runtime markers survive image rebuilds. Native
+# installs keep the original project-folder behavior unless EDA_DATA_DIR is set.
+DATA_DIR = Path(os.environ.get("EDA_DATA_DIR", str(BASE_DIR)))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_FILE = DATA_DIR / "users.db"
 
 # IceHunter / Ryan Wilson's MIT-licensed dune-admin project includes a richer
 # exchange catalog than RedBlink's admin item list. We use this local copy for
@@ -168,11 +174,13 @@ MARKET_BUY_MAX_PER_CLICK = int(os.environ.get("MARKET_BUY_MAX_PER_CLICK", "500")
 MARKET_BUYBACK_INTERVAL_MINUTES = int(os.environ.get("MARKET_BUYBACK_INTERVAL_MINUTES", "30"))
 MARKET_RESEED_INTERVAL_MINUTES = int(os.environ.get("MARKET_RESEED_INTERVAL_MINUTES", "30"))
 
-LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+LOG_DIR = Path(os.environ.get("EDA_LOG_DIR", str(DATA_DIR / "logs")))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 ACTION_LOG = LOG_DIR / "actions.log"
 
-POSTGRES_CONTAINER = "dune-postgres"
+# Container name used for direct psql calls. RedBlink defaults to dune-postgres,
+# but Docker test installs may override this if the compose project names differ.
+POSTGRES_CONTAINER = os.environ.get("POSTGRES_CONTAINER", "dune-postgres")
 
 # Change with:
 # export DUNE_SECRET_KEY='long-random-string'

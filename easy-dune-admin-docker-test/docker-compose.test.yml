@@ -1,0 +1,46 @@
+services:
+  easy-dune-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: easy-dune-admin:test
+    container_name: easy-dune-admin-test
+    restart: unless-stopped
+    ports:
+      - "${EDA_PORT:-8088}:8088"
+    environment:
+      # Generate a long random value before exposing outside a trusted LAN/VPN.
+      DUNE_SECRET_KEY: "${DUNE_SECRET_KEY:-change-this-secret-before-sharing}"
+
+      # RedBlink stack mounted inside this container. Keep this aligned with
+      # the volume below and with your host's actual install path.
+      DUNE_ROOT: "${DUNE_ROOT_CONTAINER:-/redblink}"
+      REDBLINK_INSTALL_DIR: "${DUNE_ROOT_CONTAINER:-/redblink}"
+
+      # Persistent Easy Dune Admin state lives outside the image.
+      EDA_DATA_DIR: "/data"
+      EDA_LOG_DIR: "/data/logs"
+
+      # Enable command-backed panels. Browser host shell stays disabled by
+      # default for container testing; turn on only on a trusted LAN/VPN.
+      ENABLE_HOST_COMMAND_RUNNER: "${ENABLE_HOST_COMMAND_RUNNER:-1}"
+      ENABLE_STACK_INSTALLER: "${ENABLE_STACK_INSTALLER:-0}"
+      ENABLE_HOST_SHELL: "${ENABLE_HOST_SHELL:-0}"
+
+      # Optional tuning defaults exposed by the app.
+      DEFAULT_WATER_REFILL_AMOUNT: "${DEFAULT_WATER_REFILL_AMOUNT:-1000000}"
+      MARKET_PRICE_MULTIPLIER: "${MARKET_PRICE_MULTIPLIER:-5}"
+      POSTGRES_CONTAINER: "${POSTGRES_CONTAINER:-dune-postgres}"
+    volumes:
+      - easy-dune-admin-data:/data
+
+      # Required for docker exec / docker ps / RedBlink manager actions.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Point REDBLINK_HOST_DIR at your host RedBlink install.
+      - "${REDBLINK_HOST_DIR:-/home/steam/dune-awakening-selfhost-docker}:${DUNE_ROOT_CONTAINER:-/redblink}:rw"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  easy-dune-admin-data:
