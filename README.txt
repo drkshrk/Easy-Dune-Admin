@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.2-beta
+Panel version: 0.7.3-beta
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -320,6 +320,24 @@ observed dune.actors.map / partition_id pairs with actor, player, vehicle,
 and base counts.
 
 
+Docker Test Package
+-------------------
+
+An experimental Dockerized Easy Dune Admin package is included at:
+
+  easy-dune-admin-docker-test/
+
+It runs Easy Dune Admin in a container while mounting the host RedBlink stack
+directory and Docker socket. This is currently a preview path for testing, not
+yet the recommended install method.
+
+See:
+
+  easy-dune-admin-docker-test/DOCKER_TESTING.md
+
+for setup notes.
+
+
 Runtime Assets
 --------------
 
@@ -386,7 +404,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.2-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.3-beta
 
 Preserve local runtime data:
 
@@ -432,7 +450,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.2-beta: RedBlink v1.3.3 support expands Server
+Current highlight for 0.7.3-beta: RedBlink v1.3.3 support expands Server
 Management with battlegroup readiness, autoscaler, Sietches, memory, update
 checks, restart schedule status, selected dune admin helpers, Admin Panel
 water-container refill/player-location/vehicle-spawn utilities, and VIP
