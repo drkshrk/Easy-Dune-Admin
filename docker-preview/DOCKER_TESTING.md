@@ -1,7 +1,7 @@
-# Docker Test Package
+# Docker preview package
 
 This folder is an experimental containerized Easy Dune Admin build. It lives
-inside the main project folder so the normal app and Docker test package can be
+inside the main project folder so the normal app and Docker preview package can be
 uploaded together, while Docker-specific files stay grouped in one place.
 
 ## What The Container Mounts
@@ -32,7 +32,7 @@ to delete that named volume and reset the webadmin setup. Plain
 
 ## Login Installation Profile
 
-The Docker test package defaults to the `RedBlink Docker Container` login
+The Docker preview package defaults to the `RedBlink Docker Container` login
 profile. The login page also offers `Linux Host` and experimental `Hyper-V via
 SSH`. Hyper-V mode requires `EASY_DUNE_HYPERV_SSH_TARGET` and
 `EASY_DUNE_HYPERV_DUNE_ROOT` in `.env`; leave them blank unless the webadmin
@@ -41,7 +41,7 @@ needs to SSH into a Hyper-V Linux VM.
 ## Quick Test
 
 ```bash
-cd easy-dune-admin-docker-test
+cd docker-preview
 cp .env.docker.example .env
 nano .env
 docker compose -f docker-compose.test.yml up --build

@@ -8,8 +8,8 @@ Easy Dune Admin is designed as a companion panel for RedBlink's MIT-licensed
 `dune-awakening-selfhost-docker` stack and calls its wrapper/admin commands for
 supported server operations, item grants, skill-module commands, kick commands,
 and vehicle spawn helpers. Easy Dune Admin is an independent project developed
-with RedBlink's blessing/request for a fuller webadmin, while crediting
-RedBlink's stack, scripts, catalogs, and command workflows where used.
+with RedBlink's permission, while crediting RedBlink's stack, scripts,
+catalogs, and command workflows where used.
 
 Copyright (c) 2026 RedBlink
 
@@ -36,9 +36,10 @@ Repository: https://github.com/Icehunter/dune-admin
 
 Market seeding research, exchange insert flow, market category mask mapping,
 progression-system research, progression preset structure, specialization XP
-track/cap research, character-level XP curve research, and the bundled
-`data/icehunter-item-data.json` catalog are derived from or adapted from
-IceHunter / Ryan Wilson's MIT-licensed `dune-admin` project.
+track/cap research, character-level XP curve research, the admin New Player Kit
+starter pack recipe, and the bundled `data/icehunter-item-data.json` catalog
+are derived from or adapted from IceHunter / Ryan Wilson's MIT-licensed
+`dune-admin` project.
 
 Copyright (c) 2026 Ryan Wilson
 

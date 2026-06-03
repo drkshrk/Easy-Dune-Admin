@@ -1,9 +1,31 @@
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 logs/
 users.db
+*.db
+*.sqlite
+*.sqlite3
 .env
+.env.local
+.env.*.local
 *.log
 webadmin.pid
 webadmin.mode
+FETCH_HEAD
+
+# Local research/import artifacts. Keep source zips, CSV database dumps, and
+# unpacked reference repos out of releases unless a specific file is deliberately
+# copied into the project and credited.
+*.zip
+*.csv
+reference_*/
+_license_review_*/
+dune-awakening-selfhost-docker-*/
+
+# OS/editor noise.
+.DS_Store
+Thumbs.db

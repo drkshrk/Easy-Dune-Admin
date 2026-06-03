@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.5-alpha
+Panel version: 0.7.6-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.7.5-alpha RedBlink v1.3.3 support:
+0.7.6-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -55,7 +55,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.5-alpha"
+PANEL_VERSION = "0.7.6-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -347,6 +347,28 @@ LASGUN_AUGMENT_BUNDLE = [
     ("T6_Augment_Lasgun1", 1),
     ("T6_Augment_Damage2", 1),
     ("T6_Augment_Acuracy1", 1),
+]
+
+# Admin-only starter kit adapted from IceHunter / Ryan Wilson's MIT-licensed
+# dune-admin web/public/packs.json `t1-starter` pack. The RedBlink grant helper
+# accepts template id, quantity, and durability, so the IceHunter quality=0
+# field is intentionally omitted here. Keep this list conservative: it is meant
+# to get a new private-server player moving, not to skip progression tiers.
+NEW_PLAYER_STARTER_KIT = [
+    ("Combat_Nati_ScavengerRags02_Boots", 1),
+    ("Combat_Nati_ScavengerRags02_Gloves", 1),
+    ("Combat_Nati_ScavengerRags02_Helmet", 1),
+    ("Combat_Nati_ScavengerRags02_Bottom", 1),
+    ("Combat_Nati_ScavengerRags02_Top", 1),
+    ("Ammo", 500),
+    ("HeavyAmmo", 500),
+    ("Kindjal", 1),
+    ("ChoamSda2", 1),
+    ("HarkAr2", 1),
+    ("MiningTool_1h_Heavy", 1),
+    ("HighCapacityLiterjon", 1),
+    ("BodyFluidExtractor", 1),
+    ("Bloodsack_01", 1),
 ]
 
 # Admin-only Solari grant. Keep this as the SolarisCoin template id so money
@@ -687,6 +709,7 @@ def inject_template_globals():
         "scout_thopter_template": SCOUT_THOPTER_TEMPLATE,
         "medium_bundle": MEDIUM_THOPTER_BUNDLE,
         "lasgun_augment_bundle": LASGUN_AUGMENT_BUNDLE,
+        "new_player_starter_kit": NEW_PLAYER_STARTER_KIT,
         "solaris_grant_amounts": SOLARIS_GRANT_AMOUNTS,
         "specialization_xp_tracks": SPECIALIZATION_XP_TRACKS,
         "specialization_max_xp": SPECIALIZATION_MAX_XP,

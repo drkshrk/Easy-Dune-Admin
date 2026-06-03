@@ -220,6 +220,7 @@ async function loadCharactersForGrantPage() {
     fillCharacterSelect("grantCharacterSelect", chars);
     fillCharacterSelect("scoutCharacterSelect", chars);
     fillCharacterSelect("mediumCharacterSelect", chars);
+    fillCharacterSelect("newPlayerKitCharacterSelect", chars);
 }
 
 async function loadCharactersForAdminPage() {
@@ -228,6 +229,7 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("overrepairItemCharacterSelect", chars);
     fillCharacterSelect("inventoryBrowserCharacterSelect", chars);
     fillCharacterSelect("lasgunCharacterSelect", chars);
+    fillCharacterSelect("newPlayerKitCharacterSelect", chars);
     fillCharacterSelect("redblinkWaterCharacterSelect", chars);
     fillCharacterSelect("redblinkVehicleCharacterSelect", chars);
     fillCharacterSelect("redblinkVehicleAtCharacterSelect", chars);
@@ -545,6 +547,13 @@ async function loadInventoryBrowserItems() {
 function fillLasgunPlayerId() {
     const sel = document.getElementById("lasgunCharacterSelect");
     const input = document.getElementById("lasgunPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillNewPlayerKitPlayerId() {
+    const sel = document.getElementById("newPlayerKitCharacterSelect");
+    const input = document.getElementById("newPlayerKitPlayerId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
 }

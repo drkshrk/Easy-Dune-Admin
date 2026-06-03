@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.5--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.7.6--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.5-alpha`
+Current panel version: `0.7.6-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -30,9 +30,9 @@ This alpha is intended for private/LAN/VPN-hosted self-hosted servers.
 Easy Dune Admin is an independent webadmin project built to support
 RedBlink's MIT-licensed
 [`dune-awakening-selfhost-docker`](https://github.com/Red-Blink/dune-awakening-selfhost-docker)
-stack. Development is being continued with RedBlink's blessing/request for a
-fuller webadmin, while keeping RedBlink's stack, scripts, command workflows,
-and contributors credited where they are used or targeted.
+stack. Development is being continued with RedBlink's permission, while keeping
+RedBlink's stack, scripts, command workflows, and contributors credited where
+they are used or targeted.
 
 ---
 
@@ -350,12 +350,12 @@ Teleport-capable roles can query `/api/map-partitions` after logging in to see o
 
 ---
 
-## Docker Test Package
+## Docker preview package
 
 An experimental Dockerized Easy Dune Admin package is included in:
 
 ```text
-easy-dune-admin-docker-test/
+docker-preview/
 ```
 
 This package runs Easy Dune Admin in a container while mounting the host RedBlink stack directory and Docker socket. It is currently a preview path for testing, not yet the recommended install method.
@@ -369,7 +369,7 @@ to reset the webadmin database.
 See:
 
 ```text
-easy-dune-admin-docker-test/DOCKER_TESTING.md
+docker-preview/DOCKER_TESTING.md
 ```
 
 for setup notes.
@@ -381,7 +381,7 @@ for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.5-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.6-alpha
 ```
 
 Preserve local runtime data:
@@ -480,7 +480,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.5-alpha`: RedBlink `v1.3.3` support expands Admin Panel helpers with skill-module level setting, kick controls, coordinate-based vehicle spawning, and purple offline-character map markers while keeping the existing Server Management, market, VIP, and Docker-preview tooling.
+Current highlight for `0.7.6-alpha`: Admin Panel now includes an attributed New Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using RedBlink's normal grant-item command path.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 
@@ -488,9 +488,9 @@ Looking ahead: faction manipulation tools are a likely future focus after factio
 
 ## Credits
 
-- RedBlink and contributors for the MIT-licensed [`dune-awakening-selfhost-docker`](https://github.com/Red-Blink/dune-awakening-selfhost-docker) stack this panel targets. This project is being developed with RedBlink's blessing/request for a fuller companion webadmin; Easy Dune Admin remains an independent project and credits RedBlink's stack, scripts, and command workflows where used.
+- RedBlink and contributors for the MIT-licensed [`dune-awakening-selfhost-docker`](https://github.com/Red-Blink/dune-awakening-selfhost-docker) stack this panel targets. This project is being developed with RedBlink's permission; Easy Dune Admin remains an independent project and credits RedBlink's stack, scripts, and command workflows where used.
 - Funcom
-- IceHunter / Ryan Wilson's MIT-licensed [`dune-admin`](https://github.com/Icehunter/dune-admin) project for market tooling research, category mapping, bundled market item data, progression preset structure, specialization XP research, and character-level XP curve research.
+- IceHunter / Ryan Wilson's MIT-licensed [`dune-admin`](https://github.com/Icehunter/dune-admin) project for market tooling research, category mapping, bundled market item data, progression preset structure, specialization XP research, character-level XP curve research, and the T1 starter pack recipe adapted for the New Player Kit.
 - Community researchers and testers
 
 ---

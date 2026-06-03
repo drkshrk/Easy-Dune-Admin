@@ -49,6 +49,33 @@
 <div class="grid">
 
 <div class="box">
+<h2>Grant New Player Kit</h2>
+
+<div class="warning">
+Admin-only test/helper bundle for any selected existing character. Uses IceHunter's MIT-licensed T1 starter pack recipe and RedBlink's normal item grant command path.
+</div>
+
+<form id="newPlayerKitGrantForm">
+    <label>Character</label>
+    <select id="newPlayerKitCharacterSelect" onchange="fillNewPlayerKitPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player ID / FLS ID</label>
+    <input type="text" name="player_id" id="newPlayerKitPlayerId" required>
+
+    <button type="submit">Grant New Player Kit</button>
+</form>
+
+<h3>Bundle Contents</h3>
+<ul>
+{% for item_id, qty in new_player_starter_kit %}
+<li>{{ item_id }} x{{ qty }}</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="box">
 <h2>Give MK6 Scout Thopter</h2>
 
 <div class="warning">
@@ -117,6 +144,17 @@ const itemSearchForm = document.getElementById("itemSearchForm");
 itemSearchForm.addEventListener("submit", async function(event) {
     event.preventDefault();
     await searchItems();
+});
+
+const newPlayerKitGrantForm = document.getElementById("newPlayerKitGrantForm");
+newPlayerKitGrantForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Grant the T1 new player starter kit to this selected character? This works for existing players too.")) {
+        return;
+    }
+
+    await postForm("/api/grant-new-player-kit", newPlayerKitGrantForm);
 });
 
 const scoutThopterForm = document.getElementById("scoutThopterForm");

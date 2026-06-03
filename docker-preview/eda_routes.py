@@ -1165,6 +1165,28 @@ def api_grant_lasgun_augment_bundle():
         return jsonify({"ok": False, "error": f"Lasgun bundle grant failed: {exc}"}), 500
 
 
+@app.route("/api/grant-new-player-kit", methods=["POST"])
+def api_grant_new_player_kit():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    player_id = request.form.get("player_id", "").strip()
+    if not player_id:
+        return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+
+    outputs = []
+    try:
+        for item_id, qty in NEW_PLAYER_STARTER_KIT:
+            outputs.append(grant_item(player_id, item_id, qty, "1.0"))
+
+        log_action(session["user"], f"grant new player starter kit to {player_id}")
+        return jsonify({"ok": True, "output": "\n\n---\n\n".join(outputs)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"New player starter kit grant failed: {exc}"}), 500
+
+
 @app.route("/api/grant-solari", methods=["POST"])
 def api_grant_solari():
     if not logged_in():

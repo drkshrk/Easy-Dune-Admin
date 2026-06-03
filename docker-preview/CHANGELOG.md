@@ -2,6 +2,13 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
+## 0.7.6-alpha
+
+### Added
+
+- Added an admin-only New Player Kit grant button based on IceHunter / Ryan Wilson's MIT-licensed `t1-starter` pack definition, using RedBlink's normal item grant command for the actual grants.
+- Added starter-kit attribution to the third-party notices and README credits.
+
 ## 0.7.5-alpha
 
 ### Changed
@@ -43,11 +50,11 @@ All notable changes to Easy Dune Admin are documented here.
 - Documented that RedBlink v1.3.3 currently ships one grant-template (`scout-ornithopter-mk6`); Easy Dune Admin's Medium Ornithopter kit remains a bundled item-grant workflow.
 - Changed Server Management memory tuning from typed map names to DB/stack-discovered map dropdowns showing map labels, active/max dimensions, type, and current memory where RedBlink reports them.
 - Added an admin emergency vehicle actor delete tool for cleaning up spawned/stuck vehicles such as accidental cargo containers.
-- Added an experimental Docker test package under `easy-dune-admin-docker-test/` and linked it from the main README files.
+- Added an experimental Docker preview package under `docker-preview/` and linked it from the main README files.
 
 ### Planned
 
-- `0.7.6` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
+- `0.7.7` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
 
 ## 0.6.6-rc2
 

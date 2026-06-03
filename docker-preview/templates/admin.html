@@ -511,6 +511,22 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
     <button type="submit">Grant Lightning Gun Kit</button>
 </form>
 
+<form id="newPlayerKitForm">
+    <label>Character</label>
+    <select id="newPlayerKitCharacterSelect" onchange="fillNewPlayerKitPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="newPlayerKitPlayerId" required>
+
+    <div class="coord-box">
+        Grants IceHunter's MIT-licensed T1 starter pack: scavenger armor, starter weapons/tools, ammo, literjon, extractor, and blood sack. Uses RedBlink's normal item grant command.
+    </div>
+
+    <button type="submit">Grant New Player Kit</button>
+</form>
+
 <form id="redblinkRefillWaterForm">
     <div class="warning">
         RedBlink v1.3.3 helper. Refills water containers/fillables for the selected player using <b>dune admin refill-water</b>. This does not refill the character hydration meter. VIP users get a self-only version of this tool.
@@ -987,6 +1003,17 @@ lasgunBundleForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/grant-lasgun-augment-bundle", lasgunBundleForm);
+});
+
+const newPlayerKitForm = document.getElementById("newPlayerKitForm");
+newPlayerKitForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Grant the T1 new player starter kit to this character using the item grant command?")) {
+        return;
+    }
+
+    await postForm("/api/grant-new-player-kit", newPlayerKitForm);
 });
 
 const redblinkRefillWaterForm = document.getElementById("redblinkRefillWaterForm");

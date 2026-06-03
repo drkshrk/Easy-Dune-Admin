@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.5-alpha
+Panel version: 0.7.6-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -19,9 +19,9 @@ Easy Dune Admin is an independent webadmin project built to support RedBlink's
 MIT-licensed dune-awakening-selfhost-docker stack:
 https://github.com/Red-Blink/dune-awakening-selfhost-docker
 
-Development is being continued with RedBlink's blessing/request for a fuller
-webadmin, while keeping RedBlink's stack, scripts, command workflows, and
-contributors credited where they are used or targeted.
+Development is being continued with RedBlink's permission, while keeping
+RedBlink's stack, scripts, command workflows, and contributors credited where
+they are used or targeted.
 
 
 Security Notes
@@ -337,12 +337,12 @@ observed dune.actors.map / partition_id pairs with actor, player, vehicle,
 and base counts.
 
 
-Docker Test Package
+Docker preview package
 -------------------
 
 An experimental Dockerized Easy Dune Admin package is included at:
 
-  easy-dune-admin-docker-test/
+  docker-preview/
 
 It runs Easy Dune Admin in a container while mounting the host RedBlink stack
 directory and Docker socket. This is currently a preview path for testing, not
@@ -359,7 +359,7 @@ unless you intentionally want to reset the webadmin database.
 
 See:
 
-  easy-dune-admin-docker-test/DOCKER_TESTING.md
+  docker-preview/DOCKER_TESTING.md
 
 for setup notes.
 
@@ -430,7 +430,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.5-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.6-alpha
 
 Preserve local runtime data:
 
@@ -476,10 +476,9 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.5-alpha: RedBlink v1.3.3 support expands Admin
-Panel helpers with skill-module level setting, kick controls, coordinate-based
-vehicle spawning, and purple offline-character map markers while keeping the
-existing Server Management, market, VIP, and Docker-preview tooling.
+Current highlight for 0.7.6-alpha: Admin Panel now includes an attributed New
+Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using
+RedBlink's normal grant-item command path.
 
 Looking ahead: faction manipulation tools are a likely 0.7.1 focus after
 faction membership and the related database state can be captured and tested
@@ -492,9 +491,9 @@ Credits
 - RedBlink and contributors for the MIT-licensed
   dune-awakening-selfhost-docker stack this panel targets:
   https://github.com/Red-Blink/dune-awakening-selfhost-docker
-  This project is being developed with RedBlink's blessing/request for a fuller
-  companion webadmin; Easy Dune Admin remains an independent project and
-  credits RedBlink's stack, scripts, and command workflows where used.
+  This project is being developed with RedBlink's permission; Easy Dune Admin
+  remains an independent project and credits RedBlink's stack, scripts, and
+  command workflows where used.
 - Funcom
 - IceHunter / Ryan Wilson's MIT-licensed dune-admin project for market
   tooling research, category mapping, bundled market item data, progression
