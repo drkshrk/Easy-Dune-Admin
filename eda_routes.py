@@ -70,6 +70,19 @@ def logout():
     return redirect("/login")
 
 
+@app.route("/service-worker.js")
+def pwa_service_worker():
+    """
+    Serve the PWA service worker at the site root so Android/iOS browsers can
+    install Easy Dune Admin with a root scope. The file itself lives in /static
+    with the rest of the browser assets for easier packaging.
+    """
+    response = app.send_static_file("service-worker.js")
+    response.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
 @app.route("/account", methods=["GET", "POST"])
 def account():
     if not logged_in():

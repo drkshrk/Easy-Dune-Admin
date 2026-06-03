@@ -1,10 +1,10 @@
 ﻿#!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.8-alpha
+Panel version: 0.7.9-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.7.8-alpha RedBlink v1.3.3 support:
+0.7.9-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -14,6 +14,7 @@ RedBlink stack compatibility target: v1.3.3
 - Adds VIP self-service tools for linked characters.
 - Adds admin market seeding tools with IceHunter attribution.
 - Splits the former app.py monolith into launcher, core helpers, and routes.
+- Adds PWA install metadata and a conservative app-shell service worker.
 
 SECURITY NOTES
 --------------
@@ -55,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.8-alpha"
+PANEL_VERSION = "0.7.9-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -6833,4 +6834,5 @@ def build_dashboard_metrics_payload():
         "system": get_system_resource_summary(),
         "world": get_world_summary_counts(),
     }
+
 

@@ -2,6 +2,14 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
+## 0.7.9-alpha
+
+### Added
+
+- Added Progressive Web App metadata so Easy Dune Admin can be installed to a phone/tablet home screen from supported browsers.
+- Added a root-scoped service worker with conservative app-shell caching and an offline fallback page.
+- Kept authenticated pages and API responses network-first so sensitive admin data is not intentionally cached for offline viewing.
+
 ## 0.7.8-alpha
 
 ### Added

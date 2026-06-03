@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.8--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.7.9--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.8-alpha`
+Current panel version: `0.7.9-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -245,6 +245,24 @@ Restore/import/delete database actions are intentionally not exposed yet.
 - Open Shell + `dune init`
 - Open Shell + `dune manager`
 
+### Mobile / PWA
+
+- Progressive Web App metadata for install-to-home-screen support on phones and tablets
+- Uses the existing Easy Dune Admin icons for app installation
+- Root-scoped service worker serves a simple offline fallback when the panel is unreachable
+- Authenticated pages and API responses remain network-first and are not intentionally cached for offline admin-data viewing
+- Keep mobile access behind LAN/VPN or other private access controls; do not expose the panel directly to the public internet
+
+Android install:
+
+1. Connect the phone to the same LAN or VPN as the Easy Dune Admin server.
+2. Open Chrome on Android and browse to `http://SERVER-IP:8088`.
+3. Log in once so Chrome sees the app as usable.
+4. Open Chrome's menu and choose `Install app` or `Add to Home screen`.
+5. Launch Easy Dune Admin from the new home-screen icon.
+
+If Chrome only offers `Add to Home screen`, use that option. No rooted phone is required.
+
 ---
 
 ## Requirements
@@ -409,7 +427,7 @@ for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.8-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.9-alpha
 ```
 
 Preserve local runtime data:
@@ -510,7 +528,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.8-alpha`: Admin Panel now includes an attributed New Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using RedBlink's normal grant-item command path.
+Current highlight for `0.7.9-alpha`: Easy Dune Admin now includes Progressive Web App support for install-to-home-screen use on phones and tablets, with conservative caching that avoids intentionally storing admin data offline.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 
@@ -536,4 +554,5 @@ Third-party reference material remains under its original license. See `THIRD_PA
 ## AI Collaboration Note
 
 Large portions of this project have been collaboratively created with the use of generative AI tools, including ChatGPT and Codex.
+
 

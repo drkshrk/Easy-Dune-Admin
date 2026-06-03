@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.8-alpha
+Panel version: 0.7.9-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -244,6 +244,28 @@ Infrastructure:
 - Open Shell + dune init
 - Open Shell + dune manager
 
+Mobile / PWA:
+- Progressive Web App metadata for install-to-home-screen support on phones
+  and tablets
+- Uses the existing Easy Dune Admin icons for app installation
+- Root-scoped service worker serves a simple offline fallback when the panel is
+  unreachable
+- Authenticated pages and API responses remain network-first and are not
+  intentionally cached for offline admin-data viewing
+- Keep mobile access behind LAN/VPN or other private access controls; do not
+  expose the panel directly to the public internet
+
+Android install:
+
+1. Connect the phone to the same LAN or VPN as the Easy Dune Admin server.
+2. Open Chrome on Android and browse to http://SERVER-IP:8088.
+3. Log in once so Chrome sees the app as usable.
+4. Open Chrome's menu and choose Install app or Add to Home screen.
+5. Launch Easy Dune Admin from the new home-screen icon.
+
+If Chrome only offers Add to Home screen, use that option. No rooted phone is
+required.
+
 
 Requirements
 ------------
@@ -461,7 +483,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.8-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.9-alpha
 
 Preserve local runtime data:
 
@@ -507,11 +529,11 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.8-alpha: Admin Panel now includes an attributed New
-Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using
-RedBlink's normal grant-item command path.
+Current highlight for 0.7.9-alpha: Easy Dune Admin now includes Progressive
+Web App support for install-to-home-screen use on phones and tablets, with
+conservative caching that avoids intentionally storing admin data offline.
 
-Looking ahead: faction manipulation tools are a likely 0.7.1 focus after
+Looking ahead: faction manipulation tools are a likely future focus after
 faction membership and the related database state can be captured and tested
 safely.
 
@@ -549,4 +571,5 @@ AI Collaboration Note
 
 Large portions of this project have been collaboratively created with the use
 of generative AI tools, including ChatGPT and Codex.
+
 
