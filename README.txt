@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.6-alpha
+Panel version: 0.7.7-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -96,9 +96,16 @@ VIP Tools:
 Item Grants:
 - Item search
 - Item grant tools
+- Admin-only Builder Supply Packs that insert curated build resources into
+  empty main-backpack slots after validating free space. These can temporarily
+  overload character carry weight, so equip a build tool before using them.
+- Admin-only Base Storage Warehouse Fill that discovers owned large base
+  containers, validates four empty selections, and fills them with a curated
+  four-box resource/component layout
 - Mk6 Scout Ornithopter grant
 - Mk6 Medium Ornithopter grant
-- Medium thopter kit includes 250 rockets
+- Medium thopter kit includes 250 rockets, one RepairTool5, and 500
+  WeldingMaterial
 - Admin-only Lightning Gun kit grant using the normal RedBlink item grant command
 - Admin-only SolarisCoin grant with preset amount dropdown
 - Admin-only Solari Coin inventory-stack lookup, add, and set-exact correction tools
@@ -119,8 +126,10 @@ Item Grants:
 - WIP/experimental Developer-only Class Progression preset dropdown for
   observed trainer/class unlock tag bundles. Currently appears nonfunctional
   for actual in-game class unlocks because the account tags alone are not
-  sufficient. The hidden /developer page also includes removal actions for the
-  Planetologist, Trooper, and Advanced Bene Gesserit test tags.
+  sufficient; advanced trainer unlocks appear to require full multi-quest
+  chains rather than one completion tag. The hidden /developer page also
+  includes removal actions for the Planetologist, Trooper, and Advanced Bene
+  Gesserit test tags.
 - Experimental Developer-only progression preset apply/reset tools for curated
   journey roots. These are for testing/research only because advancing journey
   rows this way can currently lock the character out of the 3rd combat skill
@@ -430,7 +439,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.6-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.7-alpha
 
 Preserve local runtime data:
 
@@ -476,7 +485,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.6-alpha: Admin Panel now includes an attributed New
+Current highlight for 0.7.7-alpha: Admin Panel now includes an attributed New
 Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using
 RedBlink's normal grant-item command path.
 

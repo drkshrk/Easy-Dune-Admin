@@ -1187,6 +1187,76 @@ def api_grant_new_player_kit():
         return jsonify({"ok": False, "error": f"New player starter kit grant failed: {exc}"}), 500
 
 
+@app.route("/api/grant-builder-supply-pack", methods=["POST"])
+def api_grant_builder_supply_pack():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    pack_id = request.form.get("pack_id", "").strip()
+    if not character_actor_id or not pack_id:
+        return jsonify({"ok": False, "error": "missing character actor ID or pack"}), 400
+
+    try:
+        sql = build_grant_builder_supply_pack_sql(character_actor_id, pack_id)
+        output = run_psql_script(sql, timeout=180)
+        log_action(session["user"], f"grant builder supply pack {pack_id} to actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Builder supply pack failed: {exc}"}), 500
+
+
+@app.route("/api/base-storage-containers")
+def api_base_storage_containers():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.args.get("character_actor_id", "").strip()
+    if not character_actor_id:
+        return jsonify({"ok": False, "error": "missing character actor ID"}), 400
+
+    try:
+        containers = get_base_storage_containers(character_actor_id)
+        return jsonify({"ok": True, "containers": containers})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Base storage lookup failed: {exc}"}), 500
+
+
+@app.route("/api/fill-base-storage-containers", methods=["POST"])
+def api_fill_base_storage_containers():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    pack_id = request.form.get("pack_id", "").strip()
+    container_ids = [
+        request.form.get("container_1", "").strip(),
+        request.form.get("container_2", "").strip(),
+        request.form.get("container_3", "").strip(),
+        request.form.get("container_4", "").strip(),
+    ]
+
+    if not character_actor_id or not pack_id or any(not value for value in container_ids):
+        return jsonify({"ok": False, "error": "missing character, pack, or one of the four container IDs"}), 400
+
+    try:
+        sql = build_fill_base_storage_containers_sql(character_actor_id, pack_id, container_ids)
+        output = run_psql_script(sql, timeout=240)
+        log_action(
+            session["user"],
+            f"fill base storage pack {pack_id} for actor {character_actor_id} containers {', '.join(container_ids)}",
+        )
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Base storage fill failed: {exc}"}), 500
+
+
 @app.route("/api/grant-solari", methods=["POST"])
 def api_grant_solari():
     if not logged_in():

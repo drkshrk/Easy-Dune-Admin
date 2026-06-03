@@ -221,6 +221,8 @@ async function loadCharactersForGrantPage() {
     fillCharacterSelect("scoutCharacterSelect", chars);
     fillCharacterSelect("mediumCharacterSelect", chars);
     fillCharacterSelect("newPlayerKitCharacterSelect", chars);
+    fillCharacterSelect("builderPackCharacterSelect", chars);
+    fillCharacterSelect("baseStorageCharacterSelect", chars);
 }
 
 async function loadCharactersForAdminPage() {
@@ -270,6 +272,122 @@ function fillMediumPlayerId() {
     const input = document.getElementById("mediumPlayerId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
+}
+
+function fillBuilderPackActorId() {
+    const sel = document.getElementById("builderPackCharacterSelect");
+    const input = document.getElementById("builderPackActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillBaseStorageActorId() {
+    const sel = document.getElementById("baseStorageCharacterSelect");
+    const input = document.getElementById("baseStorageActorId");
+    const c = latestCharacters[Number(sel.value)];
+
+    if (input) input.value = c ? (c.character_actor_id || "") : "";
+    resetBaseStorageContainers();
+}
+
+function baseStorageContainerLabel(container) {
+    const status = container.is_empty ? "EMPTY" : `${container.occupied_item_rows || "0"} occupied`;
+    const map = container.container_map || "Unknown map";
+    const partition = container.partition_id || "?";
+    const building = container.container_building_type || "Storage container";
+    return `Inv ${container.container_inventory_id} | ${status} | ${map} P${partition} | ${building}`;
+}
+
+function resetBaseStorageContainers(message = "Select a character, then discover owned base storage containers.") {
+    const summary = document.getElementById("baseStorageSummary");
+    const tableWrap = document.getElementById("baseStorageContainerTableWrap");
+    const tbody = document.getElementById("baseStorageContainerTableBody");
+
+    if (summary) summary.textContent = message;
+    if (tbody) tbody.innerHTML = "";
+    if (tableWrap) tableWrap.style.display = "none";
+}
+
+function fillNextBaseStorageBox(containerId) {
+    const ids = ["baseStorageContainer1", "baseStorageContainer2", "baseStorageContainer3", "baseStorageContainer4"];
+    const existing = ids
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+
+    if (existing.some(input => input.value === String(containerId))) {
+        return;
+    }
+
+    const target = existing.find(input => !input.value.trim());
+    if (target) {
+        target.value = containerId;
+    }
+}
+
+async function loadBaseStorageContainers() {
+    const actorInput = document.getElementById("baseStorageActorId");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+    const summary = document.getElementById("baseStorageSummary");
+    const tableWrap = document.getElementById("baseStorageContainerTableWrap");
+    const tbody = document.getElementById("baseStorageContainerTableBody");
+
+    if (!actorId || !tbody) {
+        resetBaseStorageContainers("Select a character before discovery.");
+        return;
+    }
+
+    tbody.innerHTML = "";
+    if (tableWrap) tableWrap.style.display = "none";
+    if (summary) summary.textContent = "Discovering owned base storage containers...";
+
+    try {
+        const response = await fetch(`/api/base-storage-containers?character_actor_id=${encodeURIComponent(actorId)}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            resetBaseStorageContainers(data.error || "Base storage lookup failed.");
+            return;
+        }
+
+        const containers = data.containers || [];
+        if (containers.length === 0) {
+            resetBaseStorageContainers("No owned empty/large storage containers found for this character.");
+            return;
+        }
+
+        containers.forEach(container => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><button type="button" data-container-id="${escapeHtml(container.container_inventory_id || "")}">Use</button></td>
+                <td>${escapeHtml(container.container_inventory_id || "")}</td>
+                <td>${escapeHtml(container.is_empty ? "Empty" : "Contains items")}</td>
+                <td>${escapeHtml(container.occupied_item_rows || "0")}</td>
+                <td>${escapeHtml(container.container_map || "")}</td>
+                <td>${escapeHtml(container.partition_id || "")}</td>
+                <td>${escapeHtml(container.base_owner_entity_id || "")}</td>
+                <td>${escapeHtml(container.container_building_type || "")}</td>
+            `;
+
+            const button = row.querySelector("button");
+            if (button) {
+                button.addEventListener("click", () => fillNextBaseStorageBox(container.container_inventory_id || ""));
+                if (!container.is_empty) {
+                    button.disabled = true;
+                    button.title = "Container must be empty before filling.";
+                }
+            }
+
+            tbody.appendChild(row);
+        });
+
+        if (tableWrap) tableWrap.style.display = "";
+        const emptyCount = containers.filter(container => container.is_empty).length;
+        if (summary) {
+            summary.textContent = `${containers.length} large storage container(s) found; ${emptyCount} empty candidate(s). Use four empty containers from the same base.`;
+        }
+    } catch (err) {
+        resetBaseStorageContainers("Base storage lookup failed.");
+    }
 }
 
 function fillOverrepairFields() {

@@ -25,6 +25,7 @@ FETCH_HEAD
 reference_*/
 _license_review_*/
 dune-awakening-selfhost-docker-*/
+DuneQueries/
 
 # OS/editor noise.
 .DS_Store

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.6--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.7.7--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.6-alpha`
+Current panel version: `0.7.7-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -38,6 +38,8 @@ they are used or targeted.
 
 ## Screenshots
 
+Some screenshots are captured at reduced browser zoom levels to show more of the interface in a single image.
+
 ### Dashboard
 
 ![Dashboard](images/dashboard.png)
@@ -53,6 +55,14 @@ they are used or targeted.
 ### Infrastructure
 
 ![Infrastructure](images/infrastructure.png)
+
+### Docker Infrastructure
+
+![Docker infrastructure](images/infrastructure-docker.png)
+
+### VIP Tools
+
+![VIP tools](images/vip.png)
 
 ### RedBlink Manager Shell Workflow
 
@@ -105,9 +115,11 @@ they are used or targeted.
 
 - Item search
 - Item grant tools
+- Admin-only Builder Supply Packs that insert curated build resources into empty main-backpack slots after validating free space. These can temporarily overload character carry weight, so equip a build tool before using them.
+- Admin-only Base Storage Warehouse Fill that discovers owned large base containers, validates four empty selections, and fills them with a curated four-box resource/component layout
 - Mk6 Scout Ornithopter grant
 - Mk6 Medium Ornithopter grant
-- Medium thopter kit includes 250 rockets
+- Medium thopter kit includes 250 rockets, one RepairTool5, and 500 WeldingMaterial
 - Admin-only Lightning Gun kit grant using the normal RedBlink item grant command
 - Admin-only SolarisCoin grant with preset amount dropdown
 - Admin-only Solari Coin inventory-stack lookup, add, and set-exact correction tools
@@ -119,7 +131,7 @@ they are used or targeted.
 - Item grants target the selected player/account inventory path and do not use map partition IDs
 - WIP/unconfirmed Developer-only specialization tools for Combat, Crafting, Gathering, Exploration, and Sabotage tracks. These now target character pawn actor IDs, can add XP to one track, grant missing all-track rows at 0 XP for testing, or max all tracks plus discovered keystones.
 - Developer-only specialization reset for one track or all tracks plus keystones
-- WIP/experimental Developer-only Class Progression preset dropdown for observed trainer/class unlock tag bundles. Currently appears nonfunctional for actual in-game class unlocks because the account tags alone are not sufficient. The hidden `/developer` page also includes removal actions for the Planetologist, Trooper, and Advanced Bene Gesserit test tags.
+- WIP/experimental Developer-only Class Progression preset dropdown for observed trainer/class unlock tag bundles. Currently appears nonfunctional for actual in-game class unlocks because the account tags alone are not sufficient; advanced trainer unlocks appear to require full multi-quest chains rather than one completion tag. The hidden `/developer` page also includes removal actions for the Planetologist, Trooper, and Advanced Bene Gesserit test tags.
 - Experimental Developer-only progression preset apply/reset tools for curated journey roots. These are for testing/research only because advancing journey rows this way can currently lock the character out of the 3rd combat skill slot.
 - Progression edits may require relogging, restarting the affected map, or restarting the battlegroup. Restarts can appear slow, and login may briefly show an error before recovering.
 
@@ -381,7 +393,7 @@ for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.6-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.7-alpha
 ```
 
 Preserve local runtime data:
@@ -417,11 +429,13 @@ GitHub README screenshots live in `images/`:
 
 - `dashboard.png`
 - `dune-manager.png`
+- `infrastructure-docker.png`
 - `infrastructure.png`
 - `live-map.png`
 - `logo.png`
+- `vip.png`
 
-When dashboard, live map, infrastructure, or README sections change, refresh the matching image before publishing.
+When dashboard, live map, infrastructure, Docker infrastructure, VIP, or README sections change, refresh the matching image before publishing.
 
 ---
 
@@ -480,7 +494,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.6-alpha`: Admin Panel now includes an attributed New Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using RedBlink's normal grant-item command path.
+Current highlight for `0.7.7-alpha`: Admin Panel now includes an attributed New Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using RedBlink's normal grant-item command path.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

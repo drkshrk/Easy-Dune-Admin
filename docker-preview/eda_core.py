@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.6-alpha
+Panel version: 0.7.7-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.7.6-alpha RedBlink v1.3.3 support:
+0.7.7-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -55,7 +55,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.6-alpha"
+PANEL_VERSION = "0.7.7-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -336,6 +336,8 @@ MEDIUM_THOPTER_BUNDLE = [
     ("OrnithopterMediumLocomotion_Unique_Strafe_6", 6),
     ("FuelCanister_Large", 5),
     ("RocketAmmo", 250),
+    ("RepairTool5", 1),
+    ("WeldingMaterial", 500),
 ]
 
 # Admin-only gift bundle derived from the freely shared lasgun SQL example.
@@ -385,6 +387,245 @@ SOLARIS_GRANT_AMOUNTS = [
     500000,
     1000000,
 ]
+
+# Admin-only direct-inventory builder packs.
+#
+# These are Easy Dune Admin pack definitions written in our own format after
+# local schema research showed the safe insertion path:
+# player_state.player_pawn_id -> inventories.actor_id -> inventory_type 0.
+#
+# User-adjustable values:
+# - label/description: browser-facing text.
+# - stack_size: quantity inserted for each template in that pack.
+# - items: exact Dune template IDs. Each item consumes one empty backpack slot.
+# Keep packs conservative enough to fit in real player backpacks; the SQL below
+# refuses to insert a partial pack if the selected character lacks free slots.
+BUILDER_SUPPLY_PACKS = {
+    "foundation": {
+        "label": "Foundation Builder Pack",
+        "description": "Core early/mid building materials for base setup and repairs.",
+        "stack_size": 25000,
+        "quality_level": 0,
+        "items": [
+            "Stone",
+            "PlantFiber",
+            "ScrapMetal",
+            "FlourSand",
+            "Plastone",
+            "Silicone",
+            "CopperBar",
+            "IronBar",
+            "SteelBar",
+            "AluminiumBar",
+            "DuraluminumRod",
+            "Oil",
+        ],
+    },
+    "advanced": {
+        "label": "Advanced Builder Pack",
+        "description": "Higher-tier resources and components for advanced construction.",
+        "stack_size": 10000,
+        "quality_level": 0,
+        "items": [
+            "CobaltBar",
+            "Basalt",
+            "MagnetiteOre",
+            "ErythriteCrystal",
+            "AzuriteOre",
+            "BauxiteOre",
+            "JasmiumCrystal",
+            "T6ResourceA",
+            "T6ResourceB",
+            "T6RefinedResourceA",
+            "T6RefinedResourceB",
+            "GreatHouseComponent1",
+            "GreatHouseComponent2",
+            "LandsraadShipwreckComponent1",
+        ],
+    },
+    "full_builder": {
+        "label": "Full Builder Pack",
+        "description": "Broad construction/resource spread for private-server build projects.",
+        "stack_size": 50000,
+        "quality_level": 0,
+        "items": [
+            "Stone",
+            "PlantFiber",
+            "ScrapMetal",
+            "FlourSand",
+            "Plastone",
+            "Silicone",
+            "CopperBar",
+            "IronBar",
+            "SteelBar",
+            "AluminiumBar",
+            "DuraluminumRod",
+            "Oil",
+            "CobaltBar",
+            "Basalt",
+            "MagnetiteOre",
+            "ErythriteCrystal",
+            "AzuriteOre",
+            "BauxiteOre",
+            "JasmiumCrystal",
+            "MelangeSpice",
+            "T2MachineComponent",
+            "T3MarksmanComponent",
+            "T3MiningGalleryComponent1",
+            "T3MiningGalleryComponent2",
+            "T1ExplorationComponent",
+            "GreatHouseComponent1",
+            "GreatHouseComponent2",
+            "LandsraadShipwreckComponent1",
+            "T6ResourceA",
+            "T6ResourceB",
+            "T6RefinedResourceA",
+            "T6RefinedResourceB",
+        ],
+    },
+}
+
+# Admin-only base storage warehouse fills.
+#
+# This is Easy Dune Admin's own four-box warehouse format. It uses the same
+# confirmed item-row creation shape as the backpack builder packs, but targets
+# empty base storage containers discovered from the selected character's owned
+# base permissions.
+#
+# User-adjustable values:
+# - label/description: browser-facing text.
+# - stack_size: quantity inserted for each configured resource/component.
+# - quality_level: inserted item quality level for all stacks in the pack.
+# - boxes: exactly four logical storage groups. Each selected in-game container
+#   receives the matching box's item list.
+# - items: exact Dune template IDs. Each item consumes one slot in that box.
+#
+# The fill SQL refuses partial work: selected boxes must be owned by the target
+# character's base, match the observed large-storage signature, be empty, and
+# have enough slots for their assigned box list.
+BASE_STORAGE_FILL_PACKS = {
+    "builder_warehouse": {
+        "label": "Builder Warehouse Fill",
+        "description": "Four-box base warehouse fill for construction, spice, salvage, and late-game components.",
+        "stack_size": 500000,
+        "quality_level": 0,
+        "boxes": [
+            {
+                "box_number": 1,
+                "label": "Bulk Construction Materials",
+                "items": [
+                    "AzuriteOre",
+                    "Basalt",
+                    "BauxiteOre",
+                    "DolomiteRock",
+                    "ErythriteCrystal",
+                    "JasmiumCrystal",
+                    "MagnetiteOre",
+                    "ScrapMetal",
+                    "Stone",
+                    "T6ResourceA",
+                    "T6ResourceB",
+                    "Oil",
+                    "PlantFiber",
+                    "SaguaroResourceRaw",
+                    "AluminiumBar",
+                    "CobaltBar",
+                    "CopperBar",
+                    "DuraluminumRod",
+                    "IronBar",
+                    "SteelBar",
+                    "Plastone",
+                    "Silicone",
+                    "T6RefinedResourceA",
+                    "T6RefinedResourceB",
+                ],
+            },
+            {
+                "box_number": 2,
+                "label": "Spice, Salvage, and Tier 1-3 Components",
+                "items": [
+                    "MelangeSpice",
+                    "SpiceResidue",
+                    "SpiceSand",
+                    "SpicedFuelCell",
+                    "FremenComponent1",
+                    "FremenComponent2",
+                    "GreatHouseComponent1",
+                    "GreatHouseComponent2",
+                    "LandsraadShipwreckComponent1",
+                    "LandsraadTreasureComponent1",
+                    "OldImperialComponent1",
+                    "OldImperialComponent2",
+                    "T1AssaultComponent",
+                    "T1ExplorationComponent",
+                    "T1RusherComponent",
+                    "T1UniqueComponent",
+                    "T2HeavyComponent",
+                    "T2MachineComponent",
+                    "T2UniqueComponent",
+                    "T3MarksmanComponent",
+                    "T3MiningGalleryComponent1",
+                    "T3MiningGalleryComponent2",
+                    "T3UniqueComponent",
+                    "T3VendorComponent1",
+                ],
+            },
+            {
+                "box_number": 3,
+                "label": "Advanced Site and Industrial Components",
+                "items": [
+                    "T4HarkSpiceSiloComponent1",
+                    "T4HarkSpiceSiloComponent2",
+                    "T4HarkSpiceSiloComponent3",
+                    "T4MaasKharetComponent1",
+                    "T4MaasKharetComponent2",
+                    "T4MysaTarilComponent1",
+                    "T4MysaTarilComponent2",
+                    "T4PyonVillageComponent",
+                    "T4UniqueComponent",
+                    "T5DeepDesertShieldWallComponent",
+                    "T5FactionBaseComponent1",
+                    "T5FactionBaseComponent2",
+                    "T5RadiatedCoreComponent",
+                    "T5UniqueComponent",
+                    "T6HoltzmanActuator",
+                    "T6HydraulicPiston",
+                    "T6IndustrialPump",
+                    "T6Machinery",
+                    "T6PlasteelComponent",
+                    "T6PowerRegulator",
+                    "WindTurbineLubricant1",
+                ],
+            },
+            {
+                "box_number": 4,
+                "label": "Endgame Equipment and Schematic Components",
+                "items": [
+                    "T6ArmorPlating",
+                    "T6BalisticWeave",
+                    "T6BladePart",
+                    "T6CarbidePladeParts",
+                    "T6DiamodineBladeParts",
+                    "T6FilteredFabric",
+                    "T6GunPart",
+                    "T6HeavyCalliberCompressor",
+                    "T6IrradiatedCore",
+                    "T6LandsraadCraftedComponent",
+                    "T6LightCalliberCompressor",
+                    "T6RangeFinder",
+                    "T6RayAmplifier",
+                    "T6UniqueComponent",
+                    "T6Watertube",
+                    "T6SchematicFragmentQL1",
+                    "T6SchematicFragmentQL2",
+                    "T6SchematicFragmentQL3",
+                    "T6SchematicFragmentQL4",
+                    "T6SchematicFragmentQL5",
+                ],
+            },
+        ],
+    }
+}
 
 # Admin-only stored Solari corrections edit SolarisCoin item stacks owned by
 # the selected character actor. Keep this capped so browser mistakes cannot
@@ -710,6 +951,8 @@ def inject_template_globals():
         "medium_bundle": MEDIUM_THOPTER_BUNDLE,
         "lasgun_augment_bundle": LASGUN_AUGMENT_BUNDLE,
         "new_player_starter_kit": NEW_PLAYER_STARTER_KIT,
+        "builder_supply_packs": BUILDER_SUPPLY_PACKS,
+        "base_storage_fill_packs": BASE_STORAGE_FILL_PACKS,
         "solaris_grant_amounts": SOLARIS_GRANT_AMOUNTS,
         "specialization_xp_tracks": SPECIALIZATION_XP_TRACKS,
         "specialization_max_xp": SPECIALIZATION_MAX_XP,
@@ -1774,6 +2017,718 @@ JOIN settings s
 JOIN applied a
     ON a.player_controller_id = bb.player_controller_id
    AND a.currency_id = 0;
+"""
+
+
+def sql_literal(value):
+    """Return a single-quoted SQL literal for trusted app-defined values."""
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def builder_pack_from_value(pack_id):
+    requested = str(pack_id or "").strip()
+    if requested not in BUILDER_SUPPLY_PACKS:
+        raise ValueError("unknown builder supply pack")
+    return requested, BUILDER_SUPPLY_PACKS[requested]
+
+
+def build_grant_builder_supply_pack_sql(character_actor_id, pack_id):
+    """
+    Build admin-only SQL that inserts one Easy Dune Admin builder pack into the
+    selected character's main backpack.
+
+    Pack definitions live in BUILDER_SUPPLY_PACKS and the query validates the
+    target, backpack, and free slot count before inserting anything. It inserts
+    into open slots only and returns every item row it created for testing and
+    cleanup notes.
+    """
+    actor_id = int(character_actor_id)
+    resolved_pack_id, pack = builder_pack_from_value(pack_id)
+    stack_size = int(pack["stack_size"])
+    quality_level = int(pack.get("quality_level", 0))
+    items = list(pack.get("items", []))
+
+    if not items:
+        raise ValueError("builder supply pack has no items")
+    if stack_size < 1 or stack_size > 1000000000:
+        raise ValueError("builder supply pack stack size is outside allowed range")
+    if quality_level < 0:
+        raise ValueError("builder supply pack quality level must be zero or higher")
+
+    values_sql = ",\n        ".join(
+        f"({index}, {sql_literal(template_id)})"
+        for index, template_id in enumerate(items, start=1)
+    )
+
+    return f"""
+BEGIN;
+CREATE TEMP TABLE eda_builder_pack_settings
+ON COMMIT DROP
+AS
+SELECT
+    {actor_id}::bigint AS character_actor_id,
+    {stack_size}::bigint AS stack_size,
+    {quality_level}::bigint AS quality_level,
+    {sql_literal(resolved_pack_id)}::text AS pack_id,
+    {sql_literal(pack.get("label", resolved_pack_id))}::text AS pack_label;
+
+CREATE TEMP TABLE eda_builder_pack_items (
+    pack_order integer PRIMARY KEY,
+    template_id text NOT NULL
+) ON COMMIT DROP;
+
+INSERT INTO eda_builder_pack_items (pack_order, template_id)
+VALUES
+        {values_sql};
+
+CREATE TEMP TABLE eda_builder_pack_target
+ON COMMIT DROP
+AS
+SELECT
+    ps.character_name,
+    ps.account_id,
+    ps.player_pawn_id AS character_actor_id,
+    ps.online_status,
+    ps.life_state,
+    inv.id AS inventory_id,
+    inv.inventory_type,
+    inv.max_item_count,
+    inv.max_item_volume
+FROM dune.player_state ps
+JOIN eda_builder_pack_settings s
+    ON s.character_actor_id = ps.player_pawn_id
+JOIN dune.inventories inv
+    ON inv.actor_id = ps.player_pawn_id
+   AND inv.inventory_type = 0;
+
+DO $$
+DECLARE
+    v_target_count integer;
+    v_character_name text;
+    v_inventory_id bigint;
+    v_max_item_count integer;
+    v_required_slots integer;
+    v_available_slots integer;
+BEGIN
+    SELECT COUNT(*) INTO v_target_count FROM eda_builder_pack_target;
+
+    IF v_target_count = 0 THEN
+        RAISE EXCEPTION 'Builder pack stopped. Target character has no main backpack inventory with inventory_type = 0.';
+    ELSIF v_target_count > 1 THEN
+        RAISE EXCEPTION 'Builder pack stopped. Target character has more than one main backpack inventory.';
+    END IF;
+
+    SELECT character_name, inventory_id, max_item_count
+    INTO v_character_name, v_inventory_id, v_max_item_count
+    FROM eda_builder_pack_target;
+
+    IF v_max_item_count IS NULL OR v_max_item_count <= 0 THEN
+        RAISE EXCEPTION 'Builder pack stopped. Backpack % for player % has no usable slot capacity.', v_inventory_id, v_character_name;
+    END IF;
+
+    SELECT COUNT(*) INTO v_required_slots FROM eda_builder_pack_items;
+
+    SELECT COUNT(*) INTO v_available_slots
+    FROM generate_series(0, v_max_item_count - 1) AS slot(position_index)
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM dune.items existing_item
+        WHERE existing_item.inventory_id = v_inventory_id
+          AND existing_item.position_index = slot.position_index
+    );
+
+    IF v_available_slots < v_required_slots THEN
+        RAISE EXCEPTION
+            'Builder pack stopped for %. Backpack % needs % free slots but only % are available. No items were inserted.',
+            v_character_name,
+            v_inventory_id,
+            v_required_slots,
+            v_available_slots;
+    END IF;
+END $$;
+
+CREATE TEMP TABLE eda_builder_pack_slots
+ON COMMIT DROP
+AS
+WITH open_slots AS (
+    SELECT
+        slot.position_index,
+        ROW_NUMBER() OVER (ORDER BY slot.position_index)::integer AS pack_order
+    FROM eda_builder_pack_target target
+    CROSS JOIN LATERAL generate_series(0, target.max_item_count - 1) AS slot(position_index)
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM dune.items existing_item
+        WHERE existing_item.inventory_id = target.inventory_id
+          AND existing_item.position_index = slot.position_index
+    )
+)
+SELECT
+    pack.pack_order,
+    pack.template_id,
+    open_slots.position_index
+FROM eda_builder_pack_items pack
+JOIN open_slots
+    ON open_slots.pack_order = pack.pack_order
+ORDER BY pack.pack_order;
+
+CREATE TEMP TABLE eda_builder_pack_inserted
+ON COMMIT DROP
+AS
+WITH id_base AS (
+    SELECT COALESCE(MAX(id), 0) AS max_item_id
+    FROM dune.items
+),
+inserted AS (
+    INSERT INTO dune.items (
+        id,
+        inventory_id,
+        stack_size,
+        position_index,
+        template_id,
+        is_new,
+        acquisition_time,
+        stats,
+        quality_level,
+        volume_override
+    )
+    SELECT
+        id_base.max_item_id + slots.pack_order,
+        target.inventory_id,
+        settings.stack_size,
+        slots.position_index,
+        slots.template_id,
+        true,
+        EXTRACT(EPOCH FROM NOW())::bigint,
+        '{{"FItemStackAndDurabilityStats": [[], {{"DecayedMaxDurability": 0.0}}]}}'::jsonb,
+        settings.quality_level,
+        NULL
+    FROM eda_builder_pack_slots slots
+    CROSS JOIN eda_builder_pack_target target
+    CROSS JOIN eda_builder_pack_settings settings
+    CROSS JOIN id_base
+    ORDER BY slots.pack_order
+    RETURNING
+        id,
+        inventory_id,
+        template_id,
+        stack_size,
+        position_index,
+        quality_level
+)
+SELECT * FROM inserted;
+
+SELECT
+    target.character_name,
+    target.character_actor_id,
+    target.online_status,
+    target.life_state,
+    settings.pack_id,
+    settings.pack_label,
+    target.inventory_id AS backpack_inventory_id,
+    target.max_item_count AS backpack_slot_capacity,
+    (SELECT COUNT(*) FROM eda_builder_pack_items) AS slots_required,
+    inserted.id AS inserted_item_id,
+    inserted.template_id,
+    inserted.stack_size,
+    inserted.position_index,
+    inserted.quality_level
+FROM eda_builder_pack_inserted inserted
+CROSS JOIN eda_builder_pack_target target
+CROSS JOIN eda_builder_pack_settings settings
+ORDER BY inserted.position_index, inserted.id;
+COMMIT;
+"""
+
+
+def base_storage_fill_pack_from_value(pack_id):
+    requested = str(pack_id or "").strip()
+    if requested not in BASE_STORAGE_FILL_PACKS:
+        raise ValueError("unknown base storage fill pack")
+    return requested, BASE_STORAGE_FILL_PACKS[requested]
+
+
+def get_base_storage_containers(character_actor_id):
+    """
+    Discover large base storage containers owned by the selected character.
+
+    This read-only helper follows the observed Dune ownership chain:
+    character pawn -> player controller -> owner permission rank -> permission
+    actor/FGL entity -> placeable owner entity -> inventory. It only returns
+    containers matching the large-storage signature used by the fill tool.
+    """
+    actor_id = int(character_actor_id)
+
+    sql = f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        acc.funcom_id,
+        ps.account_id,
+        ps.player_pawn_id AS character_actor_id,
+        ps.player_controller_id AS controller_actor_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    LEFT JOIN dune.accounts acc
+        ON acc.id = ps.account_id
+    WHERE ps.player_pawn_id = {actor_id}
+),
+owned_base_entities AS (
+    SELECT DISTINCT
+        sp.character_name,
+        sp.funcom_id,
+        sp.account_id,
+        sp.character_actor_id,
+        sp.controller_actor_id,
+        sp.online_status,
+        sp.life_state,
+        afe.entity_id AS base_owner_entity_id,
+        afe.actor_id AS base_totem_actor_id,
+        pa.actor_name AS permission_actor_name
+    FROM selected_player sp
+    JOIN dune.permission_actor_rank par
+        ON par.player_id = sp.controller_actor_id
+       AND par.rank = 1
+    JOIN dune.permission_actor pa
+        ON pa.actor_id = par.permission_actor_id
+    JOIN dune.actor_fgl_entities afe
+        ON afe.actor_id = pa.actor_id
+       AND afe.slot_name = 'Actor'
+    JOIN dune.totems t
+        ON t.id = afe.actor_id
+),
+owned_large_containers AS (
+    SELECT
+        base.character_name,
+        COALESCE(base.funcom_id, '') AS funcom_id,
+        base.account_id,
+        base.character_actor_id,
+        base.controller_actor_id,
+        base.online_status,
+        base.life_state,
+        base.base_owner_entity_id,
+        base.base_totem_actor_id,
+        COALESCE(base.permission_actor_name, '') AS permission_actor_name,
+        p.id AS container_placeable_actor_id,
+        COALESCE(p.building_type, '') AS container_building_type,
+        COALESCE(container_actor.map, '') AS container_map,
+        COALESCE(container_actor.partition_id::text, '') AS partition_id,
+        inv.id AS container_inventory_id,
+        inv.inventory_type,
+        inv.max_item_count,
+        inv.max_item_volume,
+        COUNT(item.id) AS occupied_item_rows,
+        COALESCE(SUM(item.stack_size), 0) AS total_item_quantity
+    FROM owned_base_entities base
+    JOIN dune.placeables p
+        ON p.owner_entity_id = base.base_owner_entity_id
+    JOIN dune.inventories inv
+        ON inv.actor_id = p.id
+       AND inv.inventory_type = 4
+       AND inv.max_item_count = 100
+       AND inv.max_item_volume = 3500
+    LEFT JOIN dune.actors container_actor
+        ON container_actor.id = p.id
+    LEFT JOIN dune.items item
+        ON item.inventory_id = inv.id
+    GROUP BY
+        base.character_name,
+        base.funcom_id,
+        base.account_id,
+        base.character_actor_id,
+        base.controller_actor_id,
+        base.online_status,
+        base.life_state,
+        base.base_owner_entity_id,
+        base.base_totem_actor_id,
+        base.permission_actor_name,
+        p.id,
+        p.building_type,
+        container_actor.map,
+        container_actor.partition_id,
+        inv.id,
+        inv.inventory_type,
+        inv.max_item_count,
+        inv.max_item_volume
+)
+SELECT
+    character_name,
+    funcom_id,
+    character_actor_id,
+    controller_actor_id,
+    online_status,
+    life_state,
+    base_owner_entity_id,
+    base_totem_actor_id,
+    permission_actor_name,
+    container_placeable_actor_id,
+    container_inventory_id,
+    container_building_type,
+    container_map,
+    partition_id,
+    inventory_type,
+    max_item_count,
+    max_item_volume,
+    occupied_item_rows,
+    total_item_quantity
+FROM owned_large_containers
+ORDER BY
+    CASE WHEN occupied_item_rows = 0 THEN 0 ELSE 1 END,
+    base_owner_entity_id,
+    container_inventory_id;
+"""
+
+    containers = []
+    for line in _run_psql_tsv(sql, timeout=30):
+        parts = line.split("\t")
+        if len(parts) < 19:
+            continue
+
+        occupied = int(parts[17] or 0)
+        containers.append(
+            {
+                "character_name": parts[0],
+                "funcom_id": parts[1],
+                "character_actor_id": parts[2],
+                "controller_actor_id": parts[3],
+                "online_status": parts[4],
+                "life_state": parts[5],
+                "base_owner_entity_id": parts[6],
+                "base_totem_actor_id": parts[7],
+                "permission_actor_name": parts[8],
+                "container_placeable_actor_id": parts[9],
+                "container_inventory_id": parts[10],
+                "container_building_type": parts[11],
+                "container_map": parts[12],
+                "partition_id": parts[13],
+                "inventory_type": parts[14],
+                "max_item_count": parts[15],
+                "max_item_volume": parts[16],
+                "occupied_item_rows": str(occupied),
+                "total_item_quantity": parts[18] or "0",
+                "is_empty": occupied == 0,
+            }
+        )
+
+    return containers
+
+
+def build_fill_base_storage_containers_sql(character_actor_id, pack_id, container_inventory_ids):
+    """
+    Build admin-only SQL for filling exactly four selected base containers.
+
+    The selected containers are validated against the target character's owned
+    base permission chain and must be empty. This intentionally does not accept
+    arbitrary item rows or raw SQL from the browser.
+    """
+    actor_id = int(character_actor_id)
+    resolved_pack_id, pack = base_storage_fill_pack_from_value(pack_id)
+    stack_size = int(pack["stack_size"])
+    quality_level = int(pack.get("quality_level", 0))
+    boxes = list(pack.get("boxes", []))
+    raw_container_ids = [str(value or "").strip() for value in container_inventory_ids]
+    container_ids = [int(value) for value in raw_container_ids if value]
+
+    if len(boxes) != 4:
+        raise ValueError("base storage fill pack must define exactly four boxes")
+    if len(container_ids) != 4 or len(set(container_ids)) != 4:
+        raise ValueError("exactly four distinct container inventory IDs are required")
+    if stack_size < 1 or stack_size > 1000000000:
+        raise ValueError("base storage stack size is outside allowed range")
+    if quality_level < 0:
+        raise ValueError("base storage quality level must be zero or higher")
+
+    box_values = []
+    catalog_values = []
+    catalog_order = 1
+    for box in boxes:
+        box_number = int(box["box_number"])
+        if box_number < 1 or box_number > 4:
+            raise ValueError("base storage box numbers must be 1 through 4")
+
+        box_values.append(
+            f"({box_number}, {sql_literal(box.get('label', f'Box {box_number}'))}, {container_ids[box_number - 1]}::bigint)"
+        )
+
+        items = list(box.get("items", []))
+        if not items:
+            raise ValueError("base storage boxes must contain at least one item")
+
+        for template_id in items:
+            catalog_values.append(
+                f"({catalog_order}, {sql_literal(template_id)}, {box_number})"
+            )
+            catalog_order += 1
+
+    box_values_sql = ",\n        ".join(box_values)
+    catalog_values_sql = ",\n        ".join(catalog_values)
+
+    return f"""
+BEGIN;
+CREATE TEMP TABLE eda_base_storage_fill_settings
+ON COMMIT DROP
+AS
+SELECT
+    {actor_id}::bigint AS target_character_actor_id,
+    {stack_size}::bigint AS stack_size,
+    {quality_level}::bigint AS quality_level,
+    {sql_literal(resolved_pack_id)}::text AS pack_id,
+    {sql_literal(pack.get("label", resolved_pack_id))}::text AS pack_label;
+
+CREATE TEMP TABLE eda_selected_base_storage_boxes (
+    box_number integer PRIMARY KEY,
+    box_label text NOT NULL,
+    inventory_id bigint NOT NULL UNIQUE
+) ON COMMIT DROP;
+
+INSERT INTO eda_selected_base_storage_boxes (box_number, box_label, inventory_id)
+VALUES
+        {box_values_sql};
+
+CREATE TEMP TABLE eda_base_storage_catalog (
+    catalog_order integer PRIMARY KEY,
+    template_id text NOT NULL,
+    box_number integer NOT NULL
+) ON COMMIT DROP;
+
+INSERT INTO eda_base_storage_catalog (catalog_order, template_id, box_number)
+VALUES
+        {catalog_values_sql};
+
+CREATE TEMP TABLE eda_owned_base_storage_targets
+ON COMMIT DROP
+AS
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.account_id,
+        ps.player_pawn_id AS character_actor_id,
+        ps.player_controller_id AS controller_actor_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    JOIN eda_base_storage_fill_settings settings
+        ON settings.target_character_actor_id = ps.player_pawn_id
+),
+owned_base_entities AS (
+    SELECT DISTINCT
+        sp.character_name,
+        sp.account_id,
+        sp.character_actor_id,
+        sp.controller_actor_id,
+        sp.online_status,
+        sp.life_state,
+        afe.entity_id AS base_owner_entity_id,
+        afe.actor_id AS base_totem_actor_id
+    FROM selected_player sp
+    JOIN dune.permission_actor_rank permission_rank
+        ON permission_rank.player_id = sp.controller_actor_id
+       AND permission_rank.rank = 1
+    JOIN dune.permission_actor permission_actor
+        ON permission_actor.actor_id = permission_rank.permission_actor_id
+    JOIN dune.actor_fgl_entities afe
+        ON afe.actor_id = permission_actor.actor_id
+       AND afe.slot_name = 'Actor'
+    JOIN dune.totems totem
+        ON totem.id = permission_actor.actor_id
+)
+SELECT
+    selected.box_number,
+    selected.box_label,
+    selected.inventory_id,
+    base.character_name,
+    base.account_id,
+    base.character_actor_id,
+    base.controller_actor_id,
+    base.online_status,
+    base.life_state,
+    base.base_owner_entity_id,
+    base.base_totem_actor_id,
+    placeable.id AS container_placeable_actor_id,
+    inventory.max_item_count,
+    inventory.max_item_volume
+FROM eda_selected_base_storage_boxes selected
+JOIN dune.inventories inventory
+    ON inventory.id = selected.inventory_id
+   AND inventory.inventory_type = 4
+   AND inventory.max_item_count = 100
+   AND inventory.max_item_volume = 3500
+JOIN dune.placeables placeable
+    ON placeable.id = inventory.actor_id
+JOIN owned_base_entities base
+    ON base.base_owner_entity_id = placeable.owner_entity_id;
+
+DO $$
+DECLARE
+    v_target_player_count integer;
+    v_valid_box_count integer;
+    v_distinct_base_count integer;
+    v_nonempty_boxes text;
+    v_overfilled_boxes text;
+BEGIN
+    SELECT COUNT(*) INTO v_target_player_count
+    FROM dune.player_state ps
+    JOIN eda_base_storage_fill_settings settings
+        ON settings.target_character_actor_id = ps.player_pawn_id;
+
+    IF v_target_player_count = 0 THEN
+        RAISE EXCEPTION 'Base storage fill stopped. Target character actor ID does not resolve to a player.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_valid_box_count FROM eda_owned_base_storage_targets;
+    IF v_valid_box_count <> 4 THEN
+        RAISE EXCEPTION 'Base storage fill stopped. Expected four valid owned large storage containers, found %. Check ownership and container IDs.', v_valid_box_count;
+    END IF;
+
+    SELECT COUNT(DISTINCT base_owner_entity_id) INTO v_distinct_base_count
+    FROM eda_owned_base_storage_targets;
+    IF v_distinct_base_count <> 1 THEN
+        RAISE EXCEPTION 'Base storage fill stopped. Selected boxes must all belong to the same owned base.';
+    END IF;
+
+    SELECT STRING_AGG(target.inventory_id::text || ': ' || item.template_id, ', ' ORDER BY target.inventory_id, item.position_index)
+    INTO v_nonempty_boxes
+    FROM eda_owned_base_storage_targets target
+    JOIN dune.items item
+        ON item.inventory_id = target.inventory_id;
+
+    IF v_nonempty_boxes IS NOT NULL THEN
+        RAISE EXCEPTION 'Base storage fill stopped. Selected containers are not empty: %.', v_nonempty_boxes;
+    END IF;
+
+    SELECT STRING_AGG(target.inventory_id::text || ' needs ' || configured.required_slots::text || ' slots', ', ' ORDER BY target.inventory_id)
+    INTO v_overfilled_boxes
+    FROM eda_owned_base_storage_targets target
+    JOIN (
+        SELECT box_number, COUNT(*) AS required_slots
+        FROM eda_base_storage_catalog
+        GROUP BY box_number
+    ) configured
+        ON configured.box_number = target.box_number
+    WHERE configured.required_slots > target.max_item_count;
+
+    IF v_overfilled_boxes IS NOT NULL THEN
+        RAISE EXCEPTION 'Base storage fill stopped. Configured pack exceeds destination capacity: %.', v_overfilled_boxes;
+    END IF;
+END $$;
+
+CREATE TEMP TABLE eda_base_storage_insert_plan
+ON COMMIT DROP
+AS
+SELECT
+    catalog.catalog_order,
+    catalog.template_id,
+    catalog.box_number,
+    target.box_label,
+    target.inventory_id,
+    ROW_NUMBER() OVER (
+        PARTITION BY catalog.box_number
+        ORDER BY catalog.catalog_order
+    ) - 1 AS position_index
+FROM eda_base_storage_catalog catalog
+JOIN eda_owned_base_storage_targets target
+    ON target.box_number = catalog.box_number;
+
+CREATE TEMP TABLE eda_base_storage_inserted
+ON COMMIT DROP
+AS
+WITH id_base AS (
+    SELECT COALESCE(MAX(id), 0) AS max_item_id
+    FROM dune.items
+),
+numbered_plan AS (
+    SELECT
+        plan.*,
+        ROW_NUMBER() OVER (ORDER BY plan.catalog_order) AS new_item_number
+    FROM eda_base_storage_insert_plan plan
+),
+inserted AS (
+    INSERT INTO dune.items (
+        id,
+        inventory_id,
+        stack_size,
+        position_index,
+        template_id,
+        is_new,
+        acquisition_time,
+        stats,
+        quality_level,
+        volume_override
+    )
+    SELECT
+        id_base.max_item_id + plan.new_item_number,
+        plan.inventory_id,
+        settings.stack_size,
+        plan.position_index,
+        plan.template_id,
+        true,
+        EXTRACT(EPOCH FROM NOW())::bigint,
+        '{{"FItemStackAndDurabilityStats": [[], {{"DecayedMaxDurability": 0.0}}]}}'::jsonb,
+        settings.quality_level,
+        NULL
+    FROM numbered_plan plan
+    CROSS JOIN id_base
+    CROSS JOIN eda_base_storage_fill_settings settings
+    ORDER BY plan.catalog_order
+    RETURNING
+        id,
+        inventory_id,
+        template_id,
+        stack_size,
+        position_index,
+        quality_level
+)
+SELECT
+    inserted.id AS inserted_item_id,
+    inserted.inventory_id,
+    inserted.template_id,
+    inserted.stack_size,
+    inserted.position_index,
+    inserted.quality_level,
+    plan.box_number,
+    plan.box_label
+FROM inserted
+JOIN eda_base_storage_insert_plan plan
+    ON plan.inventory_id = inserted.inventory_id
+   AND plan.template_id = inserted.template_id;
+
+SELECT
+    settings.pack_id,
+    settings.pack_label,
+    target.character_name,
+    target.character_actor_id,
+    target.online_status,
+    target.life_state,
+    target.base_owner_entity_id,
+    inserted.box_number,
+    inserted.box_label,
+    inserted.inventory_id AS destination_container_inventory_id,
+    COUNT(*) AS inserted_stack_count,
+    MIN(inserted.stack_size) AS lowest_inserted_stack_size,
+    MAX(inserted.stack_size) AS highest_inserted_stack_size,
+    STRING_AGG(
+        inserted.position_index::text || ': ' || inserted.template_id || ' x' || inserted.stack_size::text,
+        E'\\n'
+        ORDER BY inserted.position_index, inserted.inserted_item_id
+    ) AS inserted_contents
+FROM eda_base_storage_inserted inserted
+JOIN eda_owned_base_storage_targets target
+    ON target.inventory_id = inserted.inventory_id
+CROSS JOIN eda_base_storage_fill_settings settings
+GROUP BY
+    settings.pack_id,
+    settings.pack_label,
+    target.character_name,
+    target.character_actor_id,
+    target.online_status,
+    target.life_state,
+    target.base_owner_entity_id,
+    inserted.box_number,
+    inserted.box_label,
+    inserted.inventory_id
+ORDER BY inserted.box_number;
+COMMIT;
 """
 
 

@@ -1,6 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Item Grants{% endblock %}
 
+{% block head_extra %}
+<style>
+.grant-table-wrap {
+    max-height: 360px;
+    overflow: auto;
+    border: 1px solid #222;
+    background: #070707;
+    margin: 10px 0 14px;
+}
+
+.grant-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.grant-table th,
+.grant-table td {
+    border-bottom: 1px solid #242424;
+    padding: 7px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.grant-table th {
+    color: #d8c08a;
+    background: #090909;
+    position: sticky;
+    top: 0;
+}
+
+.grant-summary {
+    border: 1px solid #604010;
+    background: #201000;
+    color: #ffd48a;
+    padding: 10px;
+    margin: 10px 0 14px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>Item Grants</h1>
 
@@ -48,6 +89,7 @@
 
 <div class="grid">
 
+{% if session.role == "admin" %}
 <div class="box">
 <h2>Grant New Player Kit</h2>
 
@@ -76,6 +118,126 @@ Admin-only test/helper bundle for any selected existing character. Uses IceHunte
 </div>
 
 <div class="box">
+<h2>Grant Builder Supply Pack</h2>
+
+<div class="warning">
+Admin-only direct backpack insert. Select a character and pack; the tool inserts one stack per listed template into empty main-backpack slots only. The character should be offline. If there are not enough free slots, nothing is inserted.<br><br>
+<b>Weight warning:</b> builder packs can temporarily overload the character's carry limit. Always equip a build tool before using the pack so the materials can be placed immediately.
+</div>
+
+<form id="builderPackForm">
+    <label>Character</label>
+    <select id="builderPackCharacterSelect" onchange="fillBuilderPackActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="builderPackActorId" required>
+
+    <label>Builder Pack</label>
+    <select name="pack_id" id="builderPackId" required>
+        {% for pack_id, pack in builder_supply_packs.items() %}
+        <option value="{{ pack_id }}">{{ pack.label }} | {{ pack["items"]|length }} slots | x{{ pack.stack_size }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Grant Builder Supply Pack</button>
+</form>
+
+<h3>Pack Contents</h3>
+{% for pack_id, pack in builder_supply_packs.items() %}
+<details>
+    <summary>{{ pack.label }} - {{ pack.description }}</summary>
+    <ul>
+    {% for item_id in pack["items"] %}
+    <li>{{ item_id }} x{{ pack.stack_size }}</li>
+    {% endfor %}
+    </ul>
+</details>
+{% endfor %}
+</div>
+
+<div class="box">
+<h2>Fill Base Storage Warehouse</h2>
+
+<div class="warning">
+Admin-only direct base-storage insert. Discover a character's owned large storage containers, select four empty containers from the same base, then fill them with the selected warehouse pack. The game/map should be stopped or restarted afterward; live servers can create item IDs while this runs.
+</div>
+
+<form id="baseStorageFillForm">
+    <label>Character</label>
+    <select id="baseStorageCharacterSelect" onchange="fillBaseStorageActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="baseStorageActorId" required>
+
+    <button type="button" onclick="loadBaseStorageContainers()">Discover Owned Storage Containers</button>
+
+    <div class="grant-summary" id="baseStorageSummary">
+        Select a character, then discover owned base storage containers.
+    </div>
+
+    <div class="grant-table-wrap" id="baseStorageContainerTableWrap" style="display:none;">
+        <table class="grant-table">
+            <thead>
+                <tr>
+                    <th>Pick</th>
+                    <th>Inventory</th>
+                    <th>Status</th>
+                    <th>Rows</th>
+                    <th>Map</th>
+                    <th>Partition</th>
+                    <th>Base Entity</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody id="baseStorageContainerTableBody"></tbody>
+        </table>
+    </div>
+
+    <label>Warehouse Pack</label>
+    <select name="pack_id" id="baseStoragePackId" required>
+        {% for pack_id, pack in base_storage_fill_packs.items() %}
+        <option value="{{ pack_id }}">{{ pack.label }} | {{ pack.boxes|length }} boxes | x{{ pack.stack_size }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Container 1</label>
+    <input type="text" name="container_1" id="baseStorageContainer1" required>
+
+    <label>Container 2</label>
+    <input type="text" name="container_2" id="baseStorageContainer2" required>
+
+    <label>Container 3</label>
+    <input type="text" name="container_3" id="baseStorageContainer3" required>
+
+    <label>Container 4</label>
+    <input type="text" name="container_4" id="baseStorageContainer4" required>
+
+    <button type="submit">Fill Four Base Storage Containers</button>
+</form>
+
+<h3>Warehouse Layout</h3>
+{% for pack_id, pack in base_storage_fill_packs.items() %}
+<details>
+    <summary>{{ pack.label }} - {{ pack.description }}</summary>
+    {% for box in pack.boxes %}
+    <h4>Box {{ box.box_number }}: {{ box.label }}</h4>
+    <ul>
+    {% for item_id in box["items"] %}
+    <li>{{ item_id }} x{{ pack.stack_size }}</li>
+    {% endfor %}
+    </ul>
+    {% endfor %}
+</details>
+{% endfor %}
+</div>
+{% endif %}
+
+<div>
+<div class="box">
 <h2>Give MK6 Scout Thopter</h2>
 
 <div class="warning">
@@ -101,8 +263,8 @@ Uses RedBlink's grant-template helper: {{ scout_thopter_template }}.
 <div class="warning">
 WARNING: This grants a full Mk6 Medium Ornithopter kit.<br><br>
 Requirements:<br>
-- Character should have at least 21 free inventory slots.<br>
-- Recommended free slots: 25+.<br>
+- Character should have at least 23 free inventory slots.<br>
+- Recommended free slots: 27+.<br>
 - Overflow or partial grants may occur if inventory space is insufficient.
 </div>
 
@@ -124,6 +286,7 @@ Requirements:<br>
 <li>{{ item_id }} x{{ qty }}</li>
 {% endfor %}
 </ul>
+</div>
 </div>
 
 </div>
@@ -147,15 +310,47 @@ itemSearchForm.addEventListener("submit", async function(event) {
 });
 
 const newPlayerKitGrantForm = document.getElementById("newPlayerKitGrantForm");
-newPlayerKitGrantForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
+if (newPlayerKitGrantForm) {
+    newPlayerKitGrantForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
 
-    if (!confirm("Grant the T1 new player starter kit to this selected character? This works for existing players too.")) {
-        return;
-    }
+        if (!confirm("Grant the T1 new player starter kit to this selected character? This works for existing players too.")) {
+            return;
+        }
 
-    await postForm("/api/grant-new-player-kit", newPlayerKitGrantForm);
-});
+        await postForm("/api/grant-new-player-kit", newPlayerKitGrantForm);
+    });
+}
+
+const builderPackForm = document.getElementById("builderPackForm");
+if (builderPackForm) {
+    builderPackForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const packSelect = document.getElementById("builderPackId");
+        const packLabel = packSelect && packSelect.selectedOptions.length ? packSelect.selectedOptions[0].textContent : "selected pack";
+        if (!confirm(`Grant ${packLabel} to this character's main backpack? The character should be offline. Existing items are not overwritten.`)) {
+            return;
+        }
+
+        await postForm("/api/grant-builder-supply-pack", builderPackForm);
+    });
+}
+
+const baseStorageFillForm = document.getElementById("baseStorageFillForm");
+if (baseStorageFillForm) {
+    baseStorageFillForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const packSelect = document.getElementById("baseStoragePackId");
+        const packLabel = packSelect && packSelect.selectedOptions.length ? packSelect.selectedOptions[0].textContent : "selected warehouse pack";
+        if (!confirm(`Fill four selected empty base storage containers with ${packLabel}? Stop/restart the affected map after this operation. Existing items are not overwritten.`)) {
+            return;
+        }
+
+        await postForm("/api/fill-base-storage-containers", baseStorageFillForm);
+    });
+}
 
 const scoutThopterForm = document.getElementById("scoutThopterForm");
 scoutThopterForm.addEventListener("submit", async function(event) {
@@ -167,7 +362,7 @@ const mediumThopterForm = document.getElementById("mediumThopterForm");
 mediumThopterForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    if (!confirm("This grants a large multi-part vehicle kit. Confirm the character has 25+ free slots.")) {
+    if (!confirm("This grants a large multi-part vehicle kit. Confirm the character has 27+ free slots.")) {
         return;
     }
 

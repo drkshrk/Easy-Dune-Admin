@@ -141,6 +141,40 @@
     margin-top: 0;
 }
 
+.admin-solari-grid {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.admin-solari-card {
+    min-width: 0;
+    border: 1px solid #222;
+    padding: 10px;
+    background: #060606;
+}
+
+.admin-solari-card form {
+    border: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.admin-solari-card form + form {
+    border-top: 1px solid #222;
+    margin-top: 12px;
+    padding-top: 12px;
+}
+
+.admin-solari-card .warning,
+.admin-solari-card .coord-box {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.25;
+}
+
 .vehicle-workbench {
     display: grid;
     grid-template-columns: minmax(340px, 0.78fr) minmax(540px, 1.22fr);
@@ -763,7 +797,9 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
     <button type="submit">Grant SolarisCoin</button>
 </form>
 
-<div>
+<div class="admin-solari-grid">
+
+<div class="admin-solari-card">
     <div class="warning">
         This edits <b>Solari Coin inventory item stacks</b>, not Solari Credit. Add creates or increases one Solari Coin stack in the selected character's inventory. Set Exact sets the primary Solari Coin stack to the target amount and zeroes duplicate Solari Coin stacks for cleanup.
     </div>
@@ -799,7 +835,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
     </form>
 </div>
 
-<div>
+<div class="admin-solari-card">
     <div class="warning">
         This edits <b>Solari Credit</b> in <b>dune.player_virtual_currency_balances</b> for currency_id 0. Use this for the live exchange/bank balance shown as Solari Credit in-game. It does not edit inventory Solari Coin stacks, and live testing confirms it does not require a map or battlegroup restart.
     </div>
@@ -838,6 +874,8 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
 
     <button type="submit">Set Solari Credit</button>
     </form>
+</div>
+
 </div>
 
 </div>

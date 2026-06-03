@@ -2,12 +2,16 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.7.6-alpha
+## 0.7.7-alpha
 
 ### Added
 
 - Added an admin-only New Player Kit grant button based on IceHunter / Ryan Wilson's MIT-licensed `t1-starter` pack definition, using RedBlink's normal item grant command for the actual grants.
+- Added admin-only Builder Supply Packs that insert curated construction resources into a selected character's main backpack after validating free slots.
+- Added an admin-only four-container Base Storage Warehouse Fill that discovers owned large base containers, validates four empty selections, and inserts a curated warehouse pack.
 - Added starter-kit attribution to the third-party notices and README credits.
+- Updated Developer Class Progression warnings to note that advanced trainer unlocks appear to require full multi-quest chains, not a single observed completion tag.
+- Updated the Medium Ornithopter kit with a RepairTool5 and WeldingMaterial, and stacked the grants page Medium kit panel directly under the Scout Thopter panel.
 
 ## 0.7.5-alpha
 
@@ -54,7 +58,7 @@ All notable changes to Easy Dune Admin are documented here.
 
 ### Planned
 
-- `0.7.7` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
+- `0.7.8+` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
 
 ## 0.6.6-rc2
 

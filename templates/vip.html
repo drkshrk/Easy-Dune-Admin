@@ -171,7 +171,7 @@ Grants RedBlink template <b>{{ scout_thopter_template }}</b> to your linked char
 <h2>Give Mk6 Medium Ornithopter Kit</h2>
 <div class="warning">
 Grants the full Mk6 Medium Ornithopter kit to your linked character only.<br><br>
-Make sure you have at least 21 free inventory slots; 25+ is recommended to reduce overflow or partial grants.
+Make sure you have at least 23 free inventory slots; 27+ is recommended to reduce overflow or partial grants.
 </div>
 <form id="vipMediumThopterForm">
     <button type="submit">Give Mk6 Medium Ornithopter Kit</button>
@@ -557,7 +557,7 @@ document.getElementById("vipScoutThopterForm").addEventListener("submit", async 
 
 document.getElementById("vipMediumThopterForm").addEventListener("submit", async function(event) {
     event.preventDefault();
-    if (!confirm("Grant the Mk6 Medium Ornithopter kit to your linked character? Confirm you have 25+ free inventory slots.")) return;
+    if (!confirm("Grant the Mk6 Medium Ornithopter kit to your linked character? Confirm you have 27+ free inventory slots.")) return;
     await postForm("/api/vip-give-medium-thopter", this);
 });
 
