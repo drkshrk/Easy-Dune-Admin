@@ -37,18 +37,30 @@
 
 .online-marker {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     border: 2px solid #000;
+    box-sizing: border-box;
+    padding: 0;
+    line-height: 0;
+    appearance: none;
     transform: translate(-50%, -50%);
     cursor: pointer;
     z-index: 5;
 }
 
 .online-marker.player {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
     background: #4aa3ff;
     box-shadow: 0 0 10px #4aa3ff;
+}
+
+.online-marker.player.offline {
+    background: #b15cff;
+    box-shadow: 0 0 10px #b15cff;
 }
 
 .online-marker.vehicle {
@@ -177,10 +189,12 @@ function renderOnlineMapMarkers() {
     layer.innerHTML = "";
 
     const visible = onlineMapMarkers.filter(m => m.in_bounds);
+    const players = visible.filter(m => m.type === "player");
+    const offlinePlayers = players.filter(m => String(m.online_status || "").toLowerCase() === "offline");
 
     summary.innerHTML = `
         Hagga Basin<br>
-        Players: ${visible.filter(m => m.type === "player").length}<br>
+        Players: ${players.length} (${offlinePlayers.length} offline)<br>
         Vehicles: ${visible.filter(m => m.type === "vehicle").length}<br>
         Bases: ${visible.filter(m => m.type === "base").length}<br>
         Total: ${visible.length}
@@ -189,10 +203,15 @@ function renderOnlineMapMarkers() {
     visible.forEach(marker => {
         const node = document.createElement("button");
         node.type = "button";
-        node.className = `online-marker ${marker.type}`;
+        const offlineClass = marker.type === "player" && String(marker.online_status || "").toLowerCase() === "offline"
+            ? " offline"
+            : "";
+        node.className = `online-marker ${marker.type}${offlineClass}`;
         node.style.left = `${marker.px * onlineMapZoom}px`;
         node.style.top = `${marker.py * onlineMapZoom}px`;
-        node.title = marker.name || `${marker.type} ${marker.id}`;
+        node.title = marker.type === "player"
+            ? `${marker.name || marker.type} (${marker.online_status || "Unknown"})`
+            : marker.name || `${marker.type} ${marker.id}`;
         layer.appendChild(node);
     });
 }

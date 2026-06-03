@@ -59,14 +59,26 @@
     height: 9px;
     border-radius: 50%;
     border: 2px solid #000;
+    box-sizing: border-box;
+    padding: 0;
+    line-height: 0;
+    appearance: none;
     transform: translate(-50%, -50%);
     cursor: pointer;
     z-index: 5;
 }
 
 .map-marker.player {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
     background: #4aa3ff;
     box-shadow: 0 0 12px #4aa3ff;
+}
+
+.map-marker.player.offline {
+    background: #b15cff;
+    box-shadow: 0 0 12px #b15cff;
 }
 
 .map-marker.vehicle {
@@ -80,9 +92,14 @@
 }
 
 .map-marker:hover {
-    width: 12px;
-    height: 12px;
+    width: 11px;
+    height: 11px;
     z-index: 10;
+}
+
+.map-marker.player:hover {
+    width: 14px;
+    height: 14px;
 }
 
 .marker-tip {
@@ -587,11 +604,13 @@ function renderMapMarkers() {
     list.innerHTML = "";
 
     const visible = mapMarkers.filter(m => m.in_bounds);
+    const visiblePlayers = visible.filter(m => m.type === "player");
+    const offlinePlayers = visiblePlayers.filter(m => String(m.online_status || "").toLowerCase() === "offline");
 
     summary.innerHTML = `
         Map: ${escapeHtml(mapConfig.key)}<br>
         Partition: ${escapeHtml(partitionLabel || "Not selected")}<br>
-        Players: ${visible.filter(m => m.type === "player").length}<br>
+        Players: ${visiblePlayers.length} (${offlinePlayers.length} offline)<br>
         Vehicles: ${visible.filter(m => m.type === "vehicle").length}<br>
         Bases: ${visible.filter(m => m.type === "base").length}<br>
         Total: ${visible.length}
@@ -605,7 +624,10 @@ function renderMapMarkers() {
     visible.forEach(marker => {
         const node = document.createElement("button");
         node.type = "button";
-        node.className = `map-marker ${marker.type}`;
+        const offlineClass = marker.type === "player" && String(marker.online_status || "").toLowerCase() === "offline"
+            ? " offline"
+            : "";
+        node.className = `map-marker ${marker.type}${offlineClass}`;
         node.style.left = `${marker.px * currentZoom}px`;
         node.style.top = `${marker.py * currentZoom}px`;
         node.title = markerLabel(marker);
@@ -614,6 +636,7 @@ function renderMapMarkers() {
             <span class="marker-tip">
                 <b>${escapeHtml(markerLabel(marker))}</b><br>
                 ${escapeHtml(marker.type)} #${escapeHtml(marker.id)}<br>
+                ${marker.type === "player" ? `${escapeHtml(marker.online_status || "Unknown")}<br>` : ""}
                 X ${Number(marker.x).toFixed(2)}<br>
                 Y ${Number(marker.y).toFixed(2)}<br>
                 Z ${Number(marker.z).toFixed(2)}
@@ -632,7 +655,7 @@ function renderMapMarkers() {
         item.className = "map-list-item";
         item.innerHTML = `
             <b>${escapeHtml(markerLabel(marker))}</b><br>
-            ${escapeHtml(marker.type)} | X ${Number(marker.x).toFixed(0)} Y ${Number(marker.y).toFixed(0)} Z ${Number(marker.z).toFixed(0)}
+            ${escapeHtml(marker.type)}${marker.type === "player" ? ` / ${escapeHtml(marker.online_status || "Unknown")}` : ""} | X ${Number(marker.x).toFixed(0)} Y ${Number(marker.y).toFixed(0)} Z ${Number(marker.z).toFixed(0)}
         `;
         item.addEventListener("click", () => {
             fillTeleportFromMarker(marker);
@@ -684,11 +707,11 @@ async function emergencyReturnToHaggaBasin() {
     const data = await response.json();
 
     if (!data.ok) {
-        showOutput(data.error || "Emergency return failed.");
+        showOutput(data.error || "Emergency return failed.", document.getElementById("teleportForm"));
         return;
     }
 
-    showOutput(data.output || "Emergency return complete.");
+    showOutput(data.output || "Emergency return complete.", document.getElementById("teleportForm"));
 }
 
 const teleportForm = document.getElementById("teleportForm");

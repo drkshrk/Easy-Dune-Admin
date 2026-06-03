@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.3--beta-blue">
+  <img src="https://img.shields.io/badge/version-0.7.5--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
-  <img src="https://img.shields.io/badge/status-beta-orange">
+  <img src="https://img.shields.io/badge/status-alpha-orange">
   <img src="https://img.shields.io/badge/platform-Linux-lightgrey">
   <img src="https://img.shields.io/badge/python-3.11+-blue">
 </p>
@@ -21,11 +21,11 @@
 
 ## Status
 
-Current panel version: `0.7.3-beta`
+Current panel version: `0.7.5-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
-This beta is intended for private/LAN/VPN-hosted self-hosted servers.
+This alpha is intended for private/LAN/VPN-hosted self-hosted servers.
 
 Easy Dune Admin is an independent webadmin project built to support
 RedBlink's MIT-licensed
@@ -76,6 +76,7 @@ and contributors credited where they are used or targeted.
 - Deep Desert map support
 - Configurable map instances for multi-sietch / dual Deep Desert setups
 - Player, vehicle, and base markers
+- Offline character markers render purple so they are distinct from online players
 - Mouse-wheel zoom
 - Drag panning
 - Click-to-fill teleport coordinates
@@ -193,6 +194,9 @@ and contributors credited where they are used or targeted.
   - `dune admin player-location`
   - `dune admin refill-water`
   - `dune admin spawn-vehicle`
+  - `dune admin spawn-vehicle-at`
+  - `dune admin skill-module`
+  - `dune admin kick`
   - `dune admin vehicle-list`
   - `dune admin item-search`
   - `dune admin history`
@@ -302,6 +306,18 @@ Override with:
 export DUNE_ROOT=/path/to/dune-awakening-selfhost-docker
 ```
 
+Login installation profile:
+
+Easy Dune Admin now has a login switch for `Linux Host`, `RedBlink Docker Container`, and experimental `Hyper-V via SSH` operation. Linux Host and RedBlink Docker Container run commands locally. Hyper-V via SSH runs those same RedBlink/Docker commands through SSH on the Linux VM.
+
+```bash
+export EASY_DUNE_DEFAULT_INSTALL_MODE=linux
+export EASY_DUNE_HYPERV_SSH_TARGET='steam@192.168.1.50'
+export EASY_DUNE_HYPERV_DUNE_ROOT=/home/steam/dune-awakening-selfhost-docker
+```
+
+Leave the Hyper-V values unset unless you are using the Hyper-V profile.
+
 Set a real secret before sharing or deploying:
 
 ```bash
@@ -344,6 +360,12 @@ easy-dune-admin-docker-test/
 
 This package runs Easy Dune Admin in a container while mounting the host RedBlink stack directory and Docker socket. It is currently a preview path for testing, not yet the recommended install method.
 
+Docker webadmin state is stored in the named Docker volume `easy-dune-admin-data`
+at `/data`, including `/data/users.db` and `/data/logs`. Rebuilding the image
+should preserve users and roles as long as the volume is not removed. Avoid
+`docker compose -f docker-compose.test.yml down -v` unless you intentionally want
+to reset the webadmin database.
+
 See:
 
 ```text
@@ -359,7 +381,7 @@ for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.3-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.5-alpha
 ```
 
 Preserve local runtime data:
@@ -458,7 +480,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.3-beta`: RedBlink `v1.3.3` support expands Server Management with battlegroup readiness, autoscaler, Sietches, memory, update checks, restart schedule status, selected `dune admin` helpers, Admin Panel water-container refill/player-location/vehicle-spawn utilities, and VIP self-only water-container refill.
+Current highlight for `0.7.5-alpha`: RedBlink `v1.3.3` support expands Admin Panel helpers with skill-module level setting, kick controls, coordinate-based vehicle spawning, and purple offline-character map markers while keeping the existing Server Management, market, VIP, and Docker-preview tooling.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

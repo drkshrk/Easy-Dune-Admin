@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.3-beta
+Panel version: 0.7.5-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.7.3-beta RedBlink v1.3.3 support:
+0.7.5-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -41,7 +41,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request, session, jsonify
+from flask import Flask, redirect, render_template, request, session, jsonify, has_request_context
 
 # Flask-SocketIO is required only for the optional full host shell.
 # The app still imports it at startup for the /infrastructure terminal page.
@@ -55,7 +55,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.3-beta"
+PANEL_VERSION = "0.7.5-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -71,6 +71,12 @@ DUNE_SCRIPT = DUNE_ROOT / "runtime/scripts/dune"
 
 # RedBlink item catalog.
 ITEMS_FILE = DUNE_ROOT / "runtime/data/admin-items.json"
+
+# RedBlink skill-module catalog. This feeds the Admin Panel dropdown for the
+# v1.3.3 `dune admin skill-module` helper. If RedBlink changes the catalog
+# shape later, keep the browser-facing labels conservative and validate again
+# before allowing writes.
+SKILL_MODULES_FILE = DUNE_ROOT / "runtime/data/admin-skill-modules.json"
 
 # RedBlink v1.3.3 vehicle spawn templates. These are used by the admin panel's
 # "spawn in front of player" helper and should match runtime/data/admin-vehicles.json
@@ -95,7 +101,26 @@ REDBLINK_VEHICLE_SPAWN_TEMPLATES = {
 DEFAULT_WATER_REFILL_AMOUNT = int(os.environ.get("DEFAULT_WATER_REFILL_AMOUNT", "1000000"))
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_FILE = BASE_DIR / "users.db"
+
+# Local webadmin state. In the normal non-container install this stays next to
+# the app for backward compatibility. In the Docker package, docker-compose sets
+# EDA_DATA_DIR=/data and mounts that path as a named volume so rebuilding the
+# image does not wipe users.db or action logs.
+APP_DATA_DIR = Path(os.environ.get("EDA_DATA_DIR", str(BASE_DIR))).resolve()
+APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_FILE = APP_DATA_DIR / "users.db"
+
+# One-time Docker transition helper: older container builds wrote users.db to
+# /app because BASE_DIR was the only state path. If that old file exists inside
+# a container and the mounted data volume does not yet have a database, preserve
+# it instead of making the admin recreate users after an upgrade.
+LEGACY_DB_FILE = BASE_DIR / "users.db"
+if DB_FILE != LEGACY_DB_FILE and LEGACY_DB_FILE.exists() and not DB_FILE.exists():
+    try:
+        import shutil
+        shutil.copy2(LEGACY_DB_FILE, DB_FILE)
+    except Exception:
+        pass
 
 # IceHunter / Ryan Wilson's MIT-licensed dune-admin project includes a richer
 # exchange catalog than RedBlink's admin item list. We use this local copy for
@@ -168,11 +193,42 @@ MARKET_BUY_MAX_PER_CLICK = int(os.environ.get("MARKET_BUY_MAX_PER_CLICK", "500")
 MARKET_BUYBACK_INTERVAL_MINUTES = int(os.environ.get("MARKET_BUYBACK_INTERVAL_MINUTES", "30"))
 MARKET_RESEED_INTERVAL_MINUTES = int(os.environ.get("MARKET_RESEED_INTERVAL_MINUTES", "30"))
 
-LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+# Logs follow EDA_LOG_DIR when set, otherwise live under APP_DATA_DIR/logs.
+LOG_DIR = Path(os.environ.get("EDA_LOG_DIR", str(APP_DATA_DIR / "logs"))).resolve()
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 ACTION_LOG = LOG_DIR / "actions.log"
 
 POSTGRES_CONTAINER = "dune-postgres"
+
+# Login-selectable installation profiles. Linux host and Dockerized webadmin
+# both run commands locally; the Dockerized profile exists so the footer/login
+# clearly reflects that Easy Dune Admin is running inside its own container with
+# the RedBlink stack and Docker socket mounted. Hyper-V uses SSH to run the same
+# RedBlink/Docker commands on the Linux VM. Set EASY_DUNE_HYPERV_SSH_TARGET to
+# a value such as "steam@192.168.1.50" before using the Hyper-V profile.
+INSTALLATION_MODES = {
+    "linux": {
+        "label": "Linux Host",
+        "description": "Easy Dune Admin runs on the same Linux host as the RedBlink stack.",
+    },
+    "docker": {
+        "label": "RedBlink Docker Container",
+        "description": "Easy Dune Admin runs in its own container with Docker socket and RedBlink stack mounted.",
+    },
+    "hyperv": {
+        "label": "Hyper-V via SSH",
+        "description": "Experimental: Easy Dune Admin SSHes into the Hyper-V Linux VM to run RedBlink/Docker commands.",
+    },
+}
+DEFAULT_INSTALLATION_MODE = os.environ.get("EASY_DUNE_DEFAULT_INSTALL_MODE", "linux").strip().casefold()
+if DEFAULT_INSTALLATION_MODE not in INSTALLATION_MODES:
+    DEFAULT_INSTALLATION_MODE = "linux"
+
+# Hyper-V / remote Linux VM settings. These are deliberately environment-only
+# because they contain host/user/path details that vary per installation and
+# should not be committed into the project.
+HYPERV_SSH_TARGET = os.environ.get("EASY_DUNE_HYPERV_SSH_TARGET", "").strip()
+HYPERV_DUNE_ROOT = os.environ.get("EASY_DUNE_HYPERV_DUNE_ROOT", str(DUNE_ROOT)).strip()
 
 # Change with:
 # export DUNE_SECRET_KEY='long-random-string'
@@ -656,8 +712,50 @@ def inject_template_globals():
         "market_reseed_interval_minutes": MARKET_RESEED_INTERVAL_MINUTES,
         "solari_bank_grant_max": SOLARI_BANK_GRANT_MAX,
         "redblink_vehicle_spawn_templates": REDBLINK_VEHICLE_SPAWN_TEMPLATES,
+        "redblink_skill_modules": load_redblink_skill_modules(),
         "default_water_refill_amount": DEFAULT_WATER_REFILL_AMOUNT,
+        "installation_modes": INSTALLATION_MODES,
+        "default_installation_mode": DEFAULT_INSTALLATION_MODE,
+        "current_installation_mode": current_installation_mode(),
+        "current_installation_mode_label": current_installation_mode_label(),
+        "installation_capabilities": current_installation_capabilities(),
     }
+
+
+def load_redblink_skill_modules():
+    """
+    Load RedBlink's MIT-licensed admin skill-module catalog for browser dropdowns.
+
+    The route still validates the selected module id against this same catalog
+    before calling `dune admin skill-module`, so a browser cannot submit an
+    arbitrary module string when the catalog is present.
+    """
+    try:
+        if not SKILL_MODULES_FILE.exists():
+            return []
+        rows = json.loads(SKILL_MODULES_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+    modules = []
+    for row in rows if isinstance(rows, list) else []:
+        module_id = str(row.get("id", "")).strip()
+        if not module_id:
+            continue
+        try:
+            max_level = int(row.get("maxLevel", 1))
+        except (TypeError, ValueError):
+            max_level = 1
+        modules.append(
+            {
+                "id": module_id,
+                "name": str(row.get("name", module_id)).strip() or module_id,
+                "category": str(row.get("category", "Uncategorized")).strip() or "Uncategorized",
+                "maxLevel": max(0, max_level),
+            }
+        )
+
+    return sorted(modules, key=lambda item: (item["category"].casefold(), item["name"].casefold(), item["id"].casefold()))
 
 
 # =========================================================
@@ -786,6 +884,46 @@ def require_login():
     return None
 
 
+def current_installation_mode():
+    """
+    Return the active command profile for this browser session.
+
+    The value is selected at login so one deployed copy can target local Linux,
+    the Dockerized webadmin layout, or a Hyper-V Linux VM through SSH.
+    """
+    if has_request_context():
+        selected = session.get("installation_mode", DEFAULT_INSTALLATION_MODE)
+        if selected in INSTALLATION_MODES:
+            return selected
+    return DEFAULT_INSTALLATION_MODE
+
+
+def current_installation_mode_label():
+    return INSTALLATION_MODES[current_installation_mode()]["label"]
+
+
+def current_installation_capabilities():
+    """
+    Describe which UX blocks are meaningful for the selected install profile.
+
+    Keep these booleans conservative. Command buttons that use RedBlink's dune
+    wrapper can run locally or through Hyper-V SSH, but installer and shell
+    panels are tied to where the Flask process actually lives.
+    """
+    mode = current_installation_mode()
+    return {
+        "is_linux": mode == "linux",
+        "is_docker": mode == "docker",
+        "is_hyperv": mode == "hyperv",
+        "redblink_commands": True,
+        "stack_installer": mode == "linux",
+        "browser_shell": mode in ("linux", "docker"),
+        "host_diagnostics": mode == "linux",
+        "container_diagnostics": mode == "docker",
+        "interactive_vm_shell": mode == "linux",
+    }
+
+
 # =========================================================
 # LOGGING
 # =========================================================
@@ -806,17 +944,54 @@ def recent_log_lines(limit=250):
 # COMMAND / DATA HELPERS
 # =========================================================
 
-def run_command(cmd, timeout=60, input_text=None):
-    """Run controlled command list. Never change this to shell=True."""
-    proc = subprocess.run(
-        cmd,
-        cwd=str(DUNE_ROOT),
+def _command_for_current_installation(cmd):
+    """
+    Convert a local command list into the command that should actually run.
+
+    Linux/Docker modes execute locally. Hyper-V mode wraps the command in SSH
+    and maps the local RedBlink script path to EASY_DUNE_HYPERV_DUNE_ROOT so
+    the same route code can be reused without hardcoding VM paths everywhere.
+    """
+    mode = current_installation_mode()
+    if mode != "hyperv":
+        return cmd, str(DUNE_ROOT)
+
+    if not HYPERV_SSH_TARGET:
+        raise RuntimeError(
+            "Hyper-V mode is selected, but EASY_DUNE_HYPERV_SSH_TARGET is not configured."
+        )
+
+    mapped_cmd = [str(part) for part in cmd]
+    local_script = str(DUNE_SCRIPT)
+    remote_script = f"{HYPERV_DUNE_ROOT.rstrip('/')}/runtime/scripts/dune"
+    mapped_cmd = [
+        remote_script if part == local_script else part
+        for part in mapped_cmd
+    ]
+    remote_command = f"cd {shlex.quote(HYPERV_DUNE_ROOT)} && {shlex.join(mapped_cmd)}"
+    return ["ssh", HYPERV_SSH_TARGET, remote_command], None
+
+
+def run_process(cmd, timeout=60, input_text=None):
+    """Run a controlled command list through the selected installation profile."""
+    actual_cmd, cwd = _command_for_current_installation(cmd)
+    return subprocess.run(
+        actual_cmd,
+        cwd=cwd,
         input=input_text,
         capture_output=True,
         text=True,
         timeout=timeout,
         check=False,
     )
+
+
+def run_command(cmd, timeout=60, input_text=None):
+    """Run controlled command list. Never change this to shell=True."""
+    try:
+        proc = run_process(cmd, timeout=timeout, input_text=input_text)
+    except Exception as exc:
+        return "$ " + " ".join(cmd) + f"\n\nERROR:\n{exc}"
 
     return (
         "$ " + " ".join(cmd)
@@ -989,22 +1164,7 @@ def run_psql_script(sql, timeout=180):
         "-v",
         "ON_ERROR_STOP=1",
     ]
-    proc = subprocess.run(
-        cmd,
-        cwd=str(DUNE_ROOT),
-        input=sql,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-
-    return (
-        "$ " + " ".join(cmd)
-        + "\n\nSTDOUT:\n" + proc.stdout
-        + "\nSTDERR:\n" + proc.stderr
-        + f"\nExit code: {proc.returncode}"
-    )
+    return run_command(cmd, timeout=timeout, input_text=sql)
 
 
 def load_items():
@@ -2331,12 +2491,9 @@ def get_characters(include_offline=True):
     ]
 
     try:
-        proc = subprocess.run(
+        proc = run_process(
             cmd,
-            capture_output=True,
-            text=True,
             timeout=15,
-            check=False,
         )
 
         rows = []
@@ -2391,18 +2548,382 @@ def _run_psql_tsv(sql, timeout=15):
         sql,
     ]
 
-    proc = subprocess.run(
+    proc = run_process(
         cmd,
-        capture_output=True,
-        text=True,
         timeout=timeout,
-        check=False,
     )
 
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "psql query failed")
 
     return proc.stdout.strip().splitlines()
+
+
+def _developer_search_terms(query):
+    """
+    Convert a loose research query into safe ILIKE terms.
+
+    This is for the hidden developer page only. It keeps future NPC/encounter
+    research useful without exposing a raw SQL console or any write path.
+    """
+    raw = (query or "").strip() or "npc raider sardaukar sandflies ghola encounter spawn ai"
+    seen = set()
+    terms = []
+
+    for part in re.split(r"[\s,;]+", raw):
+        cleaned = re.sub(r"[^A-Za-z0-9_./:-]", "", part).strip()
+        folded = cleaned.casefold()
+        if cleaned and folded not in seen:
+            terms.append(cleaned[:80])
+            seen.add(folded)
+        if len(terms) >= 8:
+            break
+
+    return terms or ["npc"]
+
+
+def _ilike_any_sql(columns, terms):
+    """Build a constrained OR expression against known text-ish columns."""
+    clauses = []
+    for term in terms:
+        safe_term = term.replace("'", "''")
+        for column in columns:
+            clauses.append(f"{column}::text ILIKE '%{safe_term}%'")
+    return " OR ".join(clauses) or "false"
+
+
+def _tsv_dicts(rows, columns):
+    parsed = []
+    for row in rows:
+        parts = row.split("\t")
+        parsed.append({column: parts[idx] if idx < len(parts) else "" for idx, column in enumerate(columns)})
+    return parsed
+
+
+def developer_npc_research(query):
+    """
+    Read-only NPC/encounter discovery helper for the hidden developer page.
+
+    Current research found no safe NPC spawn command and no persistent combat
+    NPC actor pattern. These searches help future testing discover a real
+    command or live actor pattern before any spawn UI is considered.
+    """
+    terms = _developer_search_terms(query)
+
+    sections = [
+        (
+            "actors",
+            ["id", "class", "map", "partition_id", "dimension_index", "transform"],
+            f"""
+            SELECT id::text, class, map, partition_id::text, dimension_index::text, transform::text
+            FROM dune.actors
+            WHERE {_ilike_any_sql(["class", "map", "properties", "gas_attributes"], terms)}
+            ORDER BY map, class, id
+            LIMIT 50;
+            """,
+        ),
+        (
+            "actor_audit",
+            ["class", "count"],
+            f"""
+            SELECT class, COUNT(*)::text
+            FROM dune.actor_audit
+            WHERE {_ilike_any_sql(["class"], terms)}
+            GROUP BY class
+            ORDER BY COUNT(*) DESC, class
+            LIMIT 50;
+            """,
+        ),
+        (
+            "actor_spawners",
+            ["spawner_id", "map", "name", "dimension_index"],
+            f"""
+            SELECT id::text, map, name, dimension_index::text
+            FROM dune.actor_spawners
+            WHERE {_ilike_any_sql(["map", "name"], terms)}
+            ORDER BY map, name, id
+            LIMIT 50;
+            """,
+        ),
+        (
+            "actor_spawner_actors",
+            ["spawner_id", "actor_id", "class", "map", "partition_id", "dimension_index"],
+            f"""
+            SELECT
+                asa.spawner_id::text,
+                asa.actor_id::text,
+                COALESCE(a.class, ''),
+                COALESCE(a.map, ''),
+                COALESCE(a.partition_id::text, ''),
+                COALESCE(a.dimension_index::text, '')
+            FROM dune.actor_spawner_actors asa
+            LEFT JOIN dune.actors a
+                ON a.id = asa.actor_id
+            LEFT JOIN dune.actor_spawners s
+                ON s.id = asa.spawner_id
+            WHERE {_ilike_any_sql(["a.class", "a.map", "s.name", "s.map"], terms)}
+            ORDER BY asa.spawner_id, asa.actor_id
+            LIMIT 50;
+            """,
+        ),
+        (
+            "encounters_static",
+            ["map_name", "package_name", "actor_name", "encounter_name", "waiting_for_reset"],
+            f"""
+            SELECT map_name, package_name, actor_name, encounter_name, waiting_for_reset::text
+            FROM dune.encounters_static
+            WHERE {_ilike_any_sql(["map_name", "package_name", "actor_name", "encounter_name"], terms)}
+            ORDER BY map_name, package_name, actor_name
+            LIMIT 50;
+            """,
+        ),
+        (
+            "event_log",
+            ["id", "category", "function_name", "message", "meta", "event_time"],
+            f"""
+            SELECT
+                id::text,
+                category::text,
+                function_name::text,
+                message::text,
+                left(meta::text, 500),
+                event_time::text
+            FROM dune.event_log
+            WHERE {_ilike_any_sql(["category", "function_name", "message", "meta"], terms)}
+            ORDER BY event_time DESC
+            LIMIT 50;
+            """,
+        ),
+        (
+            "game_events",
+            ["actor_id", "event_type", "map", "partition_id", "custom_data", "universe_time"],
+            f"""
+            SELECT
+                actor_id::text,
+                event_type::text,
+                map,
+                partition_id::text,
+                left(custom_data::text, 500),
+                universe_time::text
+            FROM dune.game_events
+            WHERE {_ilike_any_sql(["map", "custom_data"], terms)}
+            ORDER BY universe_time DESC
+            LIMIT 50;
+            """,
+        ),
+    ]
+
+    result = {"terms": terms, "sections": {}}
+    for key, columns, sql in sections:
+        try:
+            rows = _run_psql_tsv(sql, timeout=20)
+            result["sections"][key] = {"ok": True, "columns": columns, "rows": _tsv_dicts(rows, columns)}
+        except Exception as exc:
+            result["sections"][key] = {"ok": False, "columns": columns, "rows": [], "error": str(exc)}
+
+    return result
+
+
+def _sql_literal(value):
+    """Quote a simple SQL literal for generated maintenance scripts."""
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _cheat_type_enum_values():
+    """
+    Return known values from dune.cheat_type_enum.
+
+    The only value observed in borrowed/researched routines so far is
+    negative_solaris, but querying the enum keeps this tool adaptable if the
+    game schema exposes additional ban/cheat categories on a server.
+    """
+    sql = """
+    SELECT e.enumlabel
+    FROM pg_enum e
+    JOIN pg_type t
+        ON t.oid = e.enumtypid
+    JOIN pg_namespace n
+        ON n.oid = t.typnamespace
+    WHERE n.nspname = 'dune'
+      AND t.typname = 'cheat_type_enum'
+    ORDER BY e.enumsortorder;
+    """
+
+    try:
+        rows = _run_psql_tsv(sql, timeout=10)
+        values = [row.strip() for row in rows if row.strip()]
+        return values or ["negative_solaris"]
+    except Exception:
+        return ["negative_solaris"]
+
+
+def developer_ban_lookup(query):
+    """
+    Read cheater-tracking rows for the hidden developer page.
+
+    This is intentionally labeled as ban research instead of a confirmed ban
+    list. IceHunter/DB routines show cheater_tracking and log_cheating, but we
+    have not yet verified that adding/removing these rows reliably bans/unbans
+    a player in every RedBlink/Funcom runtime.
+    """
+    raw_query = (query or "").strip()
+    cleaned_query = re.sub(r"[^A-Za-z0-9_ .@:/#-]", "", raw_query)[:120].strip()
+    filter_sql = ""
+
+    if cleaned_query:
+        safe_query = cleaned_query.replace("'", "''")
+        filter_sql = f"""
+        WHERE (
+            ct.id::text ILIKE '%{safe_query}%'
+            OR ct.fls_id ILIKE '%{safe_query}%'
+            OR ct.cheat_type::text ILIKE '%{safe_query}%'
+            OR a.id::text ILIKE '%{safe_query}%'
+            OR COALESCE(a.funcom_id, '') ILIKE '%{safe_query}%'
+            OR COALESCE(ps.character_name, '') ILIKE '%{safe_query}%'
+        )
+        """
+
+    cheater_columns = [
+        "row_id",
+        "event_time",
+        "fls_id",
+        "cheat_type",
+        "account_id",
+        "funcom_id",
+        "character_name",
+        "online_status",
+    ]
+    cheater_sql = f"""
+    SELECT
+        ct.id::text,
+        ct.event_time::text,
+        ct.fls_id,
+        ct.cheat_type::text,
+        COALESCE(a.id::text, ''),
+        COALESCE(a.funcom_id, ''),
+        COALESCE(ps.character_name, ''),
+        COALESCE(ps.online_status::text, '')
+    FROM dune.cheater_tracking ct
+    LEFT JOIN dune.accounts a
+        ON a."user" = ct.fls_id
+    LEFT JOIN dune.player_state ps
+        ON ps.account_id = a.id
+    {filter_sql}
+    ORDER BY ct.event_time DESC, ct.id DESC
+    LIMIT 100;
+    """
+
+    removal_columns = ["row_id", "event_time", "account_id", "fls_id", "reason"]
+    removal_filter_sql = ""
+    if cleaned_query:
+        safe_query = cleaned_query.replace("'", "''")
+        removal_filter_sql = f"""
+        WHERE (
+            id::text ILIKE '%{safe_query}%'
+            OR account_id::text ILIKE '%{safe_query}%'
+            OR COALESCE(fls_id, '') ILIKE '%{safe_query}%'
+            OR COALESCE(reason, '') ILIKE '%{safe_query}%'
+        )
+        """
+    removal_sql = f"""
+    SELECT
+        id::text,
+        event_time::text,
+        account_id::text,
+        COALESCE(fls_id, ''),
+        COALESCE(reason, '')
+    FROM dune.account_removal_log
+    {removal_filter_sql}
+    ORDER BY event_time DESC, id DESC
+    LIMIT 25;
+    """
+
+    result = {
+        "query": cleaned_query,
+        "cheat_types": _cheat_type_enum_values(),
+        "sections": {},
+    }
+
+    for key, columns, sql in (
+        ("cheater_tracking", cheater_columns, cheater_sql),
+        ("account_removal_log", removal_columns, removal_sql),
+    ):
+        try:
+            rows = _run_psql_tsv(sql, timeout=20)
+            result["sections"][key] = {"ok": True, "columns": columns, "rows": _tsv_dicts(rows, columns)}
+        except Exception as exc:
+            result["sections"][key] = {"ok": False, "columns": columns, "rows": [], "error": str(exc)}
+
+    return result
+
+
+def build_developer_flag_cheater_sql(fls_id, cheat_type):
+    """
+    Build developer-only SQL to add a cheater_tracking row.
+
+    This uses dune.log_cheating instead of pretending a verified ban command
+    exists. Keep it on the Developer page until live ban behavior is confirmed.
+    """
+    safe_fls = str(fls_id).strip()
+    if not safe_fls:
+        raise ValueError("missing FLS ID")
+
+    cheat_types = _cheat_type_enum_values()
+    if cheat_type not in cheat_types:
+        raise ValueError("unknown cheat type")
+
+    return f"""
+BEGIN;
+SELECT dune.log_cheating({_sql_literal(safe_fls)}, {_sql_literal(cheat_type)}::dune.cheat_type_enum);
+
+SELECT
+    'cheater_tracking_row_added' AS status,
+    {_sql_literal(safe_fls)} AS fls_id,
+    {_sql_literal(cheat_type)} AS cheat_type,
+    'Experimental: this may not be a real ban until verified in game.' AS note;
+COMMIT;
+"""
+
+
+def build_developer_unflag_cheater_sql(fls_id="", row_id=""):
+    """
+    Build developer-only SQL to remove cheater_tracking rows.
+
+    Removing rows is the safest currently known "unban" research path, but it
+    only proves the DB row was removed. Game services may cache or enforce bans
+    elsewhere, so the UI keeps this marked experimental.
+    """
+    safe_fls = str(fls_id).strip()
+    safe_row_id = str(row_id).strip()
+
+    clauses = []
+    if safe_fls:
+        clauses.append(f"fls_id = {_sql_literal(safe_fls)}")
+    if safe_row_id:
+        try:
+            clauses.append(f"id = {int(safe_row_id)}")
+        except ValueError as exc:
+            raise ValueError("cheater row ID must be a whole number") from exc
+
+    if not clauses:
+        raise ValueError("enter an FLS ID or cheater row ID to remove")
+
+    where_sql = " OR ".join(clauses)
+
+    return f"""
+BEGIN;
+WITH deleted AS (
+    DELETE FROM dune.cheater_tracking
+    WHERE {where_sql}
+    RETURNING id, event_time, fls_id, cheat_type
+)
+SELECT
+    COUNT(*)::text AS removed_rows,
+    COALESCE(string_agg(id::text, ', ' ORDER BY id), '') AS removed_row_ids,
+    'Experimental: removed cheater_tracking rows only; verify in game.' AS note
+FROM deleted;
+COMMIT;
+"""
 
 
 def get_character_inventories(character_actor_id):
@@ -2579,12 +3100,9 @@ def get_self_character_for_user(username):
         sql,
     ]
 
-    proc = subprocess.run(
+    proc = run_process(
         cmd,
-        capture_output=True,
-        text=True,
         timeout=15,
-        check=False,
     )
 
     if proc.returncode != 0:
@@ -2655,12 +3173,9 @@ def get_vehicles():
     ]
 
     try:
-        proc = subprocess.run(
+        proc = run_process(
             cmd,
-            capture_output=True,
-            text=True,
             timeout=15,
-            check=False,
         )
 
         vehicles = []
@@ -4132,12 +4647,9 @@ def get_teleportable_vehicles():
     ]
 
     try:
-        proc = subprocess.run(
+        proc = run_process(
             cmd,
-            capture_output=True,
-            text=True,
             timeout=15,
-            check=False,
         )
 
         vehicles = []
@@ -4204,12 +4716,9 @@ def get_teleportable_vehicle_actor(actor_id):
         sql,
     ]
 
-    proc = subprocess.run(
+    proc = run_process(
         cmd,
-        capture_output=True,
-        text=True,
         timeout=15,
-        check=False,
     )
 
     if proc.returncode != 0:
@@ -4352,10 +4861,11 @@ def world_to_map_pixels(x, y, map_cfg):
 
 def get_map_markers(map_key=None, partition_id_override=None):
     """
-    Pull live actors with transform data for the selected map.
+    Pull player, vehicle, and base markers with transform data for the selected map.
 
-    Uses actor.transform, not actor.properties. This is the key field
-    that carries live spatial coordinates.
+    Player markers prefer actor.transform, but also check transform-like
+    player_state fields so offline characters can still appear if this server
+    build stores their last location outside the actor row.
     """
     map_key = map_key or DEFAULT_MAP_KEY
     map_cfg = MAP_CONFIGS.get(map_key, MAP_CONFIGS[DEFAULT_MAP_KEY])
@@ -4366,30 +4876,63 @@ def get_map_markers(map_key=None, partition_id_override=None):
         else map_cfg.get("default_partition_id", "")
     ).strip()
     partition_filter = ""
+    player_partition_filter = ""
     if partition_id:
         try:
-            partition_filter = f"AND a.partition_id = {int(partition_id)}"
+            safe_partition_id = int(partition_id)
+            partition_filter = f"AND a.partition_id = {safe_partition_id}"
+            player_partition_filter = f"AND partition_id = '{safe_partition_id}'"
         except ValueError:
             partition_filter = ""
+            player_partition_filter = ""
 
     players_sql = f"""
+    WITH player_locations AS (
+        SELECT
+            COALESCE(ps.player_pawn_id::text, a.id::text, ps.player_state_id::text) AS marker_id,
+            COALESCE(NULLIF(ps.character_name, ''), 'Unknown') AS name,
+            COALESCE(ps.online_status::text, 'Unknown') AS online_status,
+            COALESCE(acc."user", '') AS fls_id,
+            COALESCE(
+                NULLIF(a.map, ''),
+                NULLIF(to_jsonb(ps)->>'map', ''),
+                NULLIF(to_jsonb(ps)->>'current_map', ''),
+                NULLIF(to_jsonb(ps)->>'last_map', '')
+            ) AS map,
+            COALESCE(
+                NULLIF(a.partition_id::text, ''),
+                NULLIF(to_jsonb(ps)->>'partition_id', ''),
+                NULLIF(to_jsonb(ps)->>'current_partition_id', ''),
+                NULLIF(to_jsonb(ps)->>'last_partition_id', '')
+            ) AS partition_id,
+            COALESCE(
+                NULLIF(a.transform::text, ''),
+                NULLIF(to_jsonb(ps)->>'transform', ''),
+                NULLIF(to_jsonb(ps)->>'current_transform', ''),
+                NULLIF(to_jsonb(ps)->>'last_transform', ''),
+                NULLIF(to_jsonb(ps)->>'last_known_transform', '')
+            ) AS transform
+        FROM dune.player_state ps
+        LEFT JOIN dune.actors a
+            ON a.id = ps.player_pawn_id
+        LEFT JOIN dune.accounts acc
+            ON ps.account_id = acc.id
+    )
     SELECT
-        a.id,
-        COALESCE(NULLIF(ps.character_name, ''), 'Unknown') AS name,
-        ps.online_status::text AS online_status,
-        acc."user" AS fls_id,
-        a.map,
-        COALESCE(a.partition_id::text, '') AS partition_id,
-        a.transform::text
-    FROM dune.actors a
-    JOIN dune.player_state ps
-        ON a.id = ps.player_pawn_id
-    LEFT JOIN dune.accounts acc
-        ON ps.account_id = acc.id
-    WHERE a.transform IS NOT NULL
-      AND a.map = '{actor_map}'
-      {partition_filter}
-    ORDER BY ps.character_name;
+        marker_id,
+        name,
+        online_status,
+        fls_id,
+        map,
+        COALESCE(partition_id, '') AS partition_id,
+        transform
+    FROM player_locations
+    WHERE transform IS NOT NULL
+      AND map = '{actor_map}'
+      {player_partition_filter}
+    ORDER BY
+        CASE WHEN online_status = 'Offline' THEN 0 ELSE 1 END,
+        name;
     """
 
     vehicles_sql = f"""
@@ -4432,12 +4975,9 @@ def get_map_markers(map_key=None, partition_id_override=None):
             "-At", "-F", "\t", "-c", sql,
         ]
 
-        proc = subprocess.run(
+        proc = run_process(
             cmd,
-            capture_output=True,
-            text=True,
             timeout=20,
-            check=False,
         )
 
         if proc.returncode != 0:
@@ -4800,6 +5340,10 @@ def start_shell_session(sid):
     pid, fd = pty.fork()
 
     if pid == 0:
+        dune_script_dir = str(DUNE_SCRIPT.parent)
+        os.environ["PATH"] = dune_script_dir + os.pathsep + os.environ.get("PATH", "")
+        if DUNE_ROOT.exists():
+            os.chdir(str(DUNE_ROOT))
         os.execv(shell, [shell])
 
     SHELL_SESSIONS[sid] = {
@@ -4874,6 +5418,29 @@ def bytes_to_human(value):
     return f"{value:.1f} {units[idx]}"
 
 
+def duration_to_human(seconds):
+    """
+    Format a host uptime duration compactly for the dashboard.
+
+    Keep this display short so the metric card remains readable on narrow
+    screens and in the Dockerized build's smaller browser windows.
+    """
+    try:
+        seconds = max(int(seconds), 0)
+    except Exception:
+        return "--"
+
+    days, remainder = divmod(seconds, 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, _ = divmod(remainder, 60)
+
+    if days > 0:
+        return f"{days}d {hours}h {minutes}m"
+    if hours > 0:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+
 def get_system_resource_summary():
     """
     Return host-level resource metrics for the dashboard.
@@ -4889,6 +5456,8 @@ def get_system_resource_summary():
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
         net = psutil.net_io_counters()
+        boot_time = psutil.boot_time()
+        load_1m, load_5m, load_15m = os.getloadavg() if hasattr(os, "getloadavg") else (None, None, None)
 
         rx_rate = 0
         tx_rate = 0
@@ -4917,6 +5486,11 @@ def get_system_resource_summary():
             "disk_percent": round(disk.percent, 1),
             "disk_used": bytes_to_human(disk.used),
             "disk_total": bytes_to_human(disk.total),
+            "load_1m": "--" if load_1m is None else round(load_1m, 2),
+            "load_5m": "--" if load_5m is None else round(load_5m, 2),
+            "load_15m": "--" if load_15m is None else round(load_15m, 2),
+            "host_uptime": duration_to_human(now - boot_time),
+            "updated_at": datetime.now().strftime("%I:%M:%S %p").lstrip("0"),
             "net_sent": bytes_to_human(net.bytes_sent),
             "net_recv": bytes_to_human(net.bytes_recv),
             "net_rx_rate": bytes_to_human(rx_rate) + "/s",
@@ -4940,8 +5514,15 @@ def get_world_summary_counts():
     WITH player_counts AS (
         SELECT
             COUNT(*) AS total_players,
-            COUNT(*) FILTER (WHERE online_status::text <> 'Offline') AS online_players
-        FROM dune.player_state
+            COUNT(*) AS known_players,
+            COUNT(*) FILTER (WHERE ps.online_status::text <> 'Offline') AS online_players,
+            COUNT(*) FILTER (
+                WHERE ps.online_status::text <> 'Offline'
+                  AND fs.server_id IS NOT NULL
+            ) AS live_players
+        FROM dune.player_state ps
+        LEFT JOIN dune.farm_state fs
+            ON fs.server_id = ps.server_id
     ),
     vehicle_counts AS (
         SELECT
@@ -4959,18 +5540,29 @@ def get_world_summary_counts():
         FROM dune.buildings b
         JOIN dune.actors a
             ON a.id = b.id
+    ),
+    partition_counts AS (
+        SELECT
+            COUNT(*) AS world_partitions,
+            COUNT(*) FILTER (WHERE COALESCE(server_id, '') <> '') AS active_servers
+        FROM dune.world_partition
     )
     SELECT
         pc.total_players,
+        pc.known_players,
         pc.online_players,
+        pc.live_players,
         vc.total_vehicles,
         vc.vehicles_hagga_basin,
         vc.vehicles_deep_desert,
         bc.bases_hagga_basin,
-        bc.bases_deep_desert
+        bc.bases_deep_desert,
+        pcnt.world_partitions,
+        pcnt.active_servers
     FROM player_counts pc
     CROSS JOIN vehicle_counts vc
-    CROSS JOIN base_counts bc;
+    CROSS JOIN base_counts bc
+    CROSS JOIN partition_counts pcnt;
     """
 
     cmd = [
@@ -4980,12 +5572,9 @@ def get_world_summary_counts():
     ]
 
     try:
-        proc = subprocess.run(
+        proc = run_process(
             cmd,
-            capture_output=True,
-            text=True,
             timeout=10,
-            check=False,
         )
 
         if proc.returncode != 0:
@@ -4997,7 +5586,7 @@ def get_world_summary_counts():
         line = proc.stdout.strip().splitlines()[0] if proc.stdout.strip() else ""
         parts = line.split("\t")
 
-        if len(parts) < 7:
+        if len(parts) < 11:
             return {
                 "ok": False,
                 "error": "unexpected world count output",
@@ -5006,12 +5595,16 @@ def get_world_summary_counts():
         return {
             "ok": True,
             "total_players": parts[0],
-            "online_players": parts[1],
-            "total_vehicles": parts[2],
-            "vehicles_hagga_basin": parts[3],
-            "vehicles_deep_desert": parts[4],
-            "bases_hagga_basin": parts[5],
-            "bases_deep_desert": parts[6],
+            "known_players": parts[1],
+            "online_players": parts[2],
+            "live_players": parts[3],
+            "total_vehicles": parts[4],
+            "vehicles_hagga_basin": parts[5],
+            "vehicles_deep_desert": parts[6],
+            "bases_hagga_basin": parts[7],
+            "bases_deep_desert": parts[8],
+            "world_partitions": parts[9],
+            "active_servers": parts[10],
         }
 
     except Exception as exc:

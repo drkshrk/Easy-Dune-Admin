@@ -397,7 +397,15 @@ Uses RedBlink v1.3.3 <b>dune admin</b> commands. RabbitMQ publish output means t
 For workflows not buttoned here, use RedBlink's guided <b>dune manager</b> or the Infrastructure shell. This includes stack/game update installation, database import/restore/delete, account transfer plans, and low-level SQL exports.
 </div>
 
-<button type="button" onclick="window.location.href='/infrastructure'">Open Infrastructure / Host Shell</button>
+<button type="button" onclick="window.location.href='/infrastructure'">
+    {% if installation_capabilities.is_linux %}
+    Open Infrastructure / Host Shell
+    {% elif installation_capabilities.is_docker %}
+    Open Infrastructure / Container Shell
+    {% else %}
+    Open Infrastructure Notes
+    {% endif %}
+</button>
 </div>
 {% endif %}
 {% endblock %}

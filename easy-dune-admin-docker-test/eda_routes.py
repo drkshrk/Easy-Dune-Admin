@@ -44,6 +44,9 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
+        installation_mode = request.form.get("installation_mode", DEFAULT_INSTALLATION_MODE).strip().casefold()
+        if installation_mode not in INSTALLATION_MODES:
+            installation_mode = DEFAULT_INSTALLATION_MODE
 
         conn = db()
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
@@ -52,7 +55,8 @@ def login():
         if row and check_password_hash(row["password"], password):
             session["user"] = row["username"]
             session["role"] = row["role"]
-            log_action(username, "logged in")
+            session["installation_mode"] = installation_mode
+            log_action(username, f"logged in using {INSTALLATION_MODES[installation_mode]['label']} mode")
             return redirect("/")
 
     return render_template("login.html")
@@ -436,6 +440,66 @@ def api_online_players():
     return jsonify({"ok": True, "players": players})
 
 
+@app.route("/api/developer-npc-research")
+def api_developer_npc_research():
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    query = request.args.get("q", "").strip()
+
+    try:
+        return jsonify({"ok": True, "research": developer_npc_research(query)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"NPC research lookup failed: {exc}"}), 500
+
+
+@app.route("/api/developer-ban-lookup")
+def api_developer_ban_lookup():
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    query = request.args.get("q", "").strip()
+
+    try:
+        return jsonify({"ok": True, "research": developer_ban_lookup(query)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Ban lookup failed: {exc}"}), 500
+
+
+@app.route("/api/developer-flag-cheater", methods=["POST"])
+def api_developer_flag_cheater():
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    fls_id = request.form.get("fls_id", "").strip()
+    cheat_type = request.form.get("cheat_type", "").strip()
+
+    try:
+        sql = build_developer_flag_cheater_sql(fls_id, cheat_type)
+        output = run_psql_script(sql, timeout=60)
+        log_action(session["user"], f"developer experimental cheater flag {cheat_type} for {fls_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Experimental cheater flag failed: {exc}"}), 500
+
+
+@app.route("/api/developer-unflag-cheater", methods=["POST"])
+def api_developer_unflag_cheater():
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    fls_id = request.form.get("fls_id", "").strip()
+    row_id = request.form.get("row_id", "").strip()
+
+    try:
+        sql = build_developer_unflag_cheater_sql(fls_id=fls_id, row_id=row_id)
+        output = run_psql_script(sql, timeout=60)
+        log_action(session["user"], f"developer experimental cheater unflag fls={fls_id} row={row_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Experimental cheater unflag failed: {exc}"}), 500
+
+
 @app.route("/api/footer-online-users")
 def api_footer_online_users():
     if not logged_in():
@@ -611,6 +675,32 @@ def api_vip_teleport_offline():
 
     except Exception as exc:
         return jsonify({"ok": False, "error": f"VIP teleport failed: {exc}"}), 500
+
+
+@app.route("/api/vip-emergency-return", methods=["POST"])
+def api_vip_emergency_return():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not can_use_vip_tools():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    try:
+        character = get_self_character_for_user(session["user"])
+        if not character.get("fls_id"):
+            return jsonify({"ok": False, "error": "linked character FLS/account ID not found"}), 400
+
+        output = emergency_return_to_hagga_basin(character["fls_id"])
+
+        log_action(
+            session["user"],
+            f"vip emergency return own character {character['character_name']} to Hagga Basin safe point",
+        )
+
+        return jsonify({"ok": True, "output": output})
+
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"VIP emergency return failed: {exc}"}), 500
 
 
 @app.route("/api/vip-give-scout-thopter", methods=["POST"])
@@ -962,6 +1052,9 @@ def api_infra_command():
     if not is_admin():
         return jsonify({"ok": False, "error": "permission denied"}), 403
 
+    if current_installation_capabilities()["is_hyperv"]:
+        return jsonify({"ok": False, "error": "infrastructure diagnostics are hidden in Hyper-V mode; use SSH to the VM"}), 403
+
     if not ENABLE_HOST_COMMAND_RUNNER:
         return jsonify({"ok": False, "error": "host command runner disabled; set ENABLE_HOST_COMMAND_RUNNER=1"}), 403
 
@@ -986,6 +1079,9 @@ def api_installer_step():
 
     if not is_admin():
         return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    if not current_installation_capabilities()["stack_installer"]:
+        return jsonify({"ok": False, "error": "stack installer is available only in Linux Host mode"}), 403
 
     if not ENABLE_STACK_INSTALLER:
         return jsonify({"ok": False, "error": "stack installer disabled; set ENABLE_STACK_INSTALLER=1"}), 403
@@ -2040,6 +2136,21 @@ def api_redblink_admin_command():
     vehicle_id = request.form.get("vehicle_id", "").strip()
     template_name = request.form.get("template_name", "").strip()
     offset = request.form.get("offset", "400").strip()
+    x = request.form.get("x", "").strip()
+    y = request.form.get("y", "").strip()
+    z = request.form.get("z", "").strip()
+    rotation = request.form.get("rotation", "0").strip()
+    module_id = request.form.get("module_id", "").strip()
+    skill_level = request.form.get("skill_level", "").strip()
+    kick_scope = request.form.get("kick_scope", "single").strip()
+    force_kick = request.form.get("force", "").strip() == "1"
+
+    def validate_float_value(raw_value, label):
+        try:
+            float(raw_value)
+        except ValueError as exc:
+            raise ValueError(f"{label} must be a number") from exc
+        return raw_value
 
     if action == "players":
         cmd = [str(DUNE_SCRIPT), "admin", "players"]
@@ -2087,11 +2198,74 @@ def api_redblink_admin_command():
             template_name,
             str(spawn_offset),
         ]
+    elif action == "spawn_vehicle_at":
+        if not player_id:
+            return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+        if vehicle_id not in REDBLINK_VEHICLE_SPAWN_TEMPLATES:
+            return jsonify({"ok": False, "error": "invalid vehicle id"}), 400
+        if template_name not in REDBLINK_VEHICLE_SPAWN_TEMPLATES[vehicle_id]:
+            return jsonify({"ok": False, "error": "invalid template for selected vehicle"}), 400
+        try:
+            valid_x = validate_float_value(x, "X")
+            valid_y = validate_float_value(y, "Y")
+            valid_z = validate_float_value(z, "Z")
+            valid_rotation = validate_float_value(rotation or "0", "Rotation")
+        except ValueError as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 400
+        cmd = [
+            "env",
+            "DUNE_ADMIN_ASSUME_YES=1",
+            str(DUNE_SCRIPT),
+            "admin",
+            "spawn-vehicle-at",
+            player_id,
+            vehicle_id,
+            template_name,
+            valid_x,
+            valid_y,
+            valid_z,
+            valid_rotation,
+        ]
+    elif action == "skill_module":
+        if not player_id:
+            return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+        if not module_id:
+            return jsonify({"ok": False, "error": "missing skill module"}), 400
+        skill_modules = load_redblink_skill_modules()
+        module_by_id = {module["id"]: module for module in skill_modules}
+        if skill_modules and module_id not in module_by_id:
+            return jsonify({"ok": False, "error": "invalid skill module"}), 400
+        try:
+            level = int(skill_level)
+        except ValueError:
+            return jsonify({"ok": False, "error": "skill level must be a whole number"}), 400
+        max_level = module_by_id.get(module_id, {}).get("maxLevel", 100)
+        if level < 0 or level > max_level:
+            return jsonify({"ok": False, "error": f"skill level must be between 0 and {max_level}"}), 400
+        cmd = [
+            "env",
+            "DUNE_ADMIN_ASSUME_YES=1",
+            str(DUNE_SCRIPT),
+            "admin",
+            "skill-module",
+            player_id,
+            module_id,
+            str(level),
+        ]
+    elif action == "kick":
+        if kick_scope == "all_online":
+            cmd = [str(DUNE_SCRIPT), "admin", "kick", "--all-online", "--yes"]
+        else:
+            if not player_id:
+                return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+            cmd = [str(DUNE_SCRIPT), "admin", "kick", player_id, "--yes"]
+            if force_kick:
+                cmd.append("--force")
     else:
         return jsonify({"ok": False, "error": "invalid RedBlink admin action"}), 400
 
     try:
-        input_text = "y\n" if action in ("refill_water", "spawn_vehicle") else None
+        input_text = "y\n" if action in ("refill_water", "spawn_vehicle", "spawn_vehicle_at") else None
         output = run_command(cmd, timeout=120, input_text=input_text)
         log_action(session["user"], f"dune admin {action}")
         return jsonify({"ok": True, "output": output})
@@ -2216,7 +2390,12 @@ def socket_connect():
         disconnect()
         return False
 
-    emit("shell_output", {"data": "[connected to host shell]\n"})
+    if current_installation_mode() == "docker":
+        emit("shell_output", {"data": "[connected to Easy Dune Admin container shell]\n"})
+    elif current_installation_mode() == "hyperv":
+        emit("shell_output", {"data": "[connected to local webadmin shell; use SSH for the Hyper-V VM shell]\n"})
+    else:
+        emit("shell_output", {"data": "[connected to host shell]\n"})
 
 
 @socketio.on("shell_start")

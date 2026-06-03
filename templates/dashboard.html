@@ -128,6 +128,18 @@
     </div>
 
     <div class="metric-card">
+        <div class="metric-title">Load Average</div>
+        <div class="metric-value" id="loadAverage">-- / -- / --</div>
+        <div class="metric-sub">1m / 5m / 15m</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-title">Host Uptime</div>
+        <div class="metric-value" id="hostUptime">--</div>
+        <div class="metric-sub">Updated <span id="metricsUpdatedAt">--</span></div>
+    </div>
+
+    <div class="metric-card">
         <div class="metric-title">Network</div>
         <div class="metric-value">RX <span id="netRxRate">--</span></div>
         <div class="metric-value">TX <span id="netTxRate">--</span></div>
@@ -154,6 +166,24 @@
     <div class="metric-card">
         <div class="metric-title">Online Players</div>
         <div class="metric-value" id="onlinePlayers">--</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-title">Live Players</div>
+        <div class="metric-value" id="livePlayers">--</div>
+        <div class="metric-sub">From dune.farm_state</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-title">Known Players</div>
+        <div class="metric-value" id="knownPlayers">--</div>
+        <div class="metric-sub">Rows in dune.player_state</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-title">World Partitions</div>
+        <div class="metric-value" id="worldPartitions">--</div>
+        <div class="metric-sub">Active servers: <span id="activeServers">--</span></div>
     </div>
 
     <div class="metric-card">
@@ -232,7 +262,13 @@
 
     <div class="card">
         <h2>Infrastructure</h2>
+        {% if installation_capabilities.is_linux %}
         <p>Host diagnostics, RedBlink stack installer, and optional browser shell.</p>
+        {% elif installation_capabilities.is_docker %}
+        <p>Container diagnostics, mounted Docker access, and optional container shell.</p>
+        {% else %}
+        <p>Mode notes for Hyper-V. Use SSH for interactive VM shell workflows.</p>
+        {% endif %}
         <p><a href="/infrastructure">Open Infrastructure</a></p>
     </div>
     {% endif %}
@@ -357,6 +393,10 @@ async function refreshDashboardMetrics() {
             setText("diskDetail", `${system.disk_used} / ${system.disk_total}`);
             setUsage("diskFill", system.disk_percent);
 
+            setText("loadAverage", `${system.load_1m || "--"} / ${system.load_5m || "--"} / ${system.load_15m || "--"}`);
+            setText("hostUptime", system.host_uptime || "--");
+            setText("metricsUpdatedAt", system.updated_at || "--");
+
             setText("netRxRate", system.net_rx_rate || "--");
             setText("netTxRate", system.net_tx_rate || "--");
             setText("netRecvTotal", system.net_recv || "--");
@@ -371,6 +411,10 @@ async function refreshDashboardMetrics() {
 
             setText("totalPlayers", world.total_players);
             setText("onlinePlayers", world.online_players);
+            setText("livePlayers", world.live_players);
+            setText("knownPlayers", world.known_players);
+            setText("worldPartitions", world.world_partitions);
+            setText("activeServers", world.active_servers);
             setText("totalVehicles", world.total_vehicles);
             setText("haggaVehicles", world.vehicles_hagga_basin);
             setText("deepDesertVehicles", world.vehicles_deep_desert);

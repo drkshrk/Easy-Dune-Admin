@@ -7,13 +7,13 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.3-beta
+Panel version: 0.7.5-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
 Python: 3.11+
 
-This beta is intended for private/LAN/VPN-hosted self-hosted servers.
+This alpha is intended for private/LAN/VPN-hosted self-hosted servers.
 
 Easy Dune Admin is an independent webadmin project built to support RedBlink's
 MIT-licensed dune-awakening-selfhost-docker stack:
@@ -58,6 +58,7 @@ Live Maps:
 - Deep Desert map support
 - Configurable map instances for multi-sietch / dual Deep Desert setups
 - Player/vehicle/base markers
+- Offline character markers render purple so they are distinct from online players
 - Mouse-wheel zoom
 - Drag panning
 - Click-to-fill teleport coordinates
@@ -194,6 +195,9 @@ Server Management:
   - dune admin player-location
   - dune admin refill-water
   - dune admin spawn-vehicle
+  - dune admin spawn-vehicle-at
+  - dune admin skill-module
+  - dune admin kick
   - dune admin vehicle-list
   - dune admin item-search
   - dune admin history
@@ -294,6 +298,19 @@ Override with:
 
 export DUNE_ROOT=/path/to/dune-awakening-selfhost-docker
 
+Login installation profile:
+
+Easy Dune Admin now has a login switch for Linux Host, RedBlink Docker
+Container, and experimental Hyper-V via SSH operation. Linux Host and RedBlink
+Docker Container run commands locally. Hyper-V via SSH runs those same
+RedBlink/Docker commands through SSH on the Linux VM.
+
+export EASY_DUNE_DEFAULT_INSTALL_MODE=linux
+export EASY_DUNE_HYPERV_SSH_TARGET='steam@192.168.1.50'
+export EASY_DUNE_HYPERV_DUNE_ROOT=/home/steam/dune-awakening-selfhost-docker
+
+Leave the Hyper-V values unset unless you are using the Hyper-V profile.
+
 Set a real secret before sharing or deploying:
 
 export DUNE_SECRET_KEY='long-random-string'
@@ -330,6 +347,15 @@ An experimental Dockerized Easy Dune Admin package is included at:
 It runs Easy Dune Admin in a container while mounting the host RedBlink stack
 directory and Docker socket. This is currently a preview path for testing, not
 yet the recommended install method.
+
+Docker webadmin state is stored in the named Docker volume
+easy-dune-admin-data at /data, including /data/users.db and /data/logs.
+Rebuilding the image should preserve users and roles as long as that volume is
+not removed. Avoid:
+
+  docker compose -f docker-compose.test.yml down -v
+
+unless you intentionally want to reset the webadmin database.
 
 See:
 
@@ -404,7 +430,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.3-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.5-alpha
 
 Preserve local runtime data:
 
@@ -450,11 +476,10 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.3-beta: RedBlink v1.3.3 support expands Server
-Management with battlegroup readiness, autoscaler, Sietches, memory, update
-checks, restart schedule status, selected dune admin helpers, Admin Panel
-water-container refill/player-location/vehicle-spawn utilities, and VIP
-self-only water-container refill.
+Current highlight for 0.7.5-alpha: RedBlink v1.3.3 support expands Admin
+Panel helpers with skill-module level setting, kick controls, coordinate-based
+vehicle spawning, and purple offline-character map markers while keeping the
+existing Server Management, market, VIP, and Docker-preview tooling.
 
 Looking ahead: faction manipulation tools are a likely 0.7.1 focus after
 faction membership and the related database state can be captured and tested

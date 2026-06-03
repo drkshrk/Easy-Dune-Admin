@@ -38,10 +38,14 @@
 
 .ornithopter-marker {
     position: absolute;
-    width: 14px;
-    height: 14px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     border: 2px solid #000;
+    box-sizing: border-box;
+    padding: 0;
+    line-height: 0;
+    appearance: none;
     background: #71d36b;
     box-shadow: 0 0 12px #71d36b;
     transform: translate(-50%, -50%);
@@ -50,8 +54,8 @@
 }
 
 .ornithopter-marker:hover {
-    width: 18px;
-    height: 18px;
+    width: 11px;
+    height: 11px;
     z-index: 10;
 }
 
@@ -73,6 +77,35 @@
     margin: 0;
 }
 
+.inventory-browser-table-wrap {
+    max-height: 420px;
+    overflow: auto;
+    border: 1px solid #222;
+    background: #070707;
+    margin-top: 10px;
+}
+
+.inventory-browser-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.inventory-browser-table th,
+.inventory-browser-table td {
+    border-bottom: 1px solid #242424;
+    padding: 7px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.inventory-browser-table th {
+    color: #d8c08a;
+    background: #090909;
+    position: sticky;
+    top: 0;
+}
+
 .admin-main-layout {
     display: grid;
     grid-template-columns: minmax(480px, 1fr) minmax(520px, 1fr);
@@ -92,14 +125,14 @@
 
 .admin-tool-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
     align-items: start;
 }
 
 .admin-tool-grid form {
     border: 1px solid #222;
-    padding: 12px;
+    padding: 10px;
     background: #060606;
 }
 
@@ -211,6 +244,52 @@ Use this for uniques or stubborn items the bulk pass misses. Pick a character, t
 
     <button type="submit">Overrepair Selected Item</button>
 </form>
+
+<h3>Inventory Browser</h3>
+<div class="warning">
+Read-only inventory lookup. Pick a character, then select any discovered inventory row to inspect its item rows, positions, stack sizes, quality levels, and durability values. Inventory names are pulled from the database when available and may fall back to inventory IDs.
+</div>
+
+<form id="inventoryBrowserForm">
+    <label>Character</label>
+    <select id="inventoryBrowserCharacterSelect" onchange="fillInventoryBrowserCharacterFields()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <div class="field-grid">
+    <div>
+    <label>Character Actor ID</label>
+    <input type="text" id="inventoryBrowserActorId" placeholder="Example: 6" onchange="loadInventoryBrowserInventories()">
+    </div>
+
+    <div>
+    <label>Inventory</label>
+    <select id="inventoryBrowserInventorySelect" onchange="loadInventoryBrowserItems()">
+        <option value="">Select a character first...</option>
+    </select>
+    </div>
+    </div>
+</form>
+
+<div class="coord-box" id="inventoryBrowserSummary">
+    Select a character to inspect inventories.
+</div>
+
+<div class="inventory-browser-table-wrap" id="inventoryBrowserTableWrap" style="display:none;">
+    <table class="inventory-browser-table">
+        <thead>
+            <tr>
+                <th>Pos</th>
+                <th>Row ID</th>
+                <th>Template</th>
+                <th>Stack</th>
+                <th>QL</th>
+                <th>Durability</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryBrowserTableBody"></tbody>
+    </table>
+</div>
 </div>
 
 <div class="box">
@@ -484,6 +563,54 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
     <button type="submit">Spawn Vehicle In Front</button>
 </form>
 
+<form id="redblinkSpawnVehicleAtForm">
+    <div class="warning">
+        RedBlink v1.3.3 helper. Spawns a selected vehicle template at explicit coordinates using <b>dune admin spawn-vehicle-at</b>. Use the Vehicle Live Map below to double-click a target and populate X/Y. Z is not terrain-aware, so overestimate altitude first.
+    </div>
+
+    <label>Character</label>
+    <select id="redblinkVehicleAtCharacterSelect" onchange="fillRedblinkVehicleAtPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="redblinkVehicleAtPlayerId" required>
+
+    <label>Vehicle</label>
+    <select name="vehicle_id" id="redblinkVehicleAtId" onchange="populateRedblinkVehicleAtTemplates()" required>
+        {% for vehicle_id in redblink_vehicle_spawn_templates.keys() %}
+        <option value="{{ vehicle_id }}">{{ vehicle_id }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Template</label>
+    <select name="template_name" id="redblinkVehicleAtTemplate" required>
+        <option value="">Select a vehicle first...</option>
+    </select>
+
+    <div class="field-grid">
+    <div>
+    <label>X</label>
+    <input type="text" name="x" id="redblinkVehicleAtX" required>
+    </div>
+    <div>
+    <label>Y</label>
+    <input type="text" name="y" id="redblinkVehicleAtY" required>
+    </div>
+    <div>
+    <label>Z</label>
+    <input type="text" name="z" id="redblinkVehicleAtZ" value="1500" required>
+    </div>
+    <div>
+    <label>Rotation</label>
+    <input type="text" name="rotation" id="redblinkVehicleAtRotation" value="0" required>
+    </div>
+    </div>
+
+    <input type="hidden" name="action" value="spawn_vehicle_at">
+    <button type="submit">Spawn Vehicle At Coordinates</button>
+</form>
+
 <form id="redblinkPlayerLocationForm">
     <div class="warning">
         Quick RedBlink lookup for an online player's current location. Useful before spawning vehicles or verifying where a player is standing.
@@ -499,6 +626,68 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
 
     <input type="hidden" name="action" value="player_location">
     <button type="submit">Lookup Player Location</button>
+</form>
+
+<form id="redblinkSkillModuleForm">
+    <div class="warning">
+        RedBlink v1.3.3 helper. Sets one skill module level for a selected player using <b>dune admin skill-module</b>. This calls RedBlink's command wrapper; relogging may be required before the client reflects the change.
+    </div>
+
+    <label>Character</label>
+    <select id="redblinkSkillModuleCharacterSelect" onchange="fillRedblinkSkillModulePlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="redblinkSkillModulePlayerId" required>
+
+    <label>Skill Module</label>
+    <select name="module_id" id="redblinkSkillModuleId" onchange="syncRedblinkSkillModuleLevel()" required>
+        {% if redblink_skill_modules %}
+            {% for module in redblink_skill_modules %}
+            <option value="{{ module.id }}" data-max-level="{{ module.maxLevel }}">
+                {{ module.category }} - {{ module.name }} ({{ module.id }}, max {{ module.maxLevel }})
+            </option>
+            {% endfor %}
+        {% else %}
+            <option value="">RedBlink skill-module catalog not found</option>
+        {% endif %}
+    </select>
+
+    <label>Level</label>
+    <input type="number" name="skill_level" id="redblinkSkillModuleLevel" min="0" max="1" step="1" value="1" required>
+
+    <input type="hidden" name="action" value="skill_module">
+    <button type="submit">Set Skill Module Level</button>
+</form>
+
+<form id="redblinkKickForm">
+    <div class="warning">
+        RedBlink v1.3.3 helper. Kicks one selected player, or every currently online player. Use force only for stuck/offline edge cases where RedBlink refuses a normal kick.<br><br>
+        Ban/cheater flag research is hidden on the Developer page until a working ban and unban path is verified.
+    </div>
+
+    <label>Scope</label>
+    <select name="kick_scope" id="redblinkKickScope" onchange="syncRedblinkKickScope()">
+        <option value="single">Selected player</option>
+        <option value="all_online">All online players</option>
+    </select>
+
+    <label>Character</label>
+    <select id="redblinkKickCharacterSelect" onchange="fillRedblinkKickPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="redblinkKickPlayerId" required>
+
+    <label class="admin-inline-check">
+        <input type="checkbox" name="force" value="1">
+        <span>Force kick selected player</span>
+    </label>
+
+    <input type="hidden" name="action" value="kick">
+    <button type="submit">Run Kick Command</button>
 </form>
 
 <form id="characterXpForm">
@@ -750,6 +939,9 @@ loadCharactersForAdminPage();
 loadVehiclesForAdminPage();
 loadOrnithoptersForAdminPage();
 populateRedblinkVehicleTemplates();
+populateRedblinkVehicleAtTemplates();
+syncRedblinkSkillModuleLevel();
+syncRedblinkKickScope();
 wireOrnithopterAdminMapControls();
 loadMarketExchanges();
 loadMarketPresetPreview();
@@ -778,6 +970,12 @@ overrepairItemForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/overrepair-item", overrepairItemForm);
+});
+
+const inventoryBrowserForm = document.getElementById("inventoryBrowserForm");
+inventoryBrowserForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    loadInventoryBrowserItems();
 });
 
 const lasgunBundleForm = document.getElementById("lasgunBundleForm");
@@ -816,10 +1014,55 @@ redblinkSpawnVehicleForm.addEventListener("submit", async function(event) {
     await postForm("/api/redblink-admin-command", redblinkSpawnVehicleForm);
 });
 
+const redblinkSpawnVehicleAtForm = document.getElementById("redblinkSpawnVehicleAtForm");
+redblinkSpawnVehicleAtForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const vehicle = document.getElementById("redblinkVehicleAtId").value || "";
+    const template = document.getElementById("redblinkVehicleAtTemplate").value || "";
+    const x = document.getElementById("redblinkVehicleAtX").value || "";
+    const y = document.getElementById("redblinkVehicleAtY").value || "";
+    const z = document.getElementById("redblinkVehicleAtZ").value || "";
+    if (!confirm(`Spawn ${vehicle} / ${template} at X ${x}, Y ${y}, Z ${z}? Overestimate Z if terrain height is uncertain.`)) {
+        return;
+    }
+
+    await postForm("/api/redblink-admin-command", redblinkSpawnVehicleAtForm);
+});
+
 const redblinkPlayerLocationForm = document.getElementById("redblinkPlayerLocationForm");
 redblinkPlayerLocationForm.addEventListener("submit", async function(event) {
     event.preventDefault();
     await postForm("/api/redblink-admin-command", redblinkPlayerLocationForm);
+});
+
+const redblinkSkillModuleForm = document.getElementById("redblinkSkillModuleForm");
+redblinkSkillModuleForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const moduleSelect = document.getElementById("redblinkSkillModuleId");
+    const moduleLabel = moduleSelect && moduleSelect.selectedOptions.length ? moduleSelect.selectedOptions[0].textContent.trim() : "selected module";
+    const level = document.getElementById("redblinkSkillModuleLevel").value || "0";
+    if (!confirm(`Set ${moduleLabel} to level ${level} for this player? Relog may be required.`)) {
+        return;
+    }
+
+    await postForm("/api/redblink-admin-command", redblinkSkillModuleForm);
+});
+
+const redblinkKickForm = document.getElementById("redblinkKickForm");
+redblinkKickForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const scope = document.getElementById("redblinkKickScope").value || "single";
+    const message = scope === "all_online"
+        ? "Kick every online player now?"
+        : "Kick the selected player now?";
+    if (!confirm(message)) {
+        return;
+    }
+
+    await postForm("/api/redblink-admin-command", redblinkKickForm);
 });
 
 const characterXpForm = document.getElementById("characterXpForm");
@@ -891,7 +1134,7 @@ exchangeBankSolariAddForm.addEventListener("submit", async function(event) {
 
     const controllerId = document.getElementById("exchangeBankSolariAddControllerId").value || "";
     if (!controllerId.trim()) {
-        showOutput("Select a character or enter a Player Controller ID before editing Solari Credit.", true);
+        showOutput("Select a character or enter a Player Controller ID before editing Solari Credit.", exchangeBankSolariAddForm);
         return;
     }
 
@@ -911,7 +1154,7 @@ exchangeBankSolariSetForm.addEventListener("submit", async function(event) {
 
     const controllerId = document.getElementById("exchangeBankSolariSetControllerId").value || "";
     if (!controllerId.trim()) {
-        showOutput("Select a character or enter a Player Controller ID before editing Solari Credit.", true);
+        showOutput("Select a character or enter a Player Controller ID before editing Solari Credit.", exchangeBankSolariSetForm);
         return;
     }
 
@@ -1104,7 +1347,7 @@ vehicleDeleteForm.addEventListener("submit", async function(event) {
 
     const typed = prompt(`Delete this vehicle actor from the database?\n\n${label}\n\nA running map may need a restart before the object disappears in-game.\n\nType DELETE to continue.`);
     if (typed !== "DELETE") {
-        showOutput("Vehicle delete cancelled.");
+        showOutput("Vehicle delete cancelled.", vehicleDeleteForm);
         return;
     }
 

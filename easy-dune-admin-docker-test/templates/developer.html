@@ -2,6 +2,46 @@
 
 {% block title %}Developer Tools{% endblock %}
 
+{% block head_extra %}
+<style>
+.developer-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.developer-result-card {
+    border: 1px solid #222;
+    background: #060606;
+    padding: 12px;
+    overflow: auto;
+}
+
+.developer-result-card h3 {
+    margin-top: 0;
+}
+
+.developer-result-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.developer-result-card th,
+.developer-result-card td {
+    border-bottom: 1px solid #252525;
+    padding: 6px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.developer-result-card th {
+    color: #d8c08a;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>Developer Tools</h1>
 
@@ -214,6 +254,74 @@ Experimental journey presets edit journey story-node completion state. Use for t
 </div>
 
 <div class="box">
+<h2>NPC / Encounter Research Framework</h2>
+<div class="warning">
+Research-only and read-only. Current investigation found no confirmed NPC spawn command and no persistent combat NPC actor pattern. Use this panel to search actor classes, actor spawners, static encounters, event logs, and game events while looking for a future supported spawn path. Do not add a spawn button until a real command or live actor pattern is confirmed.
+</div>
+
+<form id="npcResearchForm">
+    <label>Search Terms</label>
+    <input type="text" name="q" id="npcResearchQuery" value="npc raider sardaukar sandflies ghola encounter spawn ai">
+    <button type="submit">Search NPC / Encounter Clues</button>
+</form>
+
+<div class="coord-box" id="npcResearchSummary">
+    No NPC research query has run yet.
+</div>
+
+<div class="developer-results" id="npcResearchResults"></div>
+</div>
+
+<div class="box">
+<h2>Ban / Cheater Flag Research</h2>
+<div class="warning">
+Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</b>, the only ban-adjacent path currently found in the public/researched DB routines. Flagging may or may not behave as a real ban. Unflagging removes cheater-tracking rows only, and a relog, map restart, or battlegroup restart may still be required.
+</div>
+
+<form id="banLookupForm">
+    <label>Banned / Flagged Player Lookup</label>
+    <input type="text" name="q" id="banLookupQuery" placeholder="FLS ID, Funcom ID, character, row id, or cheat type">
+    <button type="submit">Lookup Banned / Flagged Players</button>
+</form>
+
+<div class="coord-box" id="banLookupSummary">
+    No ban lookup has run yet.
+</div>
+
+<div class="developer-results" id="banLookupResults"></div>
+
+<form id="flagCheaterForm">
+    <div class="warning">
+        Research-only flag test. This calls the database log_cheating routine and inserts a cheater_tracking row. Keep this off normal Admin until actual kick/ban behavior is proven.
+    </div>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="fls_id" id="flagCheaterFlsId" required>
+
+    <label>Cheat / Ban Type</label>
+    <select name="cheat_type" id="flagCheaterType">
+        <option value="negative_solaris">negative_solaris</option>
+    </select>
+
+    <button type="submit">Experimental Flag / Ban Test</button>
+</form>
+
+<form id="unflagCheaterForm">
+    <div class="warning">
+        Experimental unban/unflag path. Enter either an FLS ID to remove all of that player's cheater_tracking rows, or one cheater row ID to remove a single row.
+    </div>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="fls_id" id="unflagCheaterFlsId">
+
+    <label>Cheater Row ID</label>
+    <input type="text" name="row_id" id="unflagCheaterRowId">
+
+    <button type="submit">Remove Cheater Tracking Rows</button>
+</form>
+</div>
+
+<div class="box">
 <h2>Output</h2>
 <pre id="actionOutput">Developer tool output will appear here.</pre>
 </div>
@@ -237,6 +345,152 @@ async function loadDeveloperCharacters() {
 }
 
 loadDeveloperCharacters();
+
+function renderDeveloperResultSection(name, section) {
+    const rows = section.rows || [];
+    const columns = section.columns || [];
+
+    if (!section.ok) {
+        return `
+            <div class="developer-result-card">
+                <h3>${escapeHtml(name)}</h3>
+                <div class="warning">${escapeHtml(section.error || "Lookup failed.")}</div>
+            </div>
+        `;
+    }
+
+    if (rows.length === 0) {
+        return `
+            <div class="developer-result-card">
+                <h3>${escapeHtml(name)}</h3>
+                <p>No matching rows.</p>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="developer-result-card">
+            <h3>${escapeHtml(name)} (${rows.length})</h3>
+            <table>
+                <thead>
+                    <tr>${columns.map(column => `<th>${escapeHtml(column)}</th>`).join("")}</tr>
+                </thead>
+                <tbody>
+                    ${rows.map(row => `
+                        <tr>
+                            ${columns.map(column => `<td>${escapeHtml(row[column] || "")}</td>`).join("")}
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+async function runNpcResearch() {
+    const query = document.getElementById("npcResearchQuery").value || "";
+    const summary = document.getElementById("npcResearchSummary");
+    const results = document.getElementById("npcResearchResults");
+
+    summary.textContent = "Searching known NPC/encounter research tables...";
+    results.innerHTML = "";
+
+    try {
+        const response = await fetch(`/api/developer-npc-research?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        if (!data.ok) {
+            throw new Error(data.error || "NPC research lookup failed.");
+        }
+
+        const research = data.research || {};
+        const sections = research.sections || {};
+        summary.textContent = `Terms searched: ${(research.terms || []).join(", ")}`;
+        results.innerHTML = Object.entries(sections)
+            .map(([name, section]) => renderDeveloperResultSection(name, section))
+            .join("");
+    } catch (error) {
+        summary.innerHTML = `<span class="status-bad">${escapeHtml(error.message)}</span>`;
+    }
+}
+
+const npcResearchForm = document.getElementById("npcResearchForm");
+npcResearchForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    await runNpcResearch();
+});
+
+function updateCheatTypeSelect(types) {
+    const select = document.getElementById("flagCheaterType");
+    const values = Array.isArray(types) && types.length ? types : ["negative_solaris"];
+    select.innerHTML = values
+        .map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
+        .join("");
+}
+
+async function runBanLookup() {
+    const query = document.getElementById("banLookupQuery").value || "";
+    const summary = document.getElementById("banLookupSummary");
+    const results = document.getElementById("banLookupResults");
+
+    summary.textContent = "Looking up cheater-tracking rows...";
+    results.innerHTML = "";
+
+    try {
+        const response = await fetch(`/api/developer-ban-lookup?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        if (!data.ok) {
+            throw new Error(data.error || "Ban lookup failed.");
+        }
+
+        const research = data.research || {};
+        const sections = research.sections || {};
+        updateCheatTypeSelect(research.cheat_types || []);
+        summary.textContent = `Query: ${research.query || "(all recent rows)"} | Cheat types: ${(research.cheat_types || []).join(", ") || "unknown"}`;
+        results.innerHTML = Object.entries(sections)
+            .map(([name, section]) => renderDeveloperResultSection(name, section))
+            .join("");
+    } catch (error) {
+        summary.innerHTML = `<span class="status-bad">${escapeHtml(error.message)}</span>`;
+    }
+}
+
+const banLookupForm = document.getElementById("banLookupForm");
+banLookupForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    await runBanLookup();
+});
+
+const flagCheaterForm = document.getElementById("flagCheaterForm");
+flagCheaterForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const flsId = document.getElementById("flagCheaterFlsId").value || "";
+    const cheatType = document.getElementById("flagCheaterType").value || "";
+    if (!confirm(`Experimentally flag ${flsId} as ${cheatType}? This is not a verified ban command. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/developer-flag-cheater", flagCheaterForm);
+    await runBanLookup();
+});
+
+const unflagCheaterForm = document.getElementById("unflagCheaterForm");
+unflagCheaterForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const flsId = document.getElementById("unflagCheaterFlsId").value || "";
+    const rowId = document.getElementById("unflagCheaterRowId").value || "";
+    if (!flsId && !rowId) {
+        showOutput("Enter an FLS ID or a cheater row ID before removing cheater-tracking rows.", unflagCheaterForm);
+        return;
+    }
+    if (!confirm(`Remove cheater-tracking row(s) for ${flsId || `row ${rowId}`}? This only removes database tracking rows. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/developer-unflag-cheater", unflagCheaterForm);
+    await runBanLookup();
+});
 
 const classProgressionForm = document.getElementById("classProgressionForm");
 classProgressionForm.addEventListener("submit", async function(event) {

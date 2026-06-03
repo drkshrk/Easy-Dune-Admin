@@ -6,9 +6,10 @@ Repository: https://github.com/Red-Blink/dune-awakening-selfhost-docker
 
 Easy Dune Admin is designed as a companion panel for RedBlink's MIT-licensed
 `dune-awakening-selfhost-docker` stack and calls its wrapper/admin commands for
-supported server operations and item grants. Easy Dune Admin is an independent
-project developed with RedBlink's blessing/request for a fuller webadmin, while
-crediting RedBlink's stack, scripts, and command workflows where used.
+supported server operations, item grants, skill-module commands, kick commands,
+and vehicle spawn helpers. Easy Dune Admin is an independent project developed
+with RedBlink's blessing/request for a fuller webadmin, while crediting
+RedBlink's stack, scripts, catalogs, and command workflows where used.
 
 Copyright (c) 2026 RedBlink
 

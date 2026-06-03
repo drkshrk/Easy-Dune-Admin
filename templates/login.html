@@ -29,6 +29,17 @@
 <form method="post">
     <input name="username" placeholder="Username">
     <input type="password" name="password" placeholder="Password">
+    <label for="installationMode">Server Installation</label>
+    <select id="installationMode" name="installation_mode">
+        {% for mode_id, mode in installation_modes.items() %}
+        <option value="{{ mode_id }}" {% if mode_id == default_installation_mode %}selected{% endif %}>
+            {{ mode.label }}
+        </option>
+        {% endfor %}
+    </select>
+    <div class="warning">
+        Linux Host and RedBlink Docker Container use local commands. Hyper-V via SSH is experimental and requires EASY_DUNE_HYPERV_SSH_TARGET on the webadmin host.
+    </div>
     <button>Login</button>
 </form>
 </div>

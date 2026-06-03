@@ -9,9 +9,31 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-function showOutput(text) {
+function showOutput(text, sourceElement = null) {
     const output = document.getElementById("actionOutput");
-    if (!output) return;
+    if (output) {
+        output.style.display = "block";
+        output.textContent = text;
+    }
+
+    if (sourceElement && sourceElement instanceof Element) {
+        showLocalOutput(sourceElement, text);
+    }
+}
+
+function showLocalOutput(form, text) {
+    if (!form) return;
+
+    const panel = form.closest(".box, .card, .map-panel, .selected");
+    if (!panel) return;
+
+    let output = panel.querySelector(":scope > .local-action-output");
+    if (!output) {
+        output = document.createElement("div");
+        output.className = "msg local-action-output";
+        panel.appendChild(output);
+    }
+
     output.style.display = "block";
     output.textContent = text;
 }
@@ -27,11 +49,15 @@ async function postForm(endpoint, form) {
     const json = await response.json();
 
     if (!json.ok) {
-        showOutput(json.error || "Action failed.");
+        const message = json.error || "Action failed.";
+        showOutput(message);
+        showLocalOutput(form, message);
         return;
     }
 
-    showOutput(json.output || "Action completed.");
+    const message = json.output || "Action completed.";
+    showOutput(message);
+    showLocalOutput(form, message);
 }
 
 function wireAjaxForms() {
@@ -200,10 +226,14 @@ async function loadCharactersForAdminPage() {
     const chars = await fetchCharacters(true);
     fillCharacterSelect("overrepairCharacterSelect", chars);
     fillCharacterSelect("overrepairItemCharacterSelect", chars);
+    fillCharacterSelect("inventoryBrowserCharacterSelect", chars);
     fillCharacterSelect("lasgunCharacterSelect", chars);
     fillCharacterSelect("redblinkWaterCharacterSelect", chars);
     fillCharacterSelect("redblinkVehicleCharacterSelect", chars);
+    fillCharacterSelect("redblinkVehicleAtCharacterSelect", chars);
     fillCharacterSelect("redblinkLocationCharacterSelect", chars);
+    fillCharacterSelect("redblinkSkillModuleCharacterSelect", chars);
+    fillCharacterSelect("redblinkKickCharacterSelect", chars);
     fillCharacterSelect("researchCharacterSelect", chars);
     fillCharacterSelect("characterXpCharacterSelect", chars);
     fillCharacterSelect("characterLevelCharacterSelect", chars);
@@ -367,6 +397,151 @@ async function loadOverrepairInventoryItems() {
     }
 }
 
+function resetInventoryBrowser(inventoryMessage = "Select a character first...", summaryMessage = "Select a character to inspect inventories.") {
+    const inventorySelect = document.getElementById("inventoryBrowserInventorySelect");
+    const summary = document.getElementById("inventoryBrowserSummary");
+    const tableWrap = document.getElementById("inventoryBrowserTableWrap");
+    const tbody = document.getElementById("inventoryBrowserTableBody");
+
+    if (inventorySelect) {
+        inventorySelect.innerHTML = `<option value="">${escapeHtml(inventoryMessage)}</option>`;
+    }
+    if (summary) {
+        summary.textContent = summaryMessage;
+    }
+    if (tbody) {
+        tbody.innerHTML = "";
+    }
+    if (tableWrap) {
+        tableWrap.style.display = "none";
+    }
+}
+
+async function fillInventoryBrowserCharacterFields() {
+    const sel = document.getElementById("inventoryBrowserCharacterSelect");
+    const actorInput = document.getElementById("inventoryBrowserActorId");
+    const c = latestCharacters[Number(sel.value)];
+
+    if (!c) {
+        if (actorInput) actorInput.value = "";
+        resetInventoryBrowser();
+        return;
+    }
+
+    if (actorInput) actorInput.value = c.character_actor_id || "";
+    await loadInventoryBrowserInventories();
+}
+
+async function loadInventoryBrowserInventories() {
+    const actorInput = document.getElementById("inventoryBrowserActorId");
+    const inventorySelect = document.getElementById("inventoryBrowserInventorySelect");
+    const summary = document.getElementById("inventoryBrowserSummary");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+
+    if (!inventorySelect || !actorId) {
+        resetInventoryBrowser();
+        return;
+    }
+
+    inventorySelect.innerHTML = `<option value="">Loading inventories...</option>`;
+    if (summary) summary.textContent = "Loading character inventories...";
+
+    try {
+        const response = await fetch(`/api/character-inventories?character_actor_id=${encodeURIComponent(actorId)}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            resetInventoryBrowser(data.error || "Inventory lookup failed.", data.error || "Inventory lookup failed.");
+            return;
+        }
+
+        const inventories = data.inventories || [];
+        if (inventories.length === 0) {
+            resetInventoryBrowser("No inventories found.", "No inventories found for this character.");
+            return;
+        }
+
+        inventorySelect.innerHTML = `<option value="">Select an inventory...</option>`;
+        inventories.forEach(inv => {
+            const opt = document.createElement("option");
+            opt.value = inv.inventory_id || "";
+            opt.textContent = `${inv.inventory_label || "Inventory"} | ID ${inv.inventory_id || ""} | Items ${inv.item_count || "0"}`;
+            inventorySelect.appendChild(opt);
+        });
+
+        if (summary) {
+            summary.textContent = `${inventories.length} inventor${inventories.length === 1 ? "y" : "ies"} found. Select one to list items.`;
+        }
+    } catch (err) {
+        resetInventoryBrowser("Inventory lookup failed.", "Inventory lookup failed.");
+    }
+}
+
+async function loadInventoryBrowserItems() {
+    const actorInput = document.getElementById("inventoryBrowserActorId");
+    const inventorySelect = document.getElementById("inventoryBrowserInventorySelect");
+    const summary = document.getElementById("inventoryBrowserSummary");
+    const tableWrap = document.getElementById("inventoryBrowserTableWrap");
+    const tbody = document.getElementById("inventoryBrowserTableBody");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+    const inventoryId = inventorySelect ? inventorySelect.value.trim() : "";
+    const inventoryLabel = inventorySelect && inventorySelect.selectedOptions.length
+        ? inventorySelect.selectedOptions[0].textContent
+        : "";
+
+    if (!actorId || !inventoryId || !tbody) {
+        if (summary) summary.textContent = "Select an inventory to list items.";
+        if (tableWrap) tableWrap.style.display = "none";
+        return;
+    }
+
+    tbody.innerHTML = "";
+    if (tableWrap) tableWrap.style.display = "none";
+    if (summary) summary.textContent = "Loading inventory items...";
+
+    try {
+        const url = `/api/character-inventory-items?character_actor_id=${encodeURIComponent(actorId)}&inventory_id=${encodeURIComponent(inventoryId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.ok) {
+            if (summary) summary.textContent = data.error || "Item lookup failed.";
+            return;
+        }
+
+        const items = data.items || [];
+        if (summary) {
+            summary.textContent = `${inventoryLabel || `Inventory ${inventoryId}`}: ${items.length} item row(s).`;
+        }
+
+        if (items.length === 0) {
+            if (tableWrap) tableWrap.style.display = "none";
+            return;
+        }
+
+        tbody.innerHTML = items.map(item => {
+            const durability = item.current_durability
+                ? `${item.current_durability}/${item.max_durability || item.decayed_max_durability || "?"}`
+                : "No current durability";
+            return `
+                <tr>
+                    <td>${escapeHtml(item.position_index || "")}</td>
+                    <td>${escapeHtml(item.item_row_id || "")}</td>
+                    <td>${escapeHtml(item.template_id || "")}</td>
+                    <td>${escapeHtml(item.stack_size || "")}</td>
+                    <td>${escapeHtml(item.quality_level || "")}</td>
+                    <td>${escapeHtml(durability)}</td>
+                </tr>
+            `;
+        }).join("");
+
+        if (tableWrap) tableWrap.style.display = "block";
+    } catch (err) {
+        if (summary) summary.textContent = "Item lookup failed.";
+        if (tableWrap) tableWrap.style.display = "none";
+    }
+}
+
 function fillLasgunPlayerId() {
     const sel = document.getElementById("lasgunCharacterSelect");
     const input = document.getElementById("lasgunPlayerId");
@@ -388,9 +563,30 @@ function fillRedblinkVehiclePlayerId() {
     if (input && c) input.value = c.fls_id || "";
 }
 
+function fillRedblinkVehicleAtPlayerId() {
+    const sel = document.getElementById("redblinkVehicleAtCharacterSelect");
+    const input = document.getElementById("redblinkVehicleAtPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
 function fillRedblinkLocationPlayerId() {
     const sel = document.getElementById("redblinkLocationCharacterSelect");
     const input = document.getElementById("redblinkLocationPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillRedblinkSkillModulePlayerId() {
+    const sel = document.getElementById("redblinkSkillModuleCharacterSelect");
+    const input = document.getElementById("redblinkSkillModulePlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillRedblinkKickPlayerId() {
+    const sel = document.getElementById("redblinkKickCharacterSelect");
+    const input = document.getElementById("redblinkKickPlayerId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
 }
@@ -415,6 +611,57 @@ function populateRedblinkVehicleTemplates() {
         opt.textContent = templateName;
         templateSelect.appendChild(opt);
     });
+}
+
+function populateRedblinkVehicleAtTemplates() {
+    const vehicleSelect = document.getElementById("redblinkVehicleAtId");
+    const templateSelect = document.getElementById("redblinkVehicleAtTemplate");
+    if (!vehicleSelect || !templateSelect || typeof redblinkVehicleSpawnTemplates === "undefined") return;
+
+    const vehicleId = vehicleSelect.value;
+    const templates = redblinkVehicleSpawnTemplates[vehicleId] || [];
+    templateSelect.innerHTML = "";
+
+    if (templates.length === 0) {
+        templateSelect.innerHTML = `<option value="">No templates found.</option>`;
+        return;
+    }
+
+    templates.forEach(templateName => {
+        const opt = document.createElement("option");
+        opt.value = templateName;
+        opt.textContent = templateName;
+        templateSelect.appendChild(opt);
+    });
+}
+
+function syncRedblinkSkillModuleLevel() {
+    const select = document.getElementById("redblinkSkillModuleId");
+    const input = document.getElementById("redblinkSkillModuleLevel");
+    if (!select || !input || select.selectedOptions.length === 0) return;
+
+    const maxLevel = Number(select.selectedOptions[0].dataset.maxLevel || "1");
+    input.max = String(maxLevel);
+    if (Number(input.value || "0") > maxLevel) {
+        input.value = String(maxLevel);
+    }
+    if (input.value === "") {
+        input.value = String(maxLevel > 0 ? maxLevel : 0);
+    }
+}
+
+function syncRedblinkKickScope() {
+    const scope = document.getElementById("redblinkKickScope");
+    const characterSelect = document.getElementById("redblinkKickCharacterSelect");
+    const playerInput = document.getElementById("redblinkKickPlayerId");
+    const allOnline = scope && scope.value === "all_online";
+
+    if (characterSelect) characterSelect.disabled = allOnline;
+    if (playerInput) {
+        playerInput.disabled = allOnline;
+        playerInput.required = !allOnline;
+        if (allOnline) playerInput.value = "";
+    }
 }
 
 function fillResearchActorId() {
@@ -1045,6 +1292,9 @@ function fillOrnithopterTargetFromAdminMapClick(event) {
     const xInput = document.getElementById("ornithopterX");
     const yInput = document.getElementById("ornithopterY");
     const zInput = document.getElementById("ornithopterZ");
+    const spawnAtXInput = document.getElementById("redblinkVehicleAtX");
+    const spawnAtYInput = document.getElementById("redblinkVehicleAtY");
+    const spawnAtZInput = document.getElementById("redblinkVehicleAtZ");
     const frame = document.getElementById("ornithopterMapFrame");
     const canvas = document.getElementById("ornithopterMapCanvas");
     const summary = document.getElementById("ornithopterMapSummary");
@@ -1070,6 +1320,8 @@ function fillOrnithopterTargetFromAdminMapClick(event) {
     if (partitionInput) partitionInput.value = ornithopterPartitionForMap(mapKey);
     xInput.value = world.x.toFixed(3);
     yInput.value = world.y.toFixed(3);
+    if (spawnAtXInput) spawnAtXInput.value = world.x.toFixed(3);
+    if (spawnAtYInput) spawnAtYInput.value = world.y.toFixed(3);
 
     // Z is intentionally not derived from the flat map. If a vehicle has been
     // selected, leave its current altitude as the starting point; otherwise use
@@ -1077,10 +1329,13 @@ function fillOrnithopterTargetFromAdminMapClick(event) {
     if (zInput && !zInput.value) {
         zInput.value = "1500";
     }
+    if (spawnAtZInput && !spawnAtZInput.value) {
+        spawnAtZInput.value = "1500";
+    }
 
     if (summary) {
         summary.textContent =
-            `${mapConfig.label}: target set to X ${world.x.toFixed(0)} Y ${world.y.toFixed(0)}`;
+            `${mapConfig.label}: target set to X ${world.x.toFixed(0)} Y ${world.y.toFixed(0)} for teleport and spawn-at forms`;
     }
 }
 

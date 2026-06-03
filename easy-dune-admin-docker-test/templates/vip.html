@@ -44,14 +44,25 @@
     height: 9px;
     border-radius: 50%;
     border: 2px solid #000;
+    box-sizing: border-box;
+    padding: 0;
+    line-height: 0;
     transform: translate(-50%, -50%);
     z-index: 5;
     pointer-events: none;
 }
 
 .vip-map-marker.player {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
     background: #4aa3ff;
     box-shadow: 0 0 12px #4aa3ff;
+}
+
+.vip-map-marker.player.offline {
+    background: #b15cff;
+    box-shadow: 0 0 12px #b15cff;
 }
 
 .vip-map-marker.vehicle {
@@ -71,7 +82,25 @@
     align-items: start;
 }
 
+.vip-tool-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.vip-tool-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vip-tool-stack .box {
+    margin-bottom: 0;
+}
+
 @media (max-width: 1100px) {
+    .vip-tool-columns,
     .vip-teleport-workbench {
         grid-template-columns: 1fr;
     }
@@ -84,7 +113,9 @@
 
 <div id="actionOutput" class="msg" style="display:none;"></div>
 
-<div class="grid">
+<div class="vip-tool-columns">
+
+<div class="vip-tool-stack">
 
 <div class="box">
 <h2>Linked Character</h2>
@@ -97,6 +128,22 @@ These tools only act on the in-game character linked to this web account by an a
 </div>
 
 <div class="box">
+<h2>Self Water Container Refill</h2>
+<div class="warning">
+Uses RedBlink v1.3.3's refill-water helper on your linked character only. This refills personal canteens, literjons, and other water fillables tied to your player; it does not refill your character hydration meter.
+</div>
+<form id="vipRefillWaterForm">
+    <label>Water Amount</label>
+    <input type="number" name="amount" min="1" step="1" value="{{ default_water_refill_amount }}" required>
+    <button type="submit">Refill My Water Containers</button>
+</form>
+</div>
+
+</div>
+
+<div class="vip-tool-stack">
+
+<div class="box">
 <h2>Self Overrepair</h2>
 <div class="warning">
 The character must be logged off. This repairs all inventories owned by your linked character, including equipped/hotbar inventory rows, but only items with a current durability field are touched.<br><br>
@@ -107,22 +154,6 @@ If some items fail to overrepair, empty extra inventory, move failed items highe
     <label>Durability Value</label>
     <input type="text" name="durability" value="{{ default_overrepair_durability }}" required>
     <button type="submit">Overrepair My Inventories</button>
-</form>
-</div>
-
-</div>
-
-<div class="grid">
-
-<div class="box">
-<h2>Self Water Container Refill</h2>
-<div class="warning">
-Uses RedBlink v1.3.3's refill-water helper on your linked character only. This refills personal canteens, literjons, and other water fillables tied to your player; it does not refill your character hydration meter.
-</div>
-<form id="vipRefillWaterForm">
-    <label>Water Amount</label>
-    <input type="number" name="amount" min="1" step="1" value="{{ default_water_refill_amount }}" required>
-    <button type="submit">Refill My Water Containers</button>
 </form>
 </div>
 
@@ -156,10 +187,13 @@ Make sure you have at least 21 free inventory slots; 25+ is recommended to reduc
 
 </div>
 
+</div>
+
 <div class="box">
 <h2>Self Offline Teleport</h2>
 <div class="warning">
 Use only while your character is offline. Drag the map to pan, hold Ctrl/Command while using the mouse wheel to zoom, then double-click the map to confirm and fill X/Y. Set a safe Z before teleporting.<br><br>
+The emergency return button uses the same configured Hagga Basin safe point as the admin emergency return tool and only targets your linked character.<br><br>
 <b>Experimental:</b> multi-partition map/teleport support is currently untested until additional Survival or Deep Desert instances are available. The partition picker reads observed map names and partition IDs from the database, and map markers are filtered by the selected partition. The server uses your linked character automatically; no player IDs are accepted from the browser.
 </div>
 
@@ -198,6 +232,10 @@ Use only while your character is offline. Drag the map to pan, hold Ctrl/Command
     <input type="text" name="z" id="vipTeleportZ" value="1000" required>
 
     <button type="submit">Teleport My Offline Character</button>
+</form>
+
+<form id="vipEmergencyReturnForm">
+    <button type="submit">Emergency Return to Safe Location</button>
 </form>
 </div>
 
@@ -463,17 +501,24 @@ async function refreshVipMapMarkers() {
     }
 
     const visible = (data.markers || []).filter(m => m.in_bounds);
+    const visiblePlayers = visible.filter(m => m.type === "player");
+    const offlinePlayers = visiblePlayers.filter(m => String(m.online_status || "").toLowerCase() === "offline");
     const partitionLabel = partition && partition.selectedOptions.length
         ? partition.selectedOptions[0].textContent
         : "No partition selected";
-    summary.textContent = `${vipMapConfig.label}: ${visible.length} visible marker(s) on ${partitionLabel}`;
+    summary.textContent = `${vipMapConfig.label}: ${visible.length} visible marker(s), ${offlinePlayers.length} offline player(s) on ${partitionLabel}`;
 
     visible.forEach(marker => {
         const node = document.createElement("div");
-        node.className = `vip-map-marker ${marker.type}`;
+        const offlineClass = marker.type === "player" && String(marker.online_status || "").toLowerCase() === "offline"
+            ? " offline"
+            : "";
+        node.className = `vip-map-marker ${marker.type}${offlineClass}`;
         node.style.left = `${marker.px * vipMapZoom}px`;
         node.style.top = `${marker.py * vipMapZoom}px`;
-        node.title = marker.name || marker.type;
+        node.title = marker.type === "player"
+            ? `${marker.name || marker.type} (${marker.online_status || "Unknown"})`
+            : marker.name || marker.type;
         layer.appendChild(node);
     });
 }
@@ -490,6 +535,12 @@ document.getElementById("vipTeleportForm").addEventListener("submit", async func
     event.preventDefault();
     if (!confirm("Teleport your linked character? This is intended for offline characters only.")) return;
     await postForm("/api/vip-teleport-offline", this);
+});
+
+document.getElementById("vipEmergencyReturnForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    if (!confirm("Emergency return your linked character to the configured Hagga Basin safe point? Character should be offline.")) return;
+    await postForm("/api/vip-emergency-return", this);
 });
 
 document.getElementById("vipRefillWaterForm").addEventListener("submit", async function(event) {

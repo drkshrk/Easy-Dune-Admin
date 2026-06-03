@@ -1,8 +1,8 @@
 # Docker Test Package
 
-This folder is an experimental containerized Easy Dune Admin build. It lives
-inside the main project folder so the normal app and Docker test package can be
-uploaded together, while Docker-specific files stay grouped in one place.
+This folder is an experimental containerized Easy Dune Admin build. It is kept
+separate from the normal release folder so Docker packaging can be tested
+without disturbing the current app layout.
 
 ## What The Container Mounts
 
@@ -19,16 +19,6 @@ uploaded together, while Docker-specific files stay grouped in one place.
 
 The container does **not** bundle RedBlink. It expects the host stack to already
 exist and be mounted.
-
-## Persistent Webadmin Data
-
-`docker-compose.test.yml` mounts the named volume `easy-dune-admin-data` at
-`/data`. Easy Dune Admin stores `users.db` at `/data/users.db` and logs under
-`/data/logs`, so normal image rebuilds should preserve webadmin users and roles.
-
-Do not run `docker compose -f docker-compose.test.yml down -v` unless you want
-to delete that named volume and reset the webadmin setup. Plain
-`docker compose -f docker-compose.test.yml down` leaves the volume intact.
 
 ## Login Installation Profile
 
@@ -50,7 +40,6 @@ docker compose -f docker-compose.test.yml up --build
 Or use the included helper:
 
 ```bash
-bash fix_shell_scripts.sh
 chmod +x rebuild_docker.sh
 ./rebuild_docker.sh
 ```

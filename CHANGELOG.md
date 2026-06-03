@@ -2,7 +2,17 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.7.3-beta
+## 0.7.5-alpha
+
+### Changed
+
+- Added purple offline-character markers to Live Map and VIP self-teleport map views, with player online status shown in map marker/list text.
+- Added Admin Panel wrappers for RedBlink v1.3.3 `dune admin skill-module`, using RedBlink's MIT-licensed skill-module catalog for dropdown labels and level validation.
+- Added Admin Panel RedBlink v1.3.3 kick controls for one selected player or all online players.
+- Added Admin Panel RedBlink v1.3.3 coordinate-based vehicle spawning through `dune admin spawn-vehicle-at`, paired with the existing draggable/double-click Vehicle Live Map coordinate workflow.
+- Kept the RedBlink command wrappers attributed in README/third-party notices rather than copying RedBlink's RabbitMQ payload implementation.
+
+## 0.7.4-alpha
 
 ### Changed
 
@@ -22,6 +32,9 @@ All notable changes to Easy Dune Admin are documented here.
 - Added Developer-gated tools to grant missing all-track specialization rows at 0 XP for testing, or max all specialization tracks plus discovered keystones.
 - Moved the broken Class Progression preset dropdown to a hidden Developer page protected by an admin login plus a separate key gate. It is marked WIP/experimental and includes removal actions for Planetologist, Trooper, and Advanced Bene Gesserit test tags.
 - Moved research points, skill points, specialization tools, and journey progression presets behind the hidden Developer page; normal Character XP and Set Character Level remain on the Admin Panel.
+- Added a login-time installation profile switch for Linux Host, RedBlink Docker Container, and experimental Hyper-V via SSH command routing.
+- Added installation-mode UX gating so host installer/shell tools are hidden or relabeled when running in Docker or Hyper-V modes.
+- Added a VIP self-only emergency return button using the same configured Hagga Basin safe point as the admin emergency return tool.
 - Marked journey progression presets as testing/research-only because manual advancement can currently lock the character out of the 3rd combat skill slot.
 - Documented that progression edits may require relogging, restarting the affected map, or restarting the battlegroup. Restarts can appear slow, and login may briefly show an error before recovering.
 - Updated RedBlink stack target to `v1.3.3` and expanded Server Management around the v1.3.3 command surface: battlegroup readiness/version/ports/doctor, autoscaler, Sietches, memory tuning, update checks, restart schedule status, and selected `dune admin` helpers.
@@ -34,7 +47,7 @@ All notable changes to Easy Dune Admin are documented here.
 
 ### Planned
 
-- `0.7.4` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
+- `0.7.6` candidate: evaluate faction manipulation tools after faction membership and related database state can be captured and tested safely.
 
 ## 0.6.6-rc2
 
