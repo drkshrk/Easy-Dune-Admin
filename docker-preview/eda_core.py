@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.7-alpha
+Panel version: 0.7.8-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.7.7-alpha RedBlink v1.3.3 support:
+0.7.8-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -55,7 +55,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.7-alpha"
+PANEL_VERSION = "0.7.8-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -241,7 +241,7 @@ SECRET_KEY = os.environ.get("DUNE_SECRET_KEY", "change-this-secret-before-sharin
 #   export EASY_DUNE_DEVELOPER_KEY_HASH='pbkdf2:sha256:...'
 DEVELOPER_KEY_HASH = os.environ.get(
     "EASY_DUNE_DEVELOPER_KEY_HASH",
-    "pbkdf2:sha256:1000000$njBZpe9vNjpJaBdwnqvoZw$5e11e89d643dd2ced4f02efbf7275873b100cd7e14d02f72e1ee984ce09b3176",
+    "pbkdf2:sha256:1000000$5txXq47UqLIBruGAt6eL6w$cfad056a308f452892c88e5e3c821bdfa8b2ecb613b2961200fef29f9cc54eae",
 )
 
 # =========================================================
@@ -2248,16 +2248,25 @@ def base_storage_fill_pack_from_value(pack_id):
     return requested, BASE_STORAGE_FILL_PACKS[requested]
 
 
-def get_base_storage_containers(character_actor_id):
+def get_base_storage_containers(character_actor_id, large_only=True):
     """
-    Discover large base storage containers owned by the selected character.
+    Discover base storage containers owned by the selected character.
 
     This read-only helper follows the observed Dune ownership chain:
     character pawn -> player controller -> owner permission rank -> permission
-    actor/FGL entity -> placeable owner entity -> inventory. It only returns
-    containers matching the large-storage signature used by the fill tool.
+    actor/FGL entity -> placeable owner entity -> inventory.
+
+    The builder warehouse fill deliberately keeps large_only=True because the
+    curated four-box layout assumes the observed 100-slot / 3500-volume large
+    storage signature. The empty-container tool sets large_only=False so admins
+    can clean any owned base storage container size without changing this shared
+    ownership discovery logic.
     """
     actor_id = int(character_actor_id)
+    storage_size_filter = """
+       AND inv.max_item_count = 100
+       AND inv.max_item_volume = 3500
+""" if large_only else ""
 
     sql = f"""
 WITH selected_player AS (
@@ -2326,8 +2335,7 @@ owned_large_containers AS (
     JOIN dune.inventories inv
         ON inv.actor_id = p.id
        AND inv.inventory_type = 4
-       AND inv.max_item_count = 100
-       AND inv.max_item_volume = 3500
+{storage_size_filter}
     LEFT JOIN dune.actors container_actor
         ON container_actor.id = p.id
     LEFT JOIN dune.items item
@@ -2412,6 +2420,233 @@ ORDER BY
         )
 
     return containers
+
+
+def build_empty_base_storage_containers_sql(character_actor_id, container_inventory_ids):
+    """
+    Build admin-only SQL for emptying one to four owned base storage containers.
+
+    This is the destructive inverse of the warehouse fill workflow. It validates
+    each selected inventory against the target character's owned base permission
+    chain, accepts any inventory_type=4 storage size, and deletes item rows only.
+    It does not delete the container placeable, base, inventory row, or ownership
+    permissions. Keep the max selection at four so the browser tool stays easy
+    to audit before an admin confirms the wipe.
+    """
+    actor_id = int(character_actor_id)
+    raw_container_ids = [str(value or "").strip() for value in container_inventory_ids]
+    container_ids = [int(value) for value in raw_container_ids if value]
+
+    if len(container_ids) < 1:
+        raise ValueError("at least one container inventory ID is required")
+    if len(container_ids) > 4:
+        raise ValueError("no more than four container inventory IDs are allowed")
+    if len(set(container_ids)) != len(container_ids):
+        raise ValueError("container inventory IDs must be distinct")
+
+    selected_values_sql = ",\n        ".join(
+        f"({slot_number}, {inventory_id}::bigint)"
+        for slot_number, inventory_id in enumerate(container_ids, start=1)
+    )
+
+    return f"""
+BEGIN;
+CREATE TEMP TABLE eda_empty_base_storage_settings
+ON COMMIT DROP
+AS
+SELECT
+    {actor_id}::bigint AS target_character_actor_id,
+    {len(container_ids)}::integer AS expected_container_count;
+
+CREATE TEMP TABLE eda_empty_base_storage_selected (
+    slot_number integer PRIMARY KEY,
+    inventory_id bigint NOT NULL UNIQUE
+) ON COMMIT DROP;
+
+INSERT INTO eda_empty_base_storage_selected (slot_number, inventory_id)
+VALUES
+        {selected_values_sql};
+
+CREATE TEMP TABLE eda_empty_base_storage_targets
+ON COMMIT DROP
+AS
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.account_id,
+        ps.player_pawn_id AS character_actor_id,
+        ps.player_controller_id AS controller_actor_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    JOIN eda_empty_base_storage_settings settings
+        ON settings.target_character_actor_id = ps.player_pawn_id
+),
+owned_base_entities AS (
+    SELECT DISTINCT
+        sp.character_name,
+        sp.account_id,
+        sp.character_actor_id,
+        sp.controller_actor_id,
+        sp.online_status,
+        sp.life_state,
+        afe.entity_id AS base_owner_entity_id,
+        afe.actor_id AS base_totem_actor_id
+    FROM selected_player sp
+    JOIN dune.permission_actor_rank permission_rank
+        ON permission_rank.player_id = sp.controller_actor_id
+       AND permission_rank.rank = 1
+    JOIN dune.permission_actor permission_actor
+        ON permission_actor.actor_id = permission_rank.permission_actor_id
+    JOIN dune.actor_fgl_entities afe
+        ON afe.actor_id = permission_actor.actor_id
+       AND afe.slot_name = 'Actor'
+    JOIN dune.totems totem
+        ON totem.id = permission_actor.actor_id
+)
+SELECT
+    selected.slot_number,
+    selected.inventory_id,
+    base.character_name,
+    base.account_id,
+    base.character_actor_id,
+    base.controller_actor_id,
+    base.online_status,
+    base.life_state,
+    base.base_owner_entity_id,
+    base.base_totem_actor_id,
+    placeable.id AS container_placeable_actor_id,
+    COALESCE(placeable.building_type, '') AS container_building_type,
+    COALESCE(container_actor.map, '') AS container_map,
+    COALESCE(container_actor.partition_id::text, '') AS partition_id,
+    inventory.inventory_type,
+    inventory.max_item_count,
+    inventory.max_item_volume
+FROM eda_empty_base_storage_selected selected
+JOIN dune.inventories inventory
+    ON inventory.id = selected.inventory_id
+   AND inventory.inventory_type = 4
+JOIN dune.placeables placeable
+    ON placeable.id = inventory.actor_id
+JOIN owned_base_entities base
+    ON base.base_owner_entity_id = placeable.owner_entity_id
+LEFT JOIN dune.actors container_actor
+    ON container_actor.id = placeable.id;
+
+DO $$
+DECLARE
+    v_target_player_count integer;
+    v_expected_count integer;
+    v_valid_count integer;
+    v_missing_ids text;
+BEGIN
+    SELECT COUNT(*) INTO v_target_player_count
+    FROM dune.player_state ps
+    JOIN eda_empty_base_storage_settings settings
+        ON settings.target_character_actor_id = ps.player_pawn_id;
+
+    IF v_target_player_count = 0 THEN
+        RAISE EXCEPTION 'Base storage empty stopped. Target character actor ID does not resolve to a player.';
+    END IF;
+
+    SELECT expected_container_count INTO v_expected_count
+    FROM eda_empty_base_storage_settings;
+
+    SELECT COUNT(*) INTO v_valid_count
+    FROM eda_empty_base_storage_targets;
+
+    IF v_valid_count <> v_expected_count THEN
+        SELECT STRING_AGG(selected.inventory_id::text, ', ' ORDER BY selected.inventory_id)
+        INTO v_missing_ids
+        FROM eda_empty_base_storage_selected selected
+        LEFT JOIN eda_empty_base_storage_targets target
+            ON target.inventory_id = selected.inventory_id
+        WHERE target.inventory_id IS NULL;
+
+        RAISE EXCEPTION 'Base storage empty stopped. Expected % valid owned storage container(s), found %. Invalid or unowned inventory IDs: %.',
+            v_expected_count,
+            v_valid_count,
+            COALESCE(v_missing_ids, '[none]');
+    END IF;
+END $$;
+
+CREATE TEMP TABLE eda_empty_base_storage_deleted
+ON COMMIT DROP
+AS
+WITH deleted AS (
+    DELETE FROM dune.items item
+    USING eda_empty_base_storage_targets target
+    WHERE item.inventory_id = target.inventory_id
+    RETURNING
+        item.id AS deleted_item_id,
+        item.inventory_id,
+        item.template_id,
+        item.stack_size,
+        item.position_index,
+        item.quality_level
+)
+SELECT
+    deleted.*,
+    target.slot_number,
+    target.character_name,
+    target.character_actor_id,
+    target.online_status,
+    target.life_state,
+    target.base_owner_entity_id,
+    target.container_placeable_actor_id,
+    target.container_building_type,
+    target.container_map,
+    target.partition_id,
+    target.max_item_count,
+    target.max_item_volume
+FROM deleted
+JOIN eda_empty_base_storage_targets target
+    ON target.inventory_id = deleted.inventory_id;
+
+SELECT
+    target.slot_number,
+    target.character_name,
+    target.character_actor_id,
+    target.online_status,
+    target.life_state,
+    target.base_owner_entity_id,
+    target.container_placeable_actor_id,
+    target.inventory_id AS emptied_container_inventory_id,
+    target.container_building_type,
+    target.container_map,
+    target.partition_id,
+    target.max_item_count,
+    target.max_item_volume,
+    COUNT(deleted.deleted_item_id) AS deleted_item_rows,
+    COALESCE(SUM(deleted.stack_size), 0) AS deleted_stack_total,
+    COALESCE(
+        STRING_AGG(
+            deleted.position_index::text || ': ' || deleted.template_id || ' x' || deleted.stack_size::text,
+            E'\\n'
+            ORDER BY deleted.position_index, deleted.deleted_item_id
+        ),
+        '[container already empty]'
+    ) AS deleted_contents
+FROM eda_empty_base_storage_targets target
+LEFT JOIN eda_empty_base_storage_deleted deleted
+    ON deleted.inventory_id = target.inventory_id
+GROUP BY
+    target.slot_number,
+    target.character_name,
+    target.character_actor_id,
+    target.online_status,
+    target.life_state,
+    target.base_owner_entity_id,
+    target.container_placeable_actor_id,
+    target.inventory_id,
+    target.container_building_type,
+    target.container_map,
+    target.partition_id,
+    target.max_item_count,
+    target.max_item_volume
+ORDER BY target.slot_number;
+COMMIT;
+"""
 
 
 def build_fill_base_storage_containers_sql(character_actor_id, pack_id, container_inventory_ids):
@@ -6598,3 +6833,4 @@ def build_dashboard_metrics_payload():
         "system": get_system_resource_summary(),
         "world": get_world_summary_counts(),
     }
+

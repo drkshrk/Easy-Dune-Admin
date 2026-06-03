@@ -1,11 +1,11 @@
-<h1 align="center">Easy Dune Admin</h1>
+﻿<h1 align="center">Easy Dune Admin</h1>
 
 <p align="center">
   Independent companion administration platform for RedBlink's Dune Awakening self-hosted Docker stack.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.7--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.7.8--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.7-alpha`
+Current panel version: `0.7.8-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -116,7 +116,8 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 - Item search
 - Item grant tools
 - Admin-only Builder Supply Packs that insert curated build resources into empty main-backpack slots after validating free space. These can temporarily overload character carry weight, so equip a build tool before using them.
-- Admin-only Base Storage Warehouse Fill that discovers owned large base containers, validates four empty selections, and fills them with a curated four-box resource/component layout
+- Admin-only Base Storage Warehouse Fill that discovers owned large base containers, validates four empty selections, and fills them with a curated four-box resource/component layout. Restart the affected map before expecting new container contents to appear in game.
+- Admin-only Base Storage Empty tool that discovers owned base storage containers of any size, validates up to four selected containers, and deletes only their item rows. Restart the affected map before expecting emptied containers to update in game.
 - Mk6 Scout Ornithopter grant
 - Mk6 Medium Ornithopter grant
 - Medium thopter kit includes 250 rockets, one RepairTool5, and 500 WeldingMaterial
@@ -336,6 +337,21 @@ Set a real secret before sharing or deploying:
 export DUNE_SECRET_KEY='long-random-string'
 ```
 
+Developer page key:
+
+The hidden `/developer` page is for incomplete, dangerous, broken, experimental, or research-only tools. Developer functions can corrupt progression, flags, inventories, or player state if used casually. The page is admin-only and also protected by a separate key hash. Set your own hash instead of relying on the bundled fallback:
+
+```bash
+python3 - <<'PY'
+from werkzeug.security import generate_password_hash
+print(generate_password_hash("replace-this-with-your-developer-key"))
+PY
+
+export EASY_DUNE_DEVELOPER_KEY_HASH='pbkdf2:sha256:...'
+```
+
+Restart Easy Dune Admin after changing `EASY_DUNE_DEVELOPER_KEY_HASH`.
+
 Optional high-trust infrastructure features:
 
 ```bash
@@ -393,7 +409,7 @@ for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.7-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.8-alpha
 ```
 
 Preserve local runtime data:
@@ -494,7 +510,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.7-alpha`: Admin Panel now includes an attributed New Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using RedBlink's normal grant-item command path.
+Current highlight for `0.7.8-alpha`: Admin Panel now includes an attributed New Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using RedBlink's normal grant-item command path.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 
@@ -505,7 +521,7 @@ Looking ahead: faction manipulation tools are a likely future focus after factio
 - RedBlink and contributors for the MIT-licensed [`dune-awakening-selfhost-docker`](https://github.com/Red-Blink/dune-awakening-selfhost-docker) stack this panel targets. This project is being developed with RedBlink's permission; Easy Dune Admin remains an independent project and credits RedBlink's stack, scripts, and command workflows where used.
 - Funcom
 - IceHunter / Ryan Wilson's MIT-licensed [`dune-admin`](https://github.com/Icehunter/dune-admin) project for market tooling research, category mapping, bundled market item data, progression preset structure, specialization XP research, character-level XP curve research, and the T1 starter pack recipe adapted for the New Player Kit.
-- Community researchers and testers
+- Community researchers and testers; database research for some admin workflows was informed by early community testing.
 
 ---
 
@@ -520,3 +536,4 @@ Third-party reference material remains under its original license. See `THIRD_PA
 ## AI Collaboration Note
 
 Large portions of this project have been collaboratively created with the use of generative AI tools, including ChatGPT and Codex.
+

@@ -161,7 +161,7 @@ Admin-only direct backpack insert. Select a character and pack; the tool inserts
 <h2>Fill Base Storage Warehouse</h2>
 
 <div class="warning">
-Admin-only direct base-storage insert. Discover a character's owned large storage containers, select four empty containers from the same base, then fill them with the selected warehouse pack. The game/map should be stopped or restarted afterward; live servers can create item IDs while this runs.
+Admin-only direct base-storage insert. Discover a character's owned large storage containers, select four empty containers from the same base, then fill them with the selected warehouse pack. Restart the affected map after filling storage containers before expecting the new contents to appear in game; live servers can also create item IDs while this runs.
 </div>
 
 <form id="baseStorageFillForm">
@@ -233,6 +233,64 @@ Admin-only direct base-storage insert. Discover a character's owned large storag
     {% endfor %}
 </details>
 {% endfor %}
+</div>
+
+<div class="box">
+<h2>Empty Base Storage Containers</h2>
+
+<div class="warning">
+Admin-only destructive cleanup. Discover a character's owned base storage containers of any size, select up to four, then delete the item rows inside those selected containers only. This does not delete the container placeables, base, inventory records, or permissions. Restart the affected map after emptying containers before expecting the change to appear in game. Take a database backup first when you are not sure.
+</div>
+
+<form id="emptyStorageForm">
+    <label>Character</label>
+    <select id="emptyStorageCharacterSelect" onchange="fillEmptyStorageActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="emptyStorageActorId" required>
+
+    <button type="button" onclick="loadEmptyStorageContainers()">Discover Owned Storage Containers</button>
+
+    <div class="grant-summary" id="emptyStorageSummary">
+        Select a character, then discover owned base storage containers.
+    </div>
+
+    <div class="grant-table-wrap" id="emptyStorageContainerTableWrap" style="display:none;">
+        <table class="grant-table">
+            <thead>
+                <tr>
+                    <th>Pick</th>
+                    <th>Inventory</th>
+                    <th>Status</th>
+                    <th>Rows</th>
+                    <th>Quantity</th>
+                    <th>Capacity</th>
+                    <th>Map</th>
+                    <th>Partition</th>
+                    <th>Base Entity</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody id="emptyStorageContainerTableBody"></tbody>
+        </table>
+    </div>
+
+    <label>Container 1</label>
+    <input type="text" name="empty_container_1" id="emptyStorageContainer1" required>
+
+    <label>Container 2</label>
+    <input type="text" name="empty_container_2" id="emptyStorageContainer2">
+
+    <label>Container 3</label>
+    <input type="text" name="empty_container_3" id="emptyStorageContainer3">
+
+    <label>Container 4</label>
+    <input type="text" name="empty_container_4" id="emptyStorageContainer4">
+
+    <button type="submit">Empty Selected Containers</button>
+</form>
 </div>
 {% endif %}
 
@@ -349,6 +407,31 @@ if (baseStorageFillForm) {
         }
 
         await postForm("/api/fill-base-storage-containers", baseStorageFillForm);
+    });
+}
+
+const emptyStorageForm = document.getElementById("emptyStorageForm");
+if (emptyStorageForm) {
+    emptyStorageForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const selected = ["emptyStorageContainer1", "emptyStorageContainer2", "emptyStorageContainer3", "emptyStorageContainer4"]
+            .map(id => {
+                const input = document.getElementById(id);
+                return input ? input.value.trim() : "";
+            })
+            .filter(Boolean);
+
+        if (selected.length === 0) {
+            showOutput("Select at least one container inventory ID.", emptyStorageForm);
+            return;
+        }
+
+        if (!confirm(`Permanently delete item rows from ${selected.length} selected base storage container(s)? This does not delete the container itself, but the contents will be gone. Restart the affected map afterward before checking in game.`)) {
+            return;
+        }
+
+        await postForm("/api/empty-base-storage-containers", emptyStorageForm);
     });
 }
 

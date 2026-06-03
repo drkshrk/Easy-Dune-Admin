@@ -1220,7 +1220,8 @@ def api_base_storage_containers():
         return jsonify({"ok": False, "error": "missing character actor ID"}), 400
 
     try:
-        containers = get_base_storage_containers(character_actor_id)
+        large_only = request.args.get("large_only", "1").strip() != "0"
+        containers = get_base_storage_containers(character_actor_id, large_only=large_only)
         return jsonify({"ok": True, "containers": containers})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Base storage lookup failed: {exc}"}), 500
@@ -1255,6 +1256,37 @@ def api_fill_base_storage_containers():
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Base storage fill failed: {exc}"}), 500
+
+
+@app.route("/api/empty-base-storage-containers", methods=["POST"])
+def api_empty_base_storage_containers():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    container_ids = [
+        request.form.get("empty_container_1", "").strip(),
+        request.form.get("empty_container_2", "").strip(),
+        request.form.get("empty_container_3", "").strip(),
+        request.form.get("empty_container_4", "").strip(),
+    ]
+    selected_ids = [value for value in container_ids if value]
+
+    if not character_actor_id or not selected_ids:
+        return jsonify({"ok": False, "error": "missing character or container inventory ID"}), 400
+
+    try:
+        sql = build_empty_base_storage_containers_sql(character_actor_id, selected_ids)
+        output = run_psql_script(sql, timeout=180)
+        log_action(
+            session["user"],
+            f"empty base storage for actor {character_actor_id} containers {', '.join(selected_ids)}",
+        )
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Base storage empty failed: {exc}"}), 500
 
 
 @app.route("/api/grant-solari", methods=["POST"])

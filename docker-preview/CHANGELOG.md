@@ -1,8 +1,8 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.7.7-alpha
+## 0.7.8-alpha
 
 ### Added
 
@@ -12,6 +12,8 @@ All notable changes to Easy Dune Admin are documented here.
 - Added starter-kit attribution to the third-party notices and README credits.
 - Updated Developer Class Progression warnings to note that advanced trainer unlocks appear to require full multi-quest chains, not a single observed completion tag.
 - Updated the Medium Ornithopter kit with a RepairTool5 and WeldingMaterial, and stacked the grants page Medium kit panel directly under the Scout Thopter panel.
+- Added an admin-only Base Storage Empty tool that discovers owned storage containers of any size and deletes item rows from up to four validated selections.
+- Clarified that Base Storage Warehouse Fill and Base Storage Empty changes require restarting the affected map before the in-game containers refresh.
 
 ## 0.7.5-alpha
 
@@ -134,3 +136,4 @@ All notable changes to Easy Dune Admin are documented here.
 - Hardened browser shell fitting.
 - Improved `start.sh`.
 - Updated release packaging and GPLv3 metadata.
+

@@ -1,4 +1,4 @@
-Easy Dune Admin
+﻿Easy Dune Admin
 ===============
 
 Independent companion administration platform for RedBlink's Dune Awakening
@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.7-alpha
+Panel version: 0.7.8-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -101,7 +101,12 @@ Item Grants:
   overload character carry weight, so equip a build tool before using them.
 - Admin-only Base Storage Warehouse Fill that discovers owned large base
   containers, validates four empty selections, and fills them with a curated
-  four-box resource/component layout
+  four-box resource/component layout. Restart the affected map before expecting
+  new container contents to appear in game.
+- Admin-only Base Storage Empty tool that discovers owned base storage
+  containers of any size, validates up to four selected containers, and deletes
+  only their item rows. Restart the affected map before expecting emptied
+  containers to update in game.
 - Mk6 Scout Ornithopter grant
 - Mk6 Medium Ornithopter grant
 - Medium thopter kit includes 250 rockets, one RepairTool5, and 500
@@ -324,6 +329,23 @@ Set a real secret before sharing or deploying:
 
 export DUNE_SECRET_KEY='long-random-string'
 
+Developer page key:
+
+The hidden /developer page is for incomplete, dangerous, broken, experimental,
+or research-only tools. Developer functions can corrupt progression, flags,
+inventories, or player state if used casually. The page is admin-only and also
+protected by a separate key hash. Set your own hash instead of relying on the
+bundled fallback:
+
+python3 - <<'PY'
+from werkzeug.security import generate_password_hash
+print(generate_password_hash("replace-this-with-your-developer-key"))
+PY
+
+export EASY_DUNE_DEVELOPER_KEY_HASH='pbkdf2:sha256:...'
+
+Restart Easy Dune Admin after changing EASY_DUNE_DEVELOPER_KEY_HASH.
+
 Optional high-trust infrastructure features:
 
 export ENABLE_HOST_COMMAND_RUNNER=1
@@ -439,7 +461,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.7-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.8-alpha
 
 Preserve local runtime data:
 
@@ -485,7 +507,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.7-alpha: Admin Panel now includes an attributed New
+Current highlight for 0.7.8-alpha: Admin Panel now includes an attributed New
 Player Kit grant based on IceHunter's MIT-licensed starter pack recipe, using
 RedBlink's normal grant-item command path.
 
@@ -509,7 +531,8 @@ Credits
   preset structure, specialization XP research, and character-level XP curve
   research:
   https://github.com/Icehunter/dune-admin
-- Community researchers and testers
+- Community researchers and testers; database research for some admin workflows
+  was informed by early community testing.
 
 
 License
@@ -526,3 +549,4 @@ AI Collaboration Note
 
 Large portions of this project have been collaboratively created with the use
 of generative AI tools, including ChatGPT and Codex.
+
