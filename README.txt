@@ -1,4 +1,4 @@
-﻿Easy Dune Admin
+Easy Dune Admin
 ===============
 
 Independent companion administration platform for RedBlink's Dune Awakening
@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.7.9-alpha
+Panel version: 0.8.0-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -116,11 +116,18 @@ Item Grants:
 - Admin-only Solari Coin inventory-stack lookup, add, and set-exact correction tools
 - Admin-only Solari Credit lookup, add, and set-exact correction tools for the
   live exchange/bank balance
-- Developer-only research point setter for selected characters
+- Admin-only research point setter for selected characters
 - Admin-only character XP grant for the actual displayed character level
 - Admin-only set character level tool using the same level XP curve
-- Developer-only skill point grant that adds usable skill points without changing
+- Admin-only skill point grant that adds usable skill points without changing
   character level XP
+- Admin-only live unspent skill point setter using RedBlink v1.3.3's dune admin
+  skill-points / SkillsSetUnspentSkillPoints RabbitMQ command. This is an
+  experimental compare-path that sets the current unspent value; it may not
+  change total earned skill points.
+- Admin-only bulk skill-module presets for catalog-validated skill
+  key/capstone and ability unlock testing through RedBlink v1.3.3's dune admin
+  skill-module helper
 - Item grants target the selected player/account inventory path and do not use
   map partition IDs
 - WIP/unconfirmed Developer-only specialization tools for Combat, Crafting,
@@ -279,6 +286,31 @@ Installation
 
 git clone https://github.com/n00bgames/Easy-Dune-Admin.git
 cd Easy-Dune-Admin
+cp .env.docker.example .env
+nano .env
+chmod +x rebuild_docker.sh docker/entrypoint.sh
+./rebuild_docker.sh
+
+Set REDBLINK_HOST_DIR in .env to the host path where RedBlink's stack lives.
+The default web port is 8088.
+
+Browse to:
+
+http://SERVER-IP:8088
+
+Docker is the primary supported install method as of 0.8.0-alpha. Runtime
+webadmin state is stored in the named Docker volume easy-dune-admin-data, so
+normal rebuilds preserve users.db, roles, and logs. Do not run
+docker compose down -v unless you intentionally want to reset the webadmin.
+
+See DOCKER.md for Docker mount and production notes.
+
+
+Advanced Local Install
+----------------------
+
+The legacy local Python launch remains available for Linux hosts that prefer
+running Easy Dune Admin directly outside a container:
 
 python3 -m venv venv
 source venv/bin/activate
@@ -390,31 +422,24 @@ observed dune.actors.map / partition_id pairs with actor, player, vehicle,
 and base counts.
 
 
-Docker preview package
--------------------
+Docker Package
+--------------
 
-An experimental Dockerized Easy Dune Admin package is included at:
-
-  docker-preview/
-
-It runs Easy Dune Admin in a container while mounting the host RedBlink stack
-directory and Docker socket. This is currently a preview path for testing, not
-yet the recommended install method.
+The root Dockerfile, docker-compose.yml, .env.docker.example,
+docker/entrypoint.sh, and rebuild_docker.sh are the primary deployment package.
+The container mounts the host RedBlink stack directory and Docker socket instead
+of bundling RedBlink inside the image.
 
 Docker webadmin state is stored in the named Docker volume
 easy-dune-admin-data at /data, including /data/users.db and /data/logs.
 Rebuilding the image should preserve users and roles as long as that volume is
 not removed. Avoid:
 
-  docker compose -f docker-compose.test.yml down -v
+  docker compose down -v
 
 unless you intentionally want to reset the webadmin database.
 
-See:
-
-  docker-preview/DOCKER_TESTING.md
-
-for setup notes.
+See DOCKER.md for setup notes.
 
 
 Runtime Assets
@@ -483,7 +508,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.9-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.0-alpha
 
 Preserve local runtime data:
 
@@ -494,9 +519,12 @@ Preserve local runtime data:
 After updating:
 
 git pull
-source venv/bin/activate
-pip install -r requirements.txt
-./start.sh
+cp .env.docker.example .env   # only if .env does not already exist
+nano .env                     # verify REDBLINK_HOST_DIR and secrets
+./rebuild_docker.sh
+
+For the advanced local Python install, run pip install -r requirements.txt
+inside the virtualenv and restart with ./restart.sh.
 
 
 Known Issues
@@ -529,9 +557,10 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.7.9-alpha: Easy Dune Admin now includes Progressive
-Web App support for install-to-home-screen use on phones and tablets, with
-conservative caching that avoids intentionally storing admin data offline.
+Current highlight for 0.8.0-alpha: Easy Dune Admin now promotes confirmed
+research points, skill points, and bulk skill-module presets to the Admin
+Panel, using RedBlink's current skill-module catalog rather than stale client
+INI command lists.
 
 Looking ahead: faction manipulation tools are a likely future focus after
 faction membership and the related database state can be captured and tested

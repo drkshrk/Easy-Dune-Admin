@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: easy-dune-admin:test
-    container_name: easy-dune-admin-test
+    image: easy-dune-admin:0.8.0-alpha
+    container_name: easy-dune-admin
     restart: unless-stopped
     ports:
       - "${EDA_PORT:-8088}:8088"
@@ -17,12 +17,13 @@ services:
       DUNE_ROOT: "${DUNE_ROOT_CONTAINER:-/redblink}"
       REDBLINK_INSTALL_DIR: "${DUNE_ROOT_CONTAINER:-/redblink}"
 
-      # Persistent Easy Dune Admin state lives outside the image.
+      # Persistent Easy Dune Admin state lives outside the image. The named
+      # volume below preserves users.db and logs across rebuilds.
       EDA_DATA_DIR: "/data"
       EDA_LOG_DIR: "/data/logs"
 
       # Enable command-backed panels. Browser host shell stays disabled by
-      # default for container testing; turn on only on a trusted LAN/VPN.
+      # default; turn on only on a trusted LAN/VPN.
       ENABLE_HOST_COMMAND_RUNNER: "${ENABLE_HOST_COMMAND_RUNNER:-1}"
       ENABLE_STACK_INSTALLER: "${ENABLE_STACK_INSTALLER:-0}"
       ENABLE_HOST_SHELL: "${ENABLE_HOST_SHELL:-0}"
@@ -34,6 +35,7 @@ services:
       EASY_DUNE_DEFAULT_INSTALL_MODE: "${EASY_DUNE_DEFAULT_INSTALL_MODE:-docker}"
       EASY_DUNE_HYPERV_SSH_TARGET: "${EASY_DUNE_HYPERV_SSH_TARGET:-}"
       EASY_DUNE_HYPERV_DUNE_ROOT: "${EASY_DUNE_HYPERV_DUNE_ROOT:-/home/steam/dune-awakening-selfhost-docker}"
+      EASY_DUNE_DEVELOPER_KEY_HASH: "${EASY_DUNE_DEVELOPER_KEY_HASH:-}"
     volumes:
       - easy-dune-admin-data:/data
 

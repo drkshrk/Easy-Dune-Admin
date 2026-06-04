@@ -16,7 +16,7 @@ WORKDIR /app
 
 # Easy Dune Admin shells out to RedBlink's `runtime/scripts/dune`, which in
 # turn expects common Linux tooling and Docker access. The Docker socket is
-# mounted at runtime by docker-compose.test.yml; the official static Docker CLI
+# mounted at runtime by docker-compose.yml; the official static Docker CLI
 # supplies the client because Debian slim images do not always include docker.io.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

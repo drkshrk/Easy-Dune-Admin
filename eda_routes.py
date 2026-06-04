@@ -1470,8 +1470,8 @@ def api_set_exchange_bank_solari():
 def api_set_research_points():
     if not logged_in():
         return jsonify({"ok": False, "error": "not logged in"}), 401
-    if not has_developer_access():
-        return jsonify({"ok": False, "error": "developer key required"}), 403
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
 
     character_actor_id = request.form.get("character_actor_id", "").strip()
     research_points = request.form.get("research_points", "").strip()
@@ -1569,6 +1569,56 @@ def api_reset_specialization():
         return jsonify({"ok": False, "error": f"Specialization reset failed: {exc}"}), 500
 
 
+@app.route("/api/bulk-skill-modules", methods=["POST"])
+@app.route("/api/developer-bulk-skill-modules", methods=["POST"])
+def api_developer_bulk_skill_modules():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    player_id = request.form.get("player_id", "").strip()
+    preset_id = request.form.get("preset_id", "").strip()
+    level_mode = request.form.get("level_mode", "max").strip()
+    if not player_id:
+        return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+
+    try:
+        plan = redblink_bulk_skill_module_plan(preset_id, level_mode)
+        outputs = [
+            f"Bulk skill preset: {plan['label']}",
+            f"Target player/FLS: {player_id}",
+            f"Modules queued: {len(plan['modules'])}",
+            "",
+        ]
+
+        for index, module in enumerate(plan["modules"], start=1):
+            cmd = [
+                "env",
+                "DUNE_ADMIN_ASSUME_YES=1",
+                str(DUNE_SCRIPT),
+                "admin",
+                "skill-module",
+                player_id,
+                module["id"],
+                str(module["targetLevel"]),
+            ]
+            outputs.append(
+                f"[{index}/{len(plan['modules'])}] {module['category']} - {module['name']} "
+                f"({module['id']}) -> level {module['targetLevel']}"
+            )
+            outputs.append(run_command(cmd, timeout=60))
+            outputs.append("")
+
+        log_action(
+            session["user"],
+            f"developer bulk skill preset {preset_id} mode {level_mode} for {player_id} modules {len(plan['modules'])}",
+        )
+        return jsonify({"ok": True, "output": "\n".join(outputs)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Bulk skill-module preset failed: {exc}"}), 500
+
+
 @app.route("/api/class-progression-unlock", methods=["POST"])
 def api_class_progression_unlock():
     if not logged_in():
@@ -1658,8 +1708,8 @@ def api_set_character_level():
 def api_give_skill_points():
     if not logged_in():
         return jsonify({"ok": False, "error": "not logged in"}), 401
-    if not has_developer_access():
-        return jsonify({"ok": False, "error": "developer key required"}), 403
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
 
     character_actor_id = request.form.get("character_actor_id", "").strip()
     skill_points = request.form.get("skill_points", "").strip()
@@ -2388,6 +2438,24 @@ def api_redblink_admin_command():
             player_id,
             module_id,
             str(level),
+        ]
+    elif action == "skill_points":
+        if not player_id:
+            return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+        try:
+            points = int(amount)
+        except ValueError:
+            return jsonify({"ok": False, "error": "skill points must be a whole number"}), 400
+        if points < 0 or points > 1000:
+            return jsonify({"ok": False, "error": "skill points must be between 0 and 1000"}), 400
+        cmd = [
+            "env",
+            "DUNE_ADMIN_ASSUME_YES=1",
+            str(DUNE_SCRIPT),
+            "admin",
+            "skill-points",
+            player_id,
+            str(points),
         ]
     elif action == "kick":
         if kick_scope == "all_online":

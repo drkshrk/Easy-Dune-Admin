@@ -52,12 +52,13 @@ async function postForm(endpoint, form) {
         const message = json.error || "Action failed.";
         showOutput(message);
         showLocalOutput(form, message);
-        return;
+        return { json, message };
     }
 
     const message = json.output || "Action completed.";
     showOutput(message);
     showLocalOutput(form, message);
+    return { json, message };
 }
 
 function wireAjaxForms() {
@@ -243,12 +244,17 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("characterXpCharacterSelect", chars);
     fillCharacterSelect("characterLevelCharacterSelect", chars);
     fillCharacterSelect("skillPointsCharacterSelect", chars);
+    fillCharacterSelect("redblinkSkillPointsCharacterSelect", chars);
     fillCharacterSelect("xpCharacterSelect", chars);
+    fillCharacterSelect("bulkSkillModuleCharacterSelect", chars);
     fillCharacterSelect("specializationGrantAllCharacterSelect", chars);
     fillCharacterSelect("specializationMaxCharacterSelect", chars);
     fillCharacterSelect("specializationResetCharacterSelect", chars);
     fillCharacterSelect("classProgressionCharacterSelect", chars);
     fillCharacterSelect("progressionCharacterSelect", chars);
+    fillCharacterSelect("banLookupCharacterSelect", chars);
+    fillCharacterSelect("flagCheaterCharacterSelect", chars);
+    fillCharacterSelect("unflagCheaterCharacterSelect", chars);
     fillCharacterSelect("solariCharacterSelect", chars);
     fillCharacterSelect("solariBankCharacterSelect", chars);
     fillCharacterSelect("exchangeBankSolariCharacterSelect", chars);
@@ -920,6 +926,20 @@ function fillSkillPointsActorId() {
     if (input && c) input.value = c.character_actor_id || "";
 }
 
+function fillRedblinkSkillPointsPlayerId() {
+    const sel = document.getElementById("redblinkSkillPointsCharacterSelect");
+    const input = document.getElementById("redblinkSkillPointsPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillBulkSkillModulePlayerId() {
+    const sel = document.getElementById("bulkSkillModuleCharacterSelect");
+    const input = document.getElementById("bulkSkillModulePlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
 function fillXpActorId() {
     const sel = document.getElementById("xpCharacterSelect");
     const input = document.getElementById("xpActorId");
@@ -958,6 +978,27 @@ function fillClassProgressionActorId() {
 function fillProgressionPlayerId() {
     const sel = document.getElementById("progressionCharacterSelect");
     const input = document.getElementById("progressionPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillBanLookupQuery() {
+    const sel = document.getElementById("banLookupCharacterSelect");
+    const input = document.getElementById("banLookupQuery");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || c.funcom_id || c.character_name || "";
+}
+
+function fillFlagCheaterFlsId() {
+    const sel = document.getElementById("flagCheaterCharacterSelect");
+    const input = document.getElementById("flagCheaterFlsId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillUnflagCheaterFlsId() {
+    const sel = document.getElementById("unflagCheaterCharacterSelect");
+    const input = document.getElementById("unflagCheaterFlsId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
 }

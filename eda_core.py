@@ -1,10 +1,10 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.7.9-alpha
+Panel version: 0.8.0-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.7.9-alpha RedBlink v1.3.3 support:
+0.8.0-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -56,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.7.9-alpha"
+PANEL_VERSION = "0.8.0-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -1023,6 +1023,53 @@ def load_redblink_skill_modules():
         )
 
     return sorted(modules, key=lambda item: (item["category"].casefold(), item["name"].casefold(), item["id"].casefold()))
+
+
+def redblink_bulk_skill_module_plan(preset_id, level_mode="max"):
+    """
+    Build a catalog-validated bulk skill-module plan for Developer tools.
+
+    The game DefaultGame.ini exposes old CheatScript.UnlockAllSkills and
+    CheatScript.UnlockAllAbilities command lists, but a few entries are stale or
+    internal-only. Build from RedBlink's current MIT-licensed admin catalog
+    instead, so the browser can only request modules the installed stack already
+    advertises through `dune admin skill-module`.
+    """
+    preset = str(preset_id or "").strip()
+    mode = str(level_mode or "max").strip().casefold()
+    modules = load_redblink_skill_modules()
+
+    if not modules:
+        raise ValueError("RedBlink skill-module catalog not found")
+
+    if preset == "skill_keys":
+        selected = [module for module in modules if module["id"].startswith("Skills.Key.")]
+        label = "Unlock all skill keys / capstones"
+    elif preset == "abilities":
+        selected = [module for module in modules if module["id"].startswith("Skills.Ability.")]
+        label = "Unlock all abilities"
+    elif preset == "keys_and_abilities":
+        selected = [
+            module
+            for module in modules
+            if module["id"].startswith("Skills.Key.") or module["id"].startswith("Skills.Ability.")
+        ]
+        label = "Unlock all skill keys / capstones + abilities"
+    else:
+        raise ValueError("unknown bulk skill-module preset")
+
+    if not selected:
+        raise ValueError("selected bulk skill-module preset found no catalog modules")
+
+    plan = []
+    for module in selected:
+        max_level = int(module.get("maxLevel", 1))
+        if max_level < 1:
+            continue
+        level = 1 if mode == "one" else max_level
+        plan.append({**module, "targetLevel": level})
+
+    return {"id": preset, "label": label, "level_mode": mode, "modules": plan}
 
 
 # =========================================================

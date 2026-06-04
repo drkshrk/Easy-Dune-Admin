@@ -108,40 +108,6 @@ WIP / Experimental: this currently appears nonfunctional for actual in-game clas
 Developer-only progression tools. These directly edit progression-related data and are hidden from normal admin workflows. Keep players offline before using them, and treat results as experimental unless verified in game.
 </div>
 
-<form id="researchPointsForm">
-    <label>Character</label>
-    <select id="researchCharacterSelect" onchange="fillResearchActorId()">
-        <option value="">Loading characters...</option>
-    </select>
-
-    <label>Character Actor ID</label>
-    <input type="text" name="character_actor_id" id="researchActorId" required>
-
-    <label>Research Points</label>
-    <input type="number" name="research_points" id="researchPointsValue" min="0" step="1" value="1000" required>
-
-    <button type="submit">Set Research Points</button>
-</form>
-
-<form id="skillPointsForm">
-    <div class="warning">
-        Adds usable skill points without changing character level XP. This increases both TotalSkillPoints and UnspentSkillPoints on the selected character's DuneCharacter data.
-    </div>
-
-    <label>Character</label>
-    <select id="skillPointsCharacterSelect" onchange="fillSkillPointsActorId()">
-        <option value="">Loading characters...</option>
-    </select>
-
-    <label>Character Actor ID</label>
-    <input type="text" name="character_actor_id" id="skillPointsActorId" required>
-
-    <label>Skill Points To Add</label>
-    <input type="number" name="skill_points" id="skillPointsAmount" min="1" max="1000" step="1" value="1" required>
-
-    <button type="submit">Give Skill Points</button>
-</form>
-
 <form id="specializationXpForm">
     <div class="warning">
         WIP / unconfirmed: Specialization XP is separate from character level XP. Specialization rows use the character pawn actor ID. Each track appears capped at <b>{{ "{:,}".format(specialization_max_xp) }}</b> XP / level 100.
@@ -279,6 +245,11 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
 </div>
 
 <form id="banLookupForm">
+    <label>Character</label>
+    <select id="banLookupCharacterSelect" onchange="fillBanLookupQuery()">
+        <option value="">Loading characters...</option>
+    </select>
+
     <label>Banned / Flagged Player Lookup</label>
     <input type="text" name="q" id="banLookupQuery" placeholder="FLS ID, Funcom ID, character, row id, or cheat type">
     <button type="submit">Lookup Banned / Flagged Players</button>
@@ -295,6 +266,11 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
         Research-only flag test. This calls the database log_cheating routine and inserts a cheater_tracking row. Keep this off normal Admin until actual kick/ban behavior is proven.
     </div>
 
+    <label>Character</label>
+    <select id="flagCheaterCharacterSelect" onchange="fillFlagCheaterFlsId()">
+        <option value="">Loading characters...</option>
+    </select>
+
     <label>Player / FLS ID</label>
     <input type="text" name="fls_id" id="flagCheaterFlsId" required>
 
@@ -310,6 +286,11 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
     <div class="warning">
         Experimental unban/unflag path. Enter either an FLS ID to remove all of that player's cheater_tracking rows, or one cheater row ID to remove a single row.
     </div>
+
+    <label>Character</label>
+    <select id="unflagCheaterCharacterSelect" onchange="fillUnflagCheaterFlsId()">
+        <option value="">Loading characters...</option>
+    </select>
 
     <label>Player / FLS ID</label>
     <input type="text" name="fls_id" id="unflagCheaterFlsId">
@@ -335,13 +316,14 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
 async function loadDeveloperCharacters() {
     const chars = await fetchCharacters(true);
     fillCharacterSelect("classProgressionCharacterSelect", chars);
-    fillCharacterSelect("researchCharacterSelect", chars);
-    fillCharacterSelect("skillPointsCharacterSelect", chars);
     fillCharacterSelect("xpCharacterSelect", chars);
     fillCharacterSelect("specializationGrantAllCharacterSelect", chars);
     fillCharacterSelect("specializationMaxCharacterSelect", chars);
     fillCharacterSelect("specializationResetCharacterSelect", chars);
     fillCharacterSelect("progressionCharacterSelect", chars);
+    fillCharacterSelect("banLookupCharacterSelect", chars);
+    fillCharacterSelect("flagCheaterCharacterSelect", chars);
+    fillCharacterSelect("unflagCheaterCharacterSelect", chars);
 }
 
 loadDeveloperCharacters();
@@ -503,30 +485,6 @@ classProgressionForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/class-progression-unlock", classProgressionForm);
-});
-
-const researchPointsForm = document.getElementById("researchPointsForm");
-researchPointsForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    const points = document.getElementById("researchPointsValue").value || "0";
-    if (!confirm(`Set the selected character's research points to ${points}? Developer-only progression edit. Continue?`)) {
-        return;
-    }
-
-    await postForm("/api/set-research-points", researchPointsForm);
-});
-
-const skillPointsForm = document.getElementById("skillPointsForm");
-skillPointsForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    const amount = document.getElementById("skillPointsAmount").value || "0";
-    if (!confirm(`Add ${amount} usable skill point(s) to this character? Developer-only progression edit. Continue?`)) {
-        return;
-    }
-
-    await postForm("/api/give-skill-points", skillPointsForm);
 });
 
 const specializationXpForm = document.getElementById("specializationXpForm");

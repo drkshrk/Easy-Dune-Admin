@@ -2,6 +2,18 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
+## 0.8.0-alpha
+
+### Added
+
+- Promoted the Docker package to the primary deployment method with root-level `Dockerfile`, `docker-compose.yml`, `.env.docker.example`, `docker/entrypoint.sh`, `DOCKER.md`, and `rebuild_docker.sh`.
+- Removed the need to maintain a duplicate `docker-preview` app tree; Docker now builds from the normal root application files.
+- Promoted confirmed Research Points, Skill Points, and bulk skill-module presets from the Developer page to the normal Admin Panel.
+- Added a separate Admin-only live unspent skill point setter that uses RedBlink v1.3.3's `dune admin skill-points` / `SkillsSetUnspentSkillPoints` RabbitMQ command for testing without a relog.
+- Added admin-only bulk skill-module presets for catalog-validated "unlock all skill keys / capstones", "unlock all abilities", and combined key/ability testing.
+- Bulk skill-module presets use RedBlink v1.3.3's MIT-licensed `dune admin skill-module` catalog instead of the stale client INI cheat-script entries, so unknown/internal module IDs are skipped.
+- Added Admin UI warnings that bulk skill-module changes may require relogging, a map restart, or a battlegroup restart before in-game state catches up.
+
 ## 0.7.9-alpha
 
 ### Added

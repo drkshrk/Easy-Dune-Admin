@@ -141,6 +141,19 @@
     margin-top: 0;
 }
 
+.admin-tool-grid .warning,
+.admin-tool-grid .coord-box {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.25;
+}
+
+.admin-tool-grid .coord-box {
+    white-space: pre-wrap;
+    overflow-x: hidden;
+}
+
 .admin-solari-grid {
     display: grid;
     grid-column: 1 / -1;
@@ -524,7 +537,7 @@ Recommended first use: test on a low-risk vehicle and confirm in-game behavior a
 
 <div class="warning">
 Admin-only helper tools.<br><br>
-Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal Character XP and Set Character Level remain here; experimental progression tools live behind the hidden Developer page.
+Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirmed character XP, level, research point, skill point, and bulk skill-module controls live here; unconfirmed journey/class/specialization experiments remain behind the hidden Developer page.
 </div>
 
 <div class="admin-tool-grid">
@@ -776,6 +789,94 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Normal C
     <input type="number" name="target_level" id="characterTargetLevel" min="1" max="{{ character_max_level }}" step="1" value="25" required>
 
     <button type="submit">Set Character Level</button>
+</form>
+
+<form id="researchPointsForm">
+    <div class="warning">
+        Sets the selected character's research points directly. Confirmed working; relogging may still be useful if the client UI does not refresh immediately.
+    </div>
+
+    <label>Character</label>
+    <select id="researchCharacterSelect" onchange="fillResearchActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="researchActorId" required>
+
+    <label>Research Points</label>
+    <input type="number" name="research_points" id="researchPointsValue" min="0" step="1" value="1000" required>
+
+    <button type="submit">Set Research Points</button>
+</form>
+
+<form id="skillPointsForm">
+    <div class="warning">
+        Adds usable skill points without changing character level XP. Confirmed working; use reasonable amounts and verify in game.
+    </div>
+
+    <label>Character</label>
+    <select id="skillPointsCharacterSelect" onchange="fillSkillPointsActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="skillPointsActorId" required>
+
+    <label>Skill Points To Add</label>
+    <input type="number" name="skill_points" id="skillPointsAmount" min="1" max="1000" step="1" value="1" required>
+
+    <button type="submit">Give Skill Points</button>
+</form>
+
+<form id="redblinkSkillPointsForm">
+    <div class="warning">
+        Live RabbitMQ command test using RedBlink v1.3.3 <b>dune admin skill-points</b>, which publishes <b>SkillsSetUnspentSkillPoints</b>. This appears to set the current unspent skill point value rather than add to total earned points, so use it for testing and verify the in-game skill UI.
+    </div>
+
+    <label>Character</label>
+    <select id="redblinkSkillPointsCharacterSelect" onchange="fillRedblinkSkillPointsPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="redblinkSkillPointsPlayerId" required>
+
+    <label>Set Unspent Skill Points</label>
+    <input type="number" name="amount" id="redblinkSkillPointsAmount" min="0" max="1000" step="1" value="10" required>
+
+    <input type="hidden" name="action" value="skill_points">
+    <button type="submit">Set Live Unspent Skill Points</button>
+</form>
+
+<form id="bulkSkillModuleForm">
+    <div class="warning">
+        Bulk RedBlink skill-module preset. Confirmed mostly working in live testing. This sends many <b>dune admin skill-module</b> commands against the selected Player / FLS ID, using RedBlink's current catalog. Relogging, a map restart, or a battlegroup restart may be required before all client state catches up.
+    </div>
+
+    <label>Character</label>
+    <select id="bulkSkillModuleCharacterSelect" onchange="fillBulkSkillModulePlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="bulkSkillModulePlayerId" required>
+
+    <label>Bulk Skill Preset</label>
+    <select name="preset_id" id="bulkSkillModulePresetId" required>
+        <option value="skill_keys">Unlock all skill keys / capstones</option>
+        <option value="abilities">Unlock all abilities</option>
+        <option value="keys_and_abilities">Unlock all skill keys / capstones + abilities</option>
+    </select>
+
+    <label>Target Level</label>
+    <select name="level_mode" id="bulkSkillModuleLevelMode" required>
+        <option value="max">Set each module to catalog max</option>
+        <option value="one">Set each module to level 1</option>
+    </select>
+
+    <button type="submit">Run Bulk Skill Module Preset</button>
+    <pre id="bulkSkillModuleOutput" class="coord-box">Bulk skill-module output will appear here. Large presets can take a few minutes because each module is sent as its own RedBlink command.</pre>
 </form>
 
 <form id="solariGrantForm">
@@ -1152,6 +1253,69 @@ characterLevelForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/set-character-level", characterLevelForm);
+});
+
+const researchPointsForm = document.getElementById("researchPointsForm");
+researchPointsForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const points = document.getElementById("researchPointsValue").value || "0";
+    if (!confirm(`Set the selected character's research points to ${points}? Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/set-research-points", researchPointsForm);
+});
+
+const skillPointsForm = document.getElementById("skillPointsForm");
+skillPointsForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const amount = document.getElementById("skillPointsAmount").value || "0";
+    if (!confirm(`Add ${amount} usable skill point(s) to this character? Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/give-skill-points", skillPointsForm);
+});
+
+const redblinkSkillPointsForm = document.getElementById("redblinkSkillPointsForm");
+redblinkSkillPointsForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const points = document.getElementById("redblinkSkillPointsAmount").value || "0";
+    if (!confirm(`Set this player's live unspent skill points to ${points} via RabbitMQ? This may not change total earned skill points. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/redblink-admin-command", redblinkSkillPointsForm);
+});
+
+const bulkSkillModuleForm = document.getElementById("bulkSkillModuleForm");
+bulkSkillModuleForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const preset = document.getElementById("bulkSkillModulePresetId");
+    const mode = document.getElementById("bulkSkillModuleLevelMode");
+    const label = preset && preset.selectedOptions.length ? preset.selectedOptions[0].textContent : "selected bulk skill preset";
+    const modeLabel = mode && mode.selectedOptions.length ? mode.selectedOptions[0].textContent : "selected level mode";
+    if (!confirm(`${label} using ${modeLabel}? This will run many RedBlink skill-module commands and may require relogging or a restart. Continue?`)) {
+        return;
+    }
+
+    const output = document.getElementById("bulkSkillModuleOutput");
+    const button = bulkSkillModuleForm.querySelector("button[type='submit']");
+    const startMessage = `${label} started with ${modeLabel}. This can take a few minutes; waiting for RedBlink command output...`;
+    if (output) output.textContent = startMessage;
+    showOutput(startMessage, bulkSkillModuleForm);
+    if (button) button.disabled = true;
+
+    try {
+        const result = await postForm("/api/bulk-skill-modules", bulkSkillModuleForm);
+        if (output && result) output.textContent = result.message || "Bulk skill-module preset completed.";
+    } finally {
+        if (button) button.disabled = false;
+    }
 });
 
 const solariGrantForm = document.getElementById("solariGrantForm");

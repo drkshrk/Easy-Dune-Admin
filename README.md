@@ -1,11 +1,11 @@
-﻿<h1 align="center">Easy Dune Admin</h1>
+<h1 align="center">Easy Dune Admin</h1>
 
 <p align="center">
   Independent companion administration platform for RedBlink's Dune Awakening self-hosted Docker stack.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.7.9--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.8.0--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.7.9-alpha`
+Current panel version: `0.8.0-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -125,10 +125,12 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 - Admin-only SolarisCoin grant with preset amount dropdown
 - Admin-only Solari Coin inventory-stack lookup, add, and set-exact correction tools
 - Admin-only Solari Credit lookup, add, and set-exact correction tools for the live exchange/bank balance
-- Developer-only research point setter for selected characters
+- Admin-only research point setter for selected characters
 - Admin-only character XP grant for the actual displayed character level
 - Admin-only set character level tool using the same level XP curve
-- Developer-only skill point grant that adds usable skill points without changing character level XP
+- Admin-only skill point grant that adds usable skill points without changing character level XP
+- Admin-only live unspent skill point setter using RedBlink v1.3.3's `dune admin skill-points` / `SkillsSetUnspentSkillPoints` RabbitMQ command. This is an experimental compare-path that sets the current unspent value; it may not change total earned skill points.
+- Admin-only bulk skill-module presets for catalog-validated skill key/capstone and ability unlock testing through RedBlink v1.3.3's `dune admin skill-module` helper
 - Item grants target the selected player/account inventory path and do not use map partition IDs
 - WIP/unconfirmed Developer-only specialization tools for Combat, Crafting, Gathering, Exploration, and Sabotage tracks. These now target character pawn actor IDs, can add XP to one track, grant missing all-track rows at 0 XP for testing, or max all tracks plus discovered keystones.
 - Developer-only specialization reset for one track or all tracks plus keystones
@@ -284,7 +286,34 @@ curl
 ```bash
 git clone https://github.com/n00bgames/Easy-Dune-Admin.git
 cd Easy-Dune-Admin
+cp .env.docker.example .env
+nano .env
+chmod +x rebuild_docker.sh docker/entrypoint.sh
+./rebuild_docker.sh
+```
 
+Set `REDBLINK_HOST_DIR` in `.env` to the host path where RedBlink's stack lives.
+The default web port is `8088`.
+
+Browse to:
+
+```text
+http://SERVER-IP:8088
+```
+
+Docker is the primary supported install method as of `0.8.0-alpha`. Runtime
+webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
+normal rebuilds preserve `users.db`, roles, and logs. Do not run
+`docker compose down -v` unless you intentionally want to reset the webadmin.
+
+See `DOCKER.md` for Docker mount and production notes.
+
+### Advanced Local Install
+
+The legacy local Python launch remains available for Linux hosts that prefer
+running Easy Dune Admin directly outside a container:
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -396,29 +425,20 @@ Teleport-capable roles can query `/api/map-partitions` after logging in to see o
 
 ---
 
-## Docker preview package
+## Docker Package
 
-An experimental Dockerized Easy Dune Admin package is included in:
+The root `Dockerfile`, `docker-compose.yml`, `.env.docker.example`,
+`docker/entrypoint.sh`, and `rebuild_docker.sh` are the primary deployment
+package. The container mounts the host RedBlink stack directory and Docker socket
+instead of bundling RedBlink inside the image.
 
-```text
-docker-preview/
-```
+Docker webadmin state is stored in the named Docker volume
+`easy-dune-admin-data` at `/data`, including `/data/users.db` and `/data/logs`.
+Rebuilding the image should preserve users and roles as long as the volume is
+not removed. Avoid `docker compose down -v` unless you intentionally want to
+reset the webadmin database.
 
-This package runs Easy Dune Admin in a container while mounting the host RedBlink stack directory and Docker socket. It is currently a preview path for testing, not yet the recommended install method.
-
-Docker webadmin state is stored in the named Docker volume `easy-dune-admin-data`
-at `/data`, including `/data/users.db` and `/data/logs`. Rebuilding the image
-should preserve users and roles as long as the volume is not removed. Avoid
-`docker compose -f docker-compose.test.yml down -v` unless you intentionally want
-to reset the webadmin database.
-
-See:
-
-```text
-docker-preview/DOCKER_TESTING.md
-```
-
-for setup notes.
+See `DOCKER.md` for setup notes.
 
 ---
 
@@ -427,7 +447,7 @@ for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.7.9-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.0-alpha
 ```
 
 Preserve local runtime data:
@@ -440,10 +460,13 @@ Then update:
 
 ```bash
 git pull
-source venv/bin/activate
-pip install -r requirements.txt
-./start.sh
+cp .env.docker.example .env   # only if .env does not already exist
+nano .env                     # verify REDBLINK_HOST_DIR and secrets
+./rebuild_docker.sh
 ```
+
+For the advanced local Python install, run `pip install -r requirements.txt`
+inside the virtualenv and restart with `./restart.sh`.
 
 ---
 
@@ -528,7 +551,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.7.9-alpha`: Easy Dune Admin now includes Progressive Web App support for install-to-home-screen use on phones and tablets, with conservative caching that avoids intentionally storing admin data offline.
+Current highlight for `0.8.0-alpha`: Easy Dune Admin now promotes confirmed research points, skill points, and bulk skill-module presets to the Admin Panel, using RedBlink's current skill-module catalog rather than stale client INI command lists.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

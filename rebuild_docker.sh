@@ -4,20 +4,22 @@
 # Easy Dune Admin Docker Rebuild Helper
 # =========================================================
 #
-# Run this from the Docker test package folder:
+# Run this from the Easy Dune Admin project root:
 #   ./rebuild_docker.sh
 #
 # User-adjustable values:
-# - COMPOSE_FILE: change only if you rename docker-compose.test.yml.
-# - SERVICE_NAME: change only if the compose service is renamed.
+# - COMPOSE_FILE: change only if you rename docker-compose.yml.
+# - SERVICE_NAME: keep aligned with docker-compose.yml.
+# - CONTAINER_NAME: keep aligned with docker-compose.yml container_name.
 # - FOLLOW_LOGS: set to 0 to rebuild without attaching to logs.
 
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.test.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 SERVICE_NAME="${SERVICE_NAME:-easy-dune-admin}"
+CONTAINER_NAME="${CONTAINER_NAME:-easy-dune-admin}"
 FOLLOW_LOGS="${FOLLOW_LOGS:-1}"
 
 if [ ! -f "${COMPOSE_FILE}" ]; then
@@ -30,10 +32,19 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "Stopping existing Easy Dune Admin Docker test stack..."
+echo "Stopping existing Easy Dune Admin stack..."
 docker compose -f "${COMPOSE_FILE}" down
 
-echo "Rebuilding and starting Easy Dune Admin Docker test stack..."
+# docker compose down removes containers from the current compose project. If
+# the folder was renamed or launched under a different project name, a fixed-name
+# container can remain and block the next up. Remove only this webadmin
+# container; named volumes such as easy-dune-admin-data are preserved.
+if docker ps -a --format '{{.Names}}' | grep -Fxq "${CONTAINER_NAME}"; then
+    echo "Removing stale container: ${CONTAINER_NAME}"
+    docker rm -f "${CONTAINER_NAME}"
+fi
+
+echo "Rebuilding and starting Easy Dune Admin..."
 docker compose -f "${COMPOSE_FILE}" up --build -d
 
 echo
