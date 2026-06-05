@@ -35,28 +35,28 @@
                 Easy Dune Admin
                 <span class="alpha-badge">ALPHA</span>
         </div>
-        
+
         <div class="nav">
-            <a href="/">Dashboard</a>
-            <a href="/online">Who's Online</a>
-            <a href="/map">Live Map</a>
+            <a href="/" class="nav-link" data-tooltip="Go to Dashboard">Dashboard</a>
+            <a href="/online" class="nav-link" data-tooltip="View online players.">Who's Online</a>
+            <a href="/map" class="nav-link" data-tooltip="View live players, vehicles, and bases on Arrakis / Hagga Basin">Live Map</a>
             {% if session.role == "vip" or session.role == "admin" %}
-            <a href="/vip">VIP Tools</a>
+            <a href="/vip" class="nav-link" data-tooltip="Self-service overrepair and offline teleport for your linked character.">VIP Tools</a>
             {% endif %}
             {% if session.role == "operator" or session.role == "admin" %}
-            <a href="/grants">Item Grants</a>
-            <a href="/server">Server Management</a>
+            <a href="/grants" class="nav-link" data-tooltip="Search items, grant items, and grant thopter kits.">Item Grants</a>
+            <a href="/server" class="nav-link" data-tooltip="Spawn maps and restart RedBlink services.">Server Management</a>
             {% endif %}
             {% if session.role == "admin" %}
-            <a href="/admin">Admin Panel</a>
-            <a href="/infrastructure">Infrastructure</a>
-            <a href="/users">Users</a>
+            <a href="/admin" class="nav-link" data-tooltip="Run admin-only utilities such as overrepair.">Admin Panel</a>
+            <a href="/infrastructure" class="nav-link" data-tooltip="Diagnostics & Shell Access">Infrastructure</a>
+            <a href="/users" class="nav-link" data-tooltip="Go to Dashboard">Users</a>
             {% endif %}
             {% if session.role == "admin" %}
-            <a href="/logs">Logs</a>
+            <a href="/logs" class="nav-link" data-tooltip="Go to Dashboard">Logs</a>
             {% endif %}
-            <a href="/account">My Account</a>
-            <a href="/logout">Logout</a>
+            <a href="/account" class="nav-link" data-tooltip="Go to Dashboard">My Account</a>
+            <a href="/logout" class="nav-link" data-tooltip="Go to Dashboard">Logout</a>
         </div>
     
     </div>
