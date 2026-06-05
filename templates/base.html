@@ -50,13 +50,13 @@
             {% if session.role == "admin" %}
             <a href="/admin" class="nav-link" data-tooltip="Run admin-only utilities such as overrepair.">Admin Panel</a>
             <a href="/infrastructure" class="nav-link" data-tooltip="Diagnostics & Shell Access">Infrastructure</a>
-            <a href="/users" class="nav-link" data-tooltip="Go to Dashboard">Users</a>
+            <a href="/users" class="nav-link" data-tooltip="Manage and create users for the website.">Users</a>
             {% endif %}
             {% if session.role == "admin" %}
-            <a href="/logs" class="nav-link" data-tooltip="Go to Dashboard">Logs</a>
+            <a href="/logs" class="nav-link" data-tooltip="View various log files.">Logs</a>
             {% endif %}
-            <a href="/account" class="nav-link" data-tooltip="Go to Dashboard">My Account</a>
-            <a href="/logout" class="nav-link" data-tooltip="Go to Dashboard">Logout</a>
+            <a href="/account" class="nav-link" data-tooltip="View your account information">My Account</a>
+            <a href="/logout" class="nav-link" data-tooltip="Logout from the website">Logout</a>
         </div>
     
     </div>
