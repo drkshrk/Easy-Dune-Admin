@@ -24,11 +24,18 @@
 
 {% if session.user %}
 <div class="header-container">
+    
     <div class="header-box banner">
         <img class="banner" src="/static/dune-admin.png" alt="Dune Admin Banner">
     </div>
 
     <div class="header-box">
+        
+        <div class="title">
+                Easy Dune Admin
+                <span class="alpha-badge">ALPHA</span>
+        </div>
+        
         <div class="nav">
             <a href="/">Dashboard</a>
             <a href="/online">Who's Online</a>
@@ -51,12 +58,11 @@
             <a href="/account">My Account</a>
             <a href="/logout">Logout</a>
         </div>
+    
     </div>
+
 </div>
-<div class="title">
-        Easy Dune Admin
-        <span class="alpha-badge">ALPHA</span>
-</div>
+
 {% endif %}
 
 <div class="container">
