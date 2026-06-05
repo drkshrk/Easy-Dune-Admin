@@ -9,17 +9,17 @@
   padding: 10px;
 }
 
-/* Box 1 and Box 2 will share the remaining 35% evenly */
+/* Box 1 and Box 2 will share the remaining 25% evenly */
 .header-box:not(:last-child) {
   flex: 1;         
 }
 
-/* Box 3 takes up exactly 65% of the container */
+/* Box 3 takes up exactly 75% of the container */
 .header-box:last-child {
     flex: 0 0 75%;
     display: flex;              /* Turns Box 3 into a flex container */
     flex-direction: column;     /* Keeps content flowing top-to-bottom */
-    justify-content: flex-end;  /* Pushes all content inside this box to the bottom */
+    justify-content: space-between;  /* Pushes all content inside this box to the bottom */
 }
 
 body {
@@ -32,7 +32,7 @@ body {
 
 .banner {
     width: 100%;
-    min-width: 325px;  /* Stops shrinking at 325px */
+    min-width: 425px;  /* Stops shrinking at 325px */
     height: auto;
     display: block;
 
