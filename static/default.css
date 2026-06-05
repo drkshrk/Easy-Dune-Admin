@@ -58,11 +58,94 @@ body {
 }
 
 .nav {
+    width: 100%;
+    min-height: 100px;     /* Sets the minimum height, but allows it to grow if needed */
+    position: relative;
     list-style: none;
     margin: 0;
     padding: 0 24px 18px 24px;
     gap: 10px;          /* Adds clean spacing between each link link */
     text-align: left;   /* Text-align forces inline-block child elements to align to a specific side */
+}
+
+/* THE SECRET INGREDIENT: An invisible helper element inside the navbar */
+.nav::before {
+  content: "";
+  display: inline-block;
+  height: 100%;             /* Matches the exact height of the navbar, even as it grows */
+  vertical-align: bottom;   /* Sits firmly at the bottom */
+  position: relative;       /* CRITICAL: Acts as the anchor point for the absolute tooltip position */
+}
+
+/* 2. Create the Tooltip Text Bubble */
+.nav-link::after {
+  content: attr(data-tooltip); /* Pulls the text dynamically from the HTML attribute */
+  position: absolute;
+  bottom: 100%;               /* Positions it directly above the link text */
+  left: 50%;
+  transform: translateX(-50%) translateY(-5px); /* Centers it horizontally and pushes it up slightly */
+  
+  /* Styling the bubble */
+  background-color: #858484;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;        /* Prevents the text from awkwardly wrapping to a new line */
+  
+  /* Hiding mechanism */
+  opacity: 0;
+  pointer-events: none;       /* Prevents the tooltip from blocking mouse clicks */
+  transition: opacity 0.2s ease, transform 0.2s ease; /* Smooth fade and slight slide-up animation */
+}
+
+/* 3. Create the Tiny Triangle/Arrow under the Bubble */
+.nav-link::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  
+  /* CSS Triangle Trick */
+  border: 6px solid transparent;
+  border-top-color: #f72463;
+  
+  /* Layering Fix */
+  z-index: 10;                   /* Forces the arrow to sit on top of the bubble boundary */
+
+  /* Hiding mechanism */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* 4. Trigger Visibility on Hover */
+.nav-link:hover::after,
+.nav-link:hover::before {
+  opacity: 1;
+  /* Slightly adjusts the position on hover for a gentle "float up" effect */
+  transform: translateX(-50%) translateY(-10px); 
+}
+.nav-link:hover::before {
+  transform: translateX(-50%) translateY(2px); /* Syncs the arrow's movement with the bubble */
+}
+
+/* 2. The Individual Navigation Links */
+.nav-link {
+  display: inline-block; /* Keeps them sitting horizontally side-by-side */
+  vertical-align: bottom;/* Snaps the bottom of the link to the bottom of the helper element */
+  
+  /* Spacing & Aesthetics */
+  margin-right: 25px;    /* Spaces the horizontal links out from each other */
+  padding-bottom: 15px;  /* Safely pushes the text up away from hitting the absolute edge */
+  text-decoration: none;
+  color: #333;
+}
+
+/* Prevents the final link from adding dead space on the right edge */
+.nav-link:last-child {
+  margin-right: 0;
 }
 
 .nav a {
