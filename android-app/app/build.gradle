@@ -1,0 +1,22 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.n00bgames.easyduneadmin"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.n00bgames.easyduneadmin"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "0.8.1-alpha"
+    }
+
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach {
+            outputFileName = "EDA.apk"
+        }
+    }
+}

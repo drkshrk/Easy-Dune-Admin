@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Easy Dune Admin is commonly reached over private LAN/VPN HTTP.
+         Do not expose the panel directly to the public internet. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

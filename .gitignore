@@ -28,6 +28,15 @@ dune-awakening-selfhost-docker-*/
 DuneQueries/
 docker-preview/
 
+# Android local build output.
+android-app/.gradle/
+android-app/app/build/
+android-app/build/
+android-app/local.properties
+*.apk
+*.aab
+*.ap_
+
 # OS/editor noise.
 .DS_Store
 Thumbs.db

@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.8.0-alpha
+Panel version: 0.8.1-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -31,11 +31,17 @@ Security Notes
 - Do not expose this panel directly to the public internet.
 - Use a reverse proxy, HTTPS, and additional authentication before any
   wider exposure.
+- Basic access testing has been performed over direct LAN, VPN, and HTTPS
+  reverse-proxy paths. Command-level behavior should still be verified on your
+  own stack before relying on high-impact admin actions remotely.
 - The panel can grant items, restart services, run database utilities,
   repair vehicles, teleport offline characters, and optionally open a
   browser-based host shell.
 - Direct SQL and host shell features are intentionally admin-only and
   should be treated as high-trust tools.
+- setup.sh creates /etc/sudoers.d/dune-web-admin with a restricted allowlist
+  for only the optional Infrastructure installer commands Easy Dune Admin
+  actually calls. It does not grant NOPASSWD: ALL.
 - Viewer accounts are intentionally privacy-limited. They can see
   viewer-safe status, online player names, Funcom IDs, and map markers, but they
   cannot view sensitive database identifiers such as raw player IDs,
@@ -261,8 +267,11 @@ Mobile / PWA:
   intentionally cached for offline admin-data viewing
 - Keep mobile access behind LAN/VPN or other private access controls; do not
   expose the panel directly to the public internet
+- Optional sideloadable Android APK wrapper lives in android-app/. It opens
+  your existing Easy Dune Admin server in a native WebView and stores only the
+  server URL on the phone.
 
-Android install:
+Android PWA install:
 
 1. Connect the phone to the same LAN or VPN as the Easy Dune Admin server.
 2. Open Chrome on Android and browse to http://SERVER-IP:8088.
@@ -272,6 +281,48 @@ Android install:
 
 If Chrome only offers Add to Home screen, use that option. No rooted phone is
 required.
+
+Android APK build:
+
+1. Open android-app in Android Studio.
+2. Build app with Build > Build Bundle(s) / APK(s) > Build APK(s).
+3. Or build from a terminal with:
+
+cd android-app
+gradle assembleDebug
+
+The debug APK is written to:
+
+android-app/app/build/outputs/apk/debug/EDA.apk
+
+Android APK sideload:
+
+1. Copy EDA.apk to the phone by USB, file share, cloud drive, or Android file
+   transfer.
+2. Open EDA.apk from the phone's Files app or file manager.
+3. Android will usually block the first install attempt because the APK was not
+   installed from Google Play.
+4. When prompted, open the Android settings screen for that file
+   manager/browser and allow installs from that source.
+5. Return to the APK and continue the install.
+6. Launch Easy Dune Admin.
+7. Enter your LAN/VPN/HTTPS Easy Dune Admin URL, such as
+   http://SERVER-IP:8088 or https://eda.example.com.
+
+No rooted phone is required. To update an existing sideloaded install, build a
+new EDA.apk and install it over the old one.
+
+Release packaging note:
+
+- The Android wrapper source lives in android-app/ and should be committed with
+  the repository.
+- The built EDA.apk is ignored by Git and should be attached to GitHub Releases
+  only as an optional convenience artifact.
+- Suggested release wording: Optional Android WebView wrapper. Sideload at your
+  own discretion. Android will block the first install attempt because this APK
+  is not from Google Play; allow installs from that source if you trust this
+  release. The APK stores only the configured Easy Dune Admin server URL and
+  defaults to http://127.0.0.1:8088.
 
 
 Requirements
@@ -298,7 +349,7 @@ Browse to:
 
 http://SERVER-IP:8088
 
-Docker is the primary supported install method as of 0.8.0-alpha. Runtime
+Docker is the primary supported install method as of 0.8.1-alpha. Runtime
 webadmin state is stored in the named Docker volume easy-dune-admin-data, so
 normal rebuilds preserve users.db, roles, and logs. Do not run
 docker compose down -v unless you intentionally want to reset the webadmin.
@@ -508,7 +559,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.0-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.1-alpha
 
 Preserve local runtime data:
 
@@ -557,7 +608,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.8.0-alpha: Easy Dune Admin now promotes confirmed
+Current highlight for 0.8.1-alpha: Easy Dune Admin now promotes confirmed
 research points, skill points, and bulk skill-module presets to the Admin
 Panel, using RedBlink's current skill-module catalog rather than stale client
 INI command lists.

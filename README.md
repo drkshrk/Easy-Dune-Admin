@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.8.0--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.8.1--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.8.0-alpha`
+Current panel version: `0.8.1-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -254,8 +254,9 @@ Restore/import/delete database actions are intentionally not exposed yet.
 - Root-scoped service worker serves a simple offline fallback when the panel is unreachable
 - Authenticated pages and API responses remain network-first and are not intentionally cached for offline admin-data viewing
 - Keep mobile access behind LAN/VPN or other private access controls; do not expose the panel directly to the public internet
+- Optional sideloadable Android APK wrapper lives in [`android-app/`](android-app/README_ANDROID.md). It opens your existing Easy Dune Admin server in a native WebView and stores only the server URL on the phone.
 
-Android install:
+Android PWA install:
 
 1. Connect the phone to the same LAN or VPN as the Easy Dune Admin server.
 2. Open Chrome on Android and browse to `http://SERVER-IP:8088`.
@@ -264,6 +265,41 @@ Android install:
 5. Launch Easy Dune Admin from the new home-screen icon.
 
 If Chrome only offers `Add to Home screen`, use that option. No rooted phone is required.
+
+Android APK build:
+
+1. Open `android-app` in Android Studio.
+2. Build `app` with `Build > Build Bundle(s) / APK(s) > Build APK(s)`.
+3. Or build from a terminal with:
+
+```powershell
+cd android-app
+gradle assembleDebug
+```
+
+The debug APK is written to:
+
+```text
+android-app/app/build/outputs/apk/debug/EDA.apk
+```
+
+Android APK sideload:
+
+1. Copy `EDA.apk` to the phone by USB, file share, cloud drive, or Android file transfer.
+2. Open `EDA.apk` from the phone's Files app or file manager.
+3. Android will usually block the first install attempt because the APK was not installed from Google Play.
+4. When prompted, open the Android settings screen for that file manager/browser and allow installs from that source.
+5. Return to the APK and continue the install.
+6. Launch Easy Dune Admin.
+7. Enter your LAN/VPN/HTTPS Easy Dune Admin URL, such as `http://SERVER-IP:8088` or `https://eda.example.com`.
+
+No rooted phone is required. To update an existing sideloaded install, build a new `EDA.apk` and install it over the old one.
+
+Release packaging note:
+
+- The Android wrapper source lives in `android-app/` and should be committed with the repository.
+- The built `EDA.apk` is ignored by Git and should be attached to GitHub Releases only as an optional convenience artifact.
+- Suggested release wording: `Optional Android WebView wrapper. Sideload at your own discretion. Android will block the first install attempt because this APK is not from Google Play; allow installs from that source if you trust this release. The APK stores only the configured Easy Dune Admin server URL and defaults to http://127.0.0.1:8088.`
 
 ---
 
@@ -301,7 +337,7 @@ Browse to:
 http://SERVER-IP:8088
 ```
 
-Docker is the primary supported install method as of `0.8.0-alpha`. Runtime
+Docker is the primary supported install method as of `0.8.1-alpha`. Runtime
 webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
 normal rebuilds preserve `users.db`, roles, and logs. Do not run
 `docker compose down -v` unless you intentionally want to reset the webadmin.
@@ -447,7 +483,7 @@ See `DOCKER.md` for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.0-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.1-alpha
 ```
 
 Preserve local runtime data:
@@ -513,11 +549,15 @@ chmod +x setup.sh start.sh restart.sh shutdown.sh
 
 This project is intended for LAN/private/VPN environments. Do not expose it directly to the public internet.
 
+Basic access testing has been performed over direct LAN, VPN, and HTTPS reverse-proxy paths. Command-level behavior should still be verified on your own stack before relying on high-impact admin actions remotely.
+
 `setup.sh` creates a restricted sudoers file under:
 
 ```text
 /etc/sudoers.d/dune-web-admin
 ```
+
+The generated sudoers file allowlists only the optional Infrastructure installer commands Easy Dune Admin actually calls: selected `apt` installs, Docker service enablement, adding the webadmin user to the Docker group, RedBlink's `install-command.sh`, and the downloaded Docker bootstrap script at `/tmp/easy-dune-admin-get-docker.sh`. It does not grant `NOPASSWD: ALL`.
 
 The optional browser host shell runs with the permissions of the Linux user that launches `app.py`. Treat it like SSH access to the host.
 
@@ -551,7 +591,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.8.0-alpha`: Easy Dune Admin now promotes confirmed research points, skill points, and bulk skill-module presets to the Admin Panel, using RedBlink's current skill-module catalog rather than stale client INI command lists.
+Current highlight for `0.8.1-alpha`: Easy Dune Admin now promotes confirmed research points, skill points, and bulk skill-module presets to the Admin Panel, using RedBlink's current skill-module catalog rather than stale client INI command lists.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

@@ -1,6 +1,6 @@
 # Docker Install
 
-Docker is the primary install path for Easy Dune Admin as of `0.8.0-alpha`.
+Docker is the primary install path for Easy Dune Admin as of `0.8.1-alpha`.
 
 ## What The Container Mounts
 

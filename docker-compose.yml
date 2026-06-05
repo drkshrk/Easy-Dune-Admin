@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: easy-dune-admin:0.8.0-alpha
+    image: easy-dune-admin:0.8.1-alpha
     container_name: easy-dune-admin
     restart: unless-stopped
     ports:

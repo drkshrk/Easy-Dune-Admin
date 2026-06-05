@@ -2,7 +2,7 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.8.0-alpha
+## 0.8.1-alpha
 
 ### Added
 
@@ -13,6 +13,9 @@ All notable changes to Easy Dune Admin are documented here.
 - Added admin-only bulk skill-module presets for catalog-validated "unlock all skill keys / capstones", "unlock all abilities", and combined key/ability testing.
 - Bulk skill-module presets use RedBlink v1.3.3's MIT-licensed `dune admin skill-module` catalog instead of the stale client INI cheat-script entries, so unknown/internal module IDs are skipped.
 - Added Admin UI warnings that bulk skill-module changes may require relogging, a map restart, or a battlegroup restart before in-game state catches up.
+- Added the first sideloadable Android APK wrapper project under `android-app/`, with a configurable Easy Dune Admin URL screen and native WebView shell for LAN/VPN use.
+- Documented basic access testing over direct LAN, VPN, and HTTPS reverse-proxy paths, with command-level verification still recommended per deployment.
+- Refined `setup.sh` so the generated sudoers file allowlists only the optional Infrastructure installer commands Easy Dune Admin actually calls, instead of broad passwordless sudo.
 
 ## 0.7.9-alpha
 

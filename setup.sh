@@ -25,16 +25,41 @@ echo "Creating restricted sudoers entry for:"
 echo "  $WEBADMIN_USER"
 echo
 
+APT_BIN="$(command -v apt || true)"
+SYSTEMCTL_BIN="$(command -v systemctl || true)"
+USERMOD_BIN="$(command -v usermod || true)"
+SH_BIN="$(command -v sh || true)"
+
+if [ -z "$APT_BIN" ] || [ -z "$SYSTEMCTL_BIN" ] || [ -z "$USERMOD_BIN" ] || [ -z "$SH_BIN" ]; then
+    echo "Could not locate apt, systemctl, usermod, or sh."
+    exit 1
+fi
+
+DEFAULT_REDBLINK_DIR="/home/${WEBADMIN_USER}/dune-awakening-selfhost-docker"
+read -p "RedBlink stack directory for install-command.sh [$DEFAULT_REDBLINK_DIR]: " REDBLINK_DIR
+REDBLINK_DIR="${REDBLINK_DIR:-$DEFAULT_REDBLINK_DIR}"
+REDBLINK_INSTALL_COMMAND="${REDBLINK_DIR%/}/runtime/scripts/install-command.sh"
+
 sudo tee "$SUDOERS_FILE" >/dev/null <<EOF
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/apt
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/apt-get
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/curl
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/git
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/docker
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/docker-compose
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/libexec/docker/cli-plugins/docker-compose
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl
-${WEBADMIN_USER} ALL=(ALL) NOPASSWD: /usr/sbin/usermod
+# Easy Dune Admin restricted sudo rules.
+# These are only for the optional legacy Infrastructure installer buttons.
+# Normal Docker-primary operation should not require passwordless sudo.
+
+Cmnd_Alias EDA_APT = \\
+    ${APT_BIN} update, \\
+    ${APT_BIN} install -y git curl ca-certificates apt-transport-https software-properties-common, \\
+    ${APT_BIN} install -y docker.io docker-compose-plugin, \\
+    ${APT_BIN} install -y docker-compose-plugin
+
+Cmnd_Alias EDA_DOCKER_BOOTSTRAP = \\
+    ${SH_BIN} /tmp/easy-dune-admin-get-docker.sh, \\
+    ${SYSTEMCTL_BIN} enable --now docker, \\
+    ${USERMOD_BIN} -aG docker ${WEBADMIN_USER}
+
+Cmnd_Alias EDA_REDBLINK_INSTALL = \\
+    ${REDBLINK_INSTALL_COMMAND}
+
+${WEBADMIN_USER} ALL=(root) NOPASSWD: EDA_APT, EDA_DOCKER_BOOTSTRAP, EDA_REDBLINK_INSTALL
 EOF
 
 sudo chmod 440 "$SUDOERS_FILE"
@@ -56,11 +81,12 @@ echo "  $SUDOERS_FILE"
 echo
 echo "Testing permissions..."
 
-sudo -n apt --version >/dev/null && echo "apt OK"
-sudo -n docker version >/dev/null 2>&1 && echo "docker OK"
+sudo -n "$APT_BIN" update >/dev/null && echo "apt update OK"
+sudo -n "$SYSTEMCTL_BIN" enable --now docker >/dev/null 2>&1 && echo "systemctl docker OK"
 
 echo
 echo "Setup complete."
 echo
 echo "You may need to log out and back in after Docker group changes."
+echo "The generated sudoers file intentionally does not allow NOPASSWD: ALL."
 echo

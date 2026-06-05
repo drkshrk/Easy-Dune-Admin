@@ -128,22 +128,22 @@ Infrastructure installer buttons use <b>sudo -n</b>. This prevents the web reque
 For these buttons to work, the Linux user running this panel must be allowed to run the needed sudo commands without an interactive password.
 </div>
 
-<p>For a development VM, the simplest setup is:</p>
+<p>Run the project setup helper from an SSH session or local terminal:</p>
 
-<pre><code>sudo visudo</code></pre>
+<pre><code>chmod +x setup.sh
+./setup.sh</code></pre>
 
-<p>Add this at the bottom, replacing <b>youruser</b> with the Linux username running the web-admin:</p>
+<p>It writes a restricted sudoers file for only the optional installer commands this page needs:</p>
 
-<pre><code>youruser ALL=(ALL) NOPASSWD: ALL</code></pre>
+<pre><code>/etc/sudoers.d/dune-web-admin</code></pre>
 
 <p>Then verify:</p>
 
 <pre><code>sudo -l
-sudo -n true
 sudo -n apt update</code></pre>
 
 <div class="warning">
-Production hardening note: <b>NOPASSWD: ALL</b> is broad. For public/shared environments, replace it with a restricted command allowlist.
+Do not use <b>NOPASSWD: ALL</b> for this panel. It grants far more host access than Easy Dune Admin needs.
 </div>
 </div>
 {% endif %}
