@@ -4,6 +4,22 @@ All notable changes to Easy Dune Admin are documented here.
 
 ## 0.8.2-alpha
 
+### Changed
+
+- Added a more polished shared console shell with structured page headers, concise subtitles, and role/mode status chips across major pages.
+- Reworked the authenticated navigation into a connected top navbar with role-restricted links omitted automatically, while keeping the hamburger drawer for account and server installation settings.
+- Added hover glow and click gleam feedback to navigation links and buttons for a more deliberate admin-console feel.
+- Shortened the site banner while keeping it full-width and clickable back to the Dashboard.
+- Added touch pull-to-refresh behavior for mobile/PWA/APK use while ignoring maps, forms, and the settings drawer.
+- Restyled result/output panels so command responses read as attached tool results instead of loose text dumps.
+- Added shared info/warning/danger/experimental visual tiers and applied them across routine, restart-sensitive, destructive, and research-only tools.
+- Marked destructive actions more clearly, including vehicle deletion, user deletion, container emptying, progression resets, and dangerous Developer-page actions.
+- Cleaned up Server Management by replacing separate paired grids with a dense two-column module board that packs shorter panels upward and removes large voids at wide or zoomed-out browser views.
+- Added Android App screenshot placement to the README and removed the older standard Infrastructure screenshot block while keeping Docker Infrastructure.
+- Updated version strings to `0.8.2-alpha`.
+
+## 0.8.1-alpha
+
 ### Added
 
 - Promoted the Docker package to the primary deployment method with root-level `Dockerfile`, `docker-compose.yml`, `.env.docker.example`, `docker/entrypoint.sh`, `DOCKER.md`, and `rebuild_docker.sh`.
