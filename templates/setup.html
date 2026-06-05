@@ -2,9 +2,18 @@
 {% block title %}First Run Setup{% endblock %}
 
 {% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Initial Configuration</div>
+        <h1 class="page-title">First Run Setup</h1>
+        <p class="page-subtitle">Create the first administrator account. No default admin account is created.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Admin Bootstrap</span>
+    </div>
+</div>
+
 <div class="box">
-<h1>First Run Setup</h1>
-<p>Create the first administrator account. No default admin account is created.</p>
 
 <form method="post">
     <input name="username" placeholder="Admin username">

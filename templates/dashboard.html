@@ -92,7 +92,17 @@
 {% endblock %}
 
 {% block content %}
-<h1>Master Dashboard</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Operations Overview</div>
+        <h1 class="page-title">Master Dashboard</h1>
+        <p class="page-subtitle">At-a-glance health, world activity, and linked online player visibility for the current Easy Dune Admin session.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip safe">Auto Refresh</span>
+        <span class="status-chip">{{ current_installation_mode_label }}</span>
+    </div>
+</div>
 
 <div class="box">
 <h2>System Resources</h2>

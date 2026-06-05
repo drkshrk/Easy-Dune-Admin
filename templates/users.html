@@ -2,7 +2,17 @@
 {% block title %}User Management{% endblock %}
 
 {% block content %}
-<h1>User Management</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Access Control</div>
+        <h1 class="page-title">User Management</h1>
+        <p class="page-subtitle">Create accounts, assign roles, and link web users to exact in-game character names for VIP self-service.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Admin Only</span>
+        <span class="status-chip">Role Aware</span>
+    </div>
+</div>
 
 <div class="grid-wide">
 
@@ -57,7 +67,7 @@
     <form method="post" action="/users/delete" onsubmit="return confirmDeleteSelectedUser()">
         <input type="hidden" name="user_id" id="deleteUserId">
         <label>Delete</label>
-        <button>Delete Selected User</button>
+        <button class="danger">Delete Selected User</button>
     </form>
 </div>
 </div>

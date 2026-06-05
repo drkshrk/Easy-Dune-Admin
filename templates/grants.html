@@ -43,7 +43,17 @@
 {% endblock %}
 
 {% block content %}
-<h1>Item Grants</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Inventory Administration</div>
+        <h1 class="page-title">Item Grants</h1>
+        <p class="page-subtitle">Search templates, grant items, and apply curated supply bundles with explicit restart and weight guidance where needed.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip warn">Character Targeted</span>
+        {% if session.role == "admin" %}<span class="status-chip danger">Admin Bundles</span>{% endif %}
+    </div>
+</div>
 
 <div class="grid">
 
@@ -93,7 +103,7 @@
 <div class="box">
 <h2>Grant New Player Kit</h2>
 
-<div class="warning">
+<div class="warning info">
 Admin-only test/helper bundle for any selected existing character. Uses IceHunter's MIT-licensed T1 starter pack recipe and RedBlink's normal item grant command path.
 </div>
 
@@ -120,7 +130,7 @@ Admin-only test/helper bundle for any selected existing character. Uses IceHunte
 <div class="box">
 <h2>Grant Builder Supply Pack</h2>
 
-<div class="warning">
+<div class="warning warn">
 Admin-only direct backpack insert. Select a character and pack; the tool inserts one stack per listed template into empty main-backpack slots only. The character should be offline. If there are not enough free slots, nothing is inserted.<br><br>
 <b>Weight warning:</b> builder packs can temporarily overload the character's carry limit. Always equip a build tool before using the pack so the materials can be placed immediately.
 </div>
@@ -160,7 +170,7 @@ Admin-only direct backpack insert. Select a character and pack; the tool inserts
 <div class="box">
 <h2>Fill Base Storage Warehouse</h2>
 
-<div class="warning">
+<div class="warning warn">
 Admin-only direct base-storage insert. Discover a character's owned large storage containers, select four empty containers from the same base, then fill them with the selected warehouse pack. Restart the affected map after filling storage containers before expecting the new contents to appear in game; live servers can also create item IDs while this runs.
 </div>
 
@@ -238,7 +248,7 @@ Admin-only direct base-storage insert. Discover a character's owned large storag
 <div class="box">
 <h2>Empty Base Storage Containers</h2>
 
-<div class="warning">
+<div class="warning danger">
 Admin-only destructive cleanup. Discover a character's owned base storage containers of any size, select up to four, then delete the item rows inside those selected containers only. This does not delete the container placeables, base, inventory records, or permissions. Restart the affected map after emptying containers before expecting the change to appear in game. Take a database backup first when you are not sure.
 </div>
 
@@ -289,7 +299,7 @@ Admin-only destructive cleanup. Discover a character's owned base storage contai
     <label>Container 4</label>
     <input type="text" name="empty_container_4" id="emptyStorageContainer4">
 
-    <button type="submit">Empty Selected Containers</button>
+    <button class="danger" type="submit">Empty Selected Containers</button>
 </form>
 </div>
 {% endif %}
@@ -298,7 +308,7 @@ Admin-only destructive cleanup. Discover a character's owned base storage contai
 <div class="box">
 <h2>Give MK6 Scout Thopter</h2>
 
-<div class="warning">
+<div class="warning info">
 Uses RedBlink's grant-template helper: {{ scout_thopter_template }}.
 </div>
 
@@ -318,7 +328,7 @@ Uses RedBlink's grant-template helper: {{ scout_thopter_template }}.
 <div class="box">
 <h2>Give Mk6 Medium Ornithopter Kit</h2>
 
-<div class="warning">
+<div class="warning warn">
 WARNING: This grants a full Mk6 Medium Ornithopter kit.<br><br>
 Requirements:<br>
 - Character should have at least 23 free inventory slots.<br>

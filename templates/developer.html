@@ -43,39 +43,49 @@
 {% endblock %}
 
 {% block content %}
-<h1>Developer Tools</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Restricted Research</div>
+        <h1 class="page-title">Developer Tools</h1>
+        <p class="page-subtitle">Quarantined experiments for broken, incomplete, or dangerous workflows that are not ready for normal admin use.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Dangerous</span>
+        <span class="status-chip experimental">Experimental</span>
+    </div>
+</div>
 
 {% if not developer_unlocked %}
 <div class="box">
 <h2>Developer Key Required</h2>
-<div class="warning">
+<div class="warning danger">
 This page is for incomplete, dangerous, broken, experimental, or research-only tools that are intentionally hidden from normal admin workflows. Developer functions can corrupt progression, flags, inventories, or player state if used casually.
 </div>
 
 {% if error %}
-<div class="warning">{{ error }}</div>
+<div class="warning danger">{{ error }}</div>
 {% endif %}
 
 <form method="post" action="/developer">
     <label>Developer Key</label>
     <input type="password" name="developer_key" autocomplete="current-password" required>
-    <button type="submit">Unlock Developer Tools</button>
+    <button class="danger" type="submit">Unlock Developer Tools</button>
 </form>
 </div>
 {% else %}
 <div class="box">
 <h2>Developer Gate</h2>
-<div class="warning">
+<div class="warning danger">
 Unlocked for this browser session. Many tools here are incomplete and dangerous to run outside deliberate testing. Lock this page again before handing the panel to anyone else.
 </div>
 <form method="post" action="/developer/lock">
-    <button type="submit">Lock Developer Tools</button>
+    <button class="danger" type="submit">Lock Developer Tools</button>
 </form>
 </div>
 
 <div class="box">
 <h2>Class Progression Research</h2>
-<div class="warning">
+<div class="warning experimental">
 WIP / Experimental: this currently appears nonfunctional for actual in-game class unlocks. It only applies or removes observed account tags for research. Testing shows those tags alone are not sufficient. Advanced trainer unlocks appear to require full multi-quest chains, not one completion tag, and leaving test tags in place can prevent the normal class journey from appearing after objectives are completed.
 </div>
 
@@ -104,12 +114,12 @@ WIP / Experimental: this currently appears nonfunctional for actual in-game clas
 
 <div class="box">
 <h2>Progression Research</h2>
-<div class="warning">
+<div class="warning experimental">
 Developer-only progression tools. These directly edit progression-related data and are hidden from normal admin workflows. Keep players offline before using them, and treat results as experimental unless verified in game.
 </div>
 
 <form id="specializationXpForm">
-    <div class="warning">
+    <div class="warning experimental">
         WIP / unconfirmed: Specialization XP is separate from character level XP. Specialization rows use the character pawn actor ID. Each track appears capped at <b>{{ "{:,}".format(specialization_max_xp) }}</b> XP / level 100.
     </div>
 
@@ -135,7 +145,7 @@ Developer-only progression tools. These directly edit progression-related data a
 </form>
 
 <form id="specializationGrantAllForm">
-    <div class="warning">
+    <div class="warning experimental">
         Test option: creates missing specialization track rows at 0 XP / level 0. Existing track progress is left untouched, and keystones are not granted.
     </div>
 
@@ -159,11 +169,11 @@ Developer-only progression tools. These directly edit progression-related data a
     <label>Character Actor ID</label>
     <input type="text" name="character_actor_id" id="specializationMaxActorId" required>
 
-    <button type="submit">Max All Specializations + Keystones</button>
+    <button class="danger" type="submit">Max All Specializations + Keystones</button>
 </form>
 
 <form id="specializationResetForm">
-    <div class="warning">
+    <div class="warning danger">
         Reset Specialization deletes specialization XP rows. Selecting All also clears purchased specialization keystones, which is useful after testing but may require relogging, a map restart, or a full battlegroup restart before the UI catches up.
     </div>
 
@@ -183,13 +193,13 @@ Developer-only progression tools. These directly edit progression-related data a
         {% endfor %}
     </select>
 
-    <button type="submit">Reset Specialization</button>
+    <button class="danger" type="submit">Reset Specialization</button>
 </form>
 </div>
 
 <div class="box">
 <h2>Journey Progression Presets</h2>
-<div class="warning">
+<div class="warning danger">
 Experimental journey presets edit journey story-node completion state. Use for testing/research only, not normal gameplay: advancing journey rows this way can currently lock the character out of the 3rd combat skill slot. Journey side effects may not be fully reproduced. Relogging, a map restart, or a full battlegroup restart may be required.
 </div>
 
@@ -215,13 +225,13 @@ Experimental journey presets edit journey story-node completion state. Use for t
         <option value="reset">Reset preset completion</option>
     </select>
 
-    <button type="submit">Run Progression Preset</button>
+    <button class="danger" type="submit">Run Progression Preset</button>
 </form>
 </div>
 
 <div class="box">
 <h2>NPC / Encounter Research Framework</h2>
-<div class="warning">
+<div class="warning experimental">
 Research-only and read-only. Current investigation found no confirmed NPC spawn command and no persistent combat NPC actor pattern. Use this panel to search actor classes, actor spawners, static encounters, event logs, and game events while looking for a future supported spawn path. Do not add a spawn button until a real command or live actor pattern is confirmed.
 </div>
 
@@ -240,7 +250,7 @@ Research-only and read-only. Current investigation found no confirmed NPC spawn 
 
 <div class="box">
 <h2>Ban / Cheater Flag Research</h2>
-<div class="warning">
+<div class="warning experimental">
 Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</b>, the only ban-adjacent path currently found in the public/researched DB routines. Flagging may or may not behave as a real ban. Unflagging removes cheater-tracking rows only, and a relog, map restart, or battlegroup restart may still be required.
 </div>
 
@@ -262,7 +272,7 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
 <div class="developer-results" id="banLookupResults"></div>
 
 <form id="flagCheaterForm">
-    <div class="warning">
+    <div class="warning danger">
         Research-only flag test. This calls the database log_cheating routine and inserts a cheater_tracking row. Keep this off normal Admin until actual kick/ban behavior is proven.
     </div>
 
@@ -279,11 +289,11 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
         <option value="negative_solaris">negative_solaris</option>
     </select>
 
-    <button type="submit">Experimental Flag / Ban Test</button>
+    <button class="danger" type="submit">Experimental Flag / Ban Test</button>
 </form>
 
 <form id="unflagCheaterForm">
-    <div class="warning">
+    <div class="warning danger">
         Experimental unban/unflag path. Enter either an FLS ID to remove all of that player's cheater_tracking rows, or one cheater row ID to remove a single row.
     </div>
 
@@ -298,7 +308,7 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
     <label>Cheater Row ID</label>
     <input type="text" name="row_id" id="unflagCheaterRowId">
 
-    <button type="submit">Remove Cheater Tracking Rows</button>
+    <button class="danger" type="submit">Remove Cheater Tracking Rows</button>
 </form>
 </div>
 

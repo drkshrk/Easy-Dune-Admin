@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.8.1--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.8.2--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.8.1-alpha`
+Current panel version: `0.8.2-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -270,11 +270,19 @@ Android APK build:
 
 1. Open `android-app` in Android Studio.
 2. Build `app` with `Build > Build Bundle(s) / APK(s) > Build APK(s)`.
-3. Or build from a terminal with:
+3. Or build from a terminal with the included Gradle wrapper. Java 17 and the Android SDK are still required.
 
 ```powershell
 cd android-app
-gradle assembleDebug
+.\gradlew.bat assembleDebug
+```
+
+Linux/macOS:
+
+```bash
+cd android-app
+chmod +x gradlew
+./gradlew assembleDebug
 ```
 
 The debug APK is written to:
@@ -282,6 +290,18 @@ The debug APK is written to:
 ```text
 android-app/app/build/outputs/apk/debug/EDA.apk
 ```
+
+If the Gradle wrapper starts but fails on Android SDK licenses or missing
+packages, install/accept the SDK components first:
+
+```powershell
+$env:ANDROID_SDK_ROOT="$env:LOCALAPPDATA\Android\Sdk"
+& "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin\sdkmanager.bat" --install "platforms;android-35" "build-tools;34.0.0" "platform-tools"
+& "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin\sdkmanager.bat" --licenses
+```
+
+If the SDK reports `package.xml (Access is denied)`, repair permissions or
+reinstall that SDK platform/build-tools with Android Studio's SDK Manager.
 
 Android APK sideload:
 
@@ -337,7 +357,7 @@ Browse to:
 http://SERVER-IP:8088
 ```
 
-Docker is the primary supported install method as of `0.8.1-alpha`. Runtime
+Docker is the primary supported install method as of `0.8.2-alpha`. Runtime
 webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
 normal rebuilds preserve `users.db`, roles, and logs. Do not run
 `docker compose down -v` unless you intentionally want to reset the webadmin.
@@ -483,7 +503,7 @@ See `DOCKER.md` for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.1-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.2-alpha
 ```
 
 Preserve local runtime data:
@@ -591,7 +611,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.8.1-alpha`: Easy Dune Admin now promotes confirmed research points, skill points, and bulk skill-module presets to the Admin Panel, using RedBlink's current skill-module catalog rather than stale client INI command lists.
+Current highlight for `0.8.2-alpha`: Easy Dune Admin now adds a more polished role-aware console shell, connected navigation, pull-to-refresh support, Gradle-wrapper Android builds, and stronger visual separation for routine, experimental, and dangerous tools.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 
@@ -617,5 +637,3 @@ Third-party reference material remains under its original license. See `THIRD_PA
 ## AI Collaboration Note
 
 Large portions of this project have been collaboratively created with the use of generative AI tools, including ChatGPT and Codex.
-
-

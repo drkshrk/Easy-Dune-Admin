@@ -2,7 +2,7 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.8.1-alpha
+## 0.8.2-alpha
 
 ### Added
 

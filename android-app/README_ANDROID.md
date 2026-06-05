@@ -18,11 +18,22 @@ android-app/app/build/outputs/apk/debug/EDA.apk
 
 ## Build From A Terminal
 
-If Gradle and the Android SDK are already available:
+The Android project includes the Gradle wrapper, so builders do not need to
+install Gradle separately. Java 17 and the Android SDK are still required.
+
+Windows PowerShell:
 
 ```powershell
 cd android-app
-gradle assembleDebug
+.\gradlew.bat assembleDebug
+```
+
+Linux/macOS:
+
+```bash
+cd android-app
+chmod +x gradlew
+./gradlew assembleDebug
 ```
 
 The APK is written to:
@@ -30,6 +41,19 @@ The APK is written to:
 ```text
 android-app/app/build/outputs/apk/debug/EDA.apk
 ```
+
+If the build reaches Android SDK checks and fails on licenses or missing
+packages, repair the local SDK first:
+
+```powershell
+$env:ANDROID_SDK_ROOT="$env:LOCALAPPDATA\Android\Sdk"
+& "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin\sdkmanager.bat" --install "platforms;android-35" "build-tools;34.0.0" "platform-tools"
+& "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin\sdkmanager.bat" --licenses
+```
+
+If Gradle reports `package.xml (Access is denied)`, fix the Android SDK folder
+permissions or reinstall the affected SDK platform/build-tools through Android
+Studio's SDK Manager.
 
 ## Install On Android
 

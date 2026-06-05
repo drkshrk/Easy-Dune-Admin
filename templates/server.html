@@ -1,17 +1,58 @@
 {% extends "base.html" %}
 {% block title %}Server Management{% endblock %}
 
+{% block head_extra %}
+<style>
+.server-module-grid {
+    column-count: 2;
+    column-gap: 16px;
+}
+
+.server-module-grid > .box {
+    display: inline-block;
+    width: 100%;
+    break-inside: avoid;
+    margin: 0 0 16px;
+    vertical-align: top;
+}
+
+.server-module-grid .button-row {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.server-module-grid .selected {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 1100px) {
+    .server-module-grid {
+        column-count: 1;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>Server Management</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Runtime Controls</div>
+        <h1 class="page-title">Server Management</h1>
+        <p class="page-subtitle">Operational controls for battlegroup checks, map services, database health, and RedBlink runtime modes.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip warn">Restarts Can Interrupt Play</span>
+        <span class="status-chip">{{ current_installation_mode_label }}</span>
+    </div>
+</div>
 
 <div id="actionOutput" class="msg" style="display:none;"></div>
 
-<div class="grid">
+<div class="server-module-grid">
 
 <div class="box">
 <h2>Battlegroup Overview</h2>
 
-<div class="warning">
+<div class="warning info">
 RedBlink v1.3.3 status and readiness commands. Doctor can expose more host/runtime detail, so it remains admin-only.
 </div>
 
@@ -61,17 +102,17 @@ RedBlink v1.3.3 status and readiness commands. Doctor can expose more host/runti
 <div class="button-row">
 <form class="ajaxForm" data-endpoint="/api/restart-target">
     <input type="hidden" name="target" value="survival">
-    <button type="submit">Restart Survival</button>
+    <button class="danger" type="submit">Restart Survival</button>
 </form>
 
 <form class="ajaxForm" data-endpoint="/api/restart-map">
     <input type="hidden" name="map_name" value="DeepDesert_1">
-    <button type="submit">Restart Deep Desert</button>
+    <button class="danger" type="submit">Restart Deep Desert</button>
 </form>
 
 <form class="ajaxForm" data-endpoint="/api/restart-target">
     <input type="hidden" name="target" value="overmap">
-    <button type="submit">Restart Overmap</button>
+    <button class="danger" type="submit">Restart Overmap</button>
 </form>
 </div>
 </div>
@@ -83,25 +124,21 @@ RedBlink v1.3.3 status and readiness commands. Doctor can expose more host/runti
     <div class="button-row">
     <form class="ajaxForm" data-endpoint="/api/restart-target">
         <input type="hidden" name="target" value="gateway">
-        <button type="submit">Restart Gateway</button>
+        <button class="danger" type="submit">Restart Gateway</button>
     </form>
 
     <form class="ajaxForm" data-endpoint="/api/restart-target">
         <input type="hidden" name="target" value="director">
-        <button type="submit">Restart Director</button>
+        <button class="danger" type="submit">Restart Director</button>
     </form>
 
     <form class="ajaxForm" data-endpoint="/api/restart-target">
         <input type="hidden" name="target" value="text-router">
-        <button type="submit">Restart Text Router</button>
+        <button class="danger" type="submit">Restart Text Router</button>
     </form>
     </div>
     </div>
 {% endif %}
-
-</div>
-
-<div class="grid">
 
 <div class="box">
 <h2>Map Controls</h2>
@@ -127,7 +164,7 @@ RedBlink v1.3.3 status and readiness commands. Doctor can expose more host/runti
 <div class="box">
 <h2>Database</h2>
 
-<div class="warning">
+<div class="warning warn">
 Safe database actions only. Restore/import/delete should still be done through dune manager or the shell.
 </div>
 
@@ -154,14 +191,10 @@ Safe database actions only. Restore/import/delete should still be done through d
 </div>
 </div>
 
-</div>
-
-<div class="grid">
-
 <div class="box">
 <h2>Map Runtime Modes</h2>
 
-<div class="warning">
+<div class="warning info">
 RedBlink v1.3.3 map runtime controls. Survival_1 and Overmap are protected always-on maps and should not be toggled here.
 </div>
 
@@ -211,7 +244,7 @@ RedBlink v1.3.3 map runtime controls. Survival_1 and Overmap are protected alway
     <div class="box">
     <h2>Autoscaler</h2>
 
-    <div class="warning">
+    <div class="warning warn">
     RedBlink v1.3.3 dynamic map autoscaler controls. Start/stop/restart can affect dynamic map availability.
     </div>
 
@@ -219,21 +252,17 @@ RedBlink v1.3.3 map runtime controls. Survival_1 and Overmap are protected alway
     {% for action, label in [("status", "Status"), ("logs", "Logs"), ("start", "Start"), ("stop", "Stop"), ("restart", "Restart")] %}
     <form class="ajaxForm" data-endpoint="/api/autoscaler-command">
         <input type="hidden" name="action" value="{{ action }}">
-        <button type="submit">{{ label }}</button>
+        <button class="{% if action in ['stop', 'restart'] %}danger{% endif %}" type="submit">{{ label }}</button>
     </form>
     {% endfor %}
     </div>
     </div>
 {% endif %}
 
-</div>
-
-<div class="grid">
-
 <div class="box">
 <h2>Deep Desert Dual Mode</h2>
 
-<div class="warning">
+<div class="warning warn">
 RedBlink v1.3.3 Deep Desert PvP/PvE dual-mode controls. These change gameplay routing and may require map restarts before clients reflect the new state.
 </div>
 
@@ -250,7 +279,7 @@ RedBlink v1.3.3 Deep Desert PvP/PvE dual-mode controls. These change gameplay ro
 <div class="box">
 <h2>Sietches</h2>
 
-<div class="warning">
+<div class="warning info">
 RedBlink v1.3.3 Sietch controls inspect map dimensions, display names, passwords, and active/max dimension settings. Sync/validate can touch generated runtime config and are admin-only.
 </div>
 
@@ -288,7 +317,7 @@ RedBlink v1.3.3 Sietch controls inspect map dimensions, display names, passwords
 <div class="box">
 <h2>Memory Tuning</h2>
 
-<div class="warning">
+<div class="warning warn">
 RedBlink v1.3.3 memory controls. The map dropdown is discovered from <b>dune memory list-maps</b> and enriched with active/max dimensions from <b>dune sietches list</b> when available. Changes usually require restarting the affected map/server container.
 </div>
 
@@ -327,15 +356,11 @@ RedBlink v1.3.3 memory controls. The map dropdown is discovered from <b>dune mem
 {% endif %}
 </div>
 
-</div>
-
 {% if session.role == "admin" %}
-<div class="grid">
-
 <div class="box">
 <h2>Updates & Schedules</h2>
 
-<div class="warning">
+<div class="warning info">
 Read/check actions only. Apply stack updates, game updates, auto-update changes, and restore/import flows through <b>dune manager</b> or the shell after reviewing output.
 </div>
 
@@ -352,7 +377,7 @@ Read/check actions only. Apply stack updates, game updates, auto-update changes,
 <div class="box">
 <h2>RedBlink Admin Helpers</h2>
 
-<div class="warning">
+<div class="warning info">
 Uses RedBlink v1.3.3 <b>dune admin</b> commands. RabbitMQ publish output means the command was accepted for delivery, not always that the game client visibly updated immediately.
 </div>
 
@@ -386,14 +411,13 @@ Uses RedBlink v1.3.3 <b>dune admin</b> commands. RabbitMQ publish output means t
 </form>
 </div>
 
-</div>
 {% endif %}
 
 {% if session.role == "admin" %}
 <div class="box">
 <h2>Advanced Management</h2>
 
-<div class="warning">
+<div class="warning info">
 For workflows not buttoned here, use RedBlink's guided <b>dune manager</b> or the Infrastructure shell. This includes stack/game update installation, database import/restore/delete, account transfer plans, and low-level SQL exports.
 </div>
 
@@ -408,6 +432,8 @@ For workflows not buttoned here, use RedBlink's guided <b>dune manager</b> or th
 </button>
 </div>
 {% endif %}
+
+</div>
 {% endblock %}
 
 {% block scripts %}

@@ -21,20 +21,54 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     font-size: 20px;
+    line-height: 1.35;
 }
 
 .banner {
     width: 100%;
-    height: auto;
+    height: 33.5vw;
+    max-height: 560px;
+    min-height: 140px;
     display: block;
+    border: 0;
     border-bottom: 2px solid #3a2a12;
+    object-fit: cover;
+    object-position: center;
+}
+
+.banner-link {
+    display: block;
+    line-height: 0;
+}
+
+.app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 24px;
+    background: rgba(5, 5, 5, 0.96);
+    border-bottom: 1px solid #33220f;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
 }
 
 .title {
-    font-size: 36px;
+    font-size: 28px;
     color: #ddd;
-    padding: 24px;
+    padding: 0;
     text-shadow: 0 0 12px rgba(255,180,80,0.25);
+    line-height: 1.15;
+    white-space: nowrap;
 }
 
 .alpha-badge {
@@ -49,45 +83,293 @@ body {
     box-shadow: 0 0 12px rgba(212,169,77,0.35);
 }
 
-.nav {
-    padding: 0 24px 18px 24px;
+.mode-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    color: #e8d3a1;
+    border: 1px solid #6a4a18;
+    border-radius: 999px;
+    background: #0f0a05;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
-.nav a {
-    display: inline-block;
-    padding: 12px 18px;
-    margin-right: 10px;
-    margin-bottom: 10px;
+.menu-toggle {
+    width: auto;
+    min-width: 48px;
+    height: 44px;
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 198;
+    display: none;
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.menu-backdrop.open {
+    display: block;
+}
+
+.app-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 199;
+    width: min(390px, 92vw);
+    height: 100vh;
+    box-sizing: border-box;
+    padding: 18px;
+    background: #050505;
+    border-left: 1px solid #6a4a18;
+    box-shadow: -16px 0 30px rgba(0,0,0,0.65);
+    overflow-y: auto;
+    transform: translateX(105%);
+    transition: transform 0.18s ease;
+}
+
+.app-menu.open {
+    transform: translateX(0);
+}
+
+.app-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.app-menu-title {
+    color: #e0c28f;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.menu-close {
+    width: 44px;
+    height: 40px;
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 24px;
+}
+
+.top-nav {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid #8b6b2d;
+    border-radius: 8px;
+    background: #090505;
+}
+
+.top-nav a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 8px 14px;
 
     background: linear-gradient(180deg, #2b1208 0%, #140808 100%);
-    border: 1px solid #8b6b2d;
+    border-right: 1px solid #8b6b2d;
     color: #d8c08a;
 
     text-decoration: none;
     font-weight: bold;
-    letter-spacing: 0.5px;
-    border-radius: 8px;
+    white-space: nowrap;
 
     transition:
-        transform 0.18s ease,
         box-shadow 0.18s ease,
-        border-color 0.18s ease,
         color 0.18s ease,
-        background 0.18s ease;
+        background 0.18s ease,
+        filter 0.12s ease;
 }
 
-.nav a:hover {
+.top-nav a:last-child {
+    border-right: 0;
+}
+
+.top-nav a:hover {
     color: #fff4c2;
-    border-color: #d4a94d;
     background: linear-gradient(180deg, #4a1b0c 0%, #1b0806 100%);
     box-shadow:
         0 0 12px rgba(212,169,77,0.45),
         0 0 22px rgba(180,40,20,0.22);
-    transform: translateY(-2px);
+}
+
+.top-nav a:active,
+.top-nav a.nav-gleam {
+    color: #fff9dc;
+    background:
+        linear-gradient(100deg, transparent 0%, rgba(255,244,194,0.45) 46%, transparent 58%),
+        linear-gradient(180deg, #6a2a0f 0%, #1b0806 100%);
+    box-shadow:
+        inset 0 0 16px rgba(255,220,130,0.28),
+        0 0 18px rgba(255,205,92,0.58),
+        0 0 34px rgba(180,40,20,0.30);
+    filter: brightness(1.14);
+}
+
+.drawer-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0;
+}
+
+.drawer-actions a {
+    display: block;
+    padding: 12px 18px;
+    background: linear-gradient(180deg, #2b1208 0%, #140808 100%);
+    border: 1px solid #8b6b2d;
+    border-radius: 8px;
+    color: #d8c08a;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.drawer-actions a:hover {
+    color: #fff4c2;
+    border-color: #d4a94d;
+    background: linear-gradient(180deg, #4a1b0c 0%, #1b0806 100%);
+}
+
+.server-settings-form {
+    border-top: 1px solid #222;
+    margin-top: 16px;
+    padding-top: 16px;
+}
+
+.server-settings-form select,
+.server-settings-form button {
+    margin-bottom: 8px;
+}
+
+.menu-mode-note {
+    color: #888;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.pull-refresh-indicator {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    z-index: 320;
+    min-width: 190px;
+    padding: 10px 16px;
+    color: #fff4c2;
+    background: rgba(20, 8, 8, 0.96);
+    border: 1px solid #8b6b2d;
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -70px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.pull-refresh-indicator.visible {
+    opacity: 1;
+}
+
+.pull-refresh-indicator.ready {
+    border-color: #d4a94d;
+    box-shadow: 0 0 18px rgba(212,169,77,0.35);
 }
 
 .container {
     padding: 20px 24px;
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 18px;
+    padding: 16px 0 14px;
+    border-bottom: 1px solid #30220f;
+}
+
+.page-title {
+    margin: 0;
+    color: #d7d7d7;
+    font-size: 34px;
+    line-height: 1.08;
+}
+
+.page-subtitle {
+    margin: 7px 0 0;
+    color: #9f8f75;
+    font-size: 16px;
+    max-width: 980px;
+}
+
+.page-kicker {
+    color: #d8c08a;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.page-status {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid #444;
+    border-radius: 999px;
+    background: #0f0f0f;
+    color: #ddd;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.status-chip.safe {
+    color: #caffca;
+    border-color: #3d9b47;
+    background: #071c09;
+}
+
+.status-chip.warn {
+    color: #ffe7a3;
+    border-color: #c6952c;
+    background: #211704;
+}
+
+.status-chip.danger {
+    color: #ffd6d6;
+    border-color: #b73838;
+    background: #260606;
+}
+
+.status-chip.experimental {
+    color: #d9d4ff;
+    border-color: #675fd0;
+    background: #111026;
 }
 
 .grid {
@@ -150,11 +432,13 @@ body {
 }
 
 .box, .card {
-    background: #080808;
-    border: 1px solid #333;
+    background: linear-gradient(180deg, #090909 0%, #050505 100%);
+    border: 1px solid #2f2a21;
     padding: 16px;
     margin-bottom: 16px;
-    box-shadow: 0 0 18px rgba(255,140,0,0.08);
+    box-shadow:
+        0 0 18px rgba(255,140,0,0.06),
+        inset 0 1px 0 rgba(255,220,140,0.04);
 }
 
 .box h1,
@@ -164,6 +448,19 @@ body {
 .card h2,
 .card h3 {
     margin-top: 0;
+}
+
+.box h2,
+.card h2 {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #21170b;
+    color: #d1d1d1;
+}
+
+.section-note {
+    color: #9d907a;
+    font-size: 15px;
+    margin: -2px 0 12px;
 }
 
 .box form + form {
@@ -208,10 +505,58 @@ button {
     color: #ddd;
     font-weight: bold;
     border: 1px solid #6a4a18;
+    transition:
+        color 0.14s ease,
+        background 0.14s ease,
+        border-color 0.14s ease,
+        box-shadow 0.14s ease,
+        filter 0.12s ease;
 }
 
 button:hover {
     background: linear-gradient(to bottom, #52371a, #2f1d0d);
+    color: #fff4c2;
+    border-color: #d4a94d;
+    box-shadow: 0 0 14px rgba(212,169,77,0.32);
+}
+
+button:active,
+button.button-gleam {
+    color: #fff9dc;
+    background:
+        linear-gradient(100deg, transparent 0%, rgba(255,244,194,0.40) 46%, transparent 58%),
+        linear-gradient(to bottom, #6a3b13, #2f1d0d);
+    box-shadow:
+        inset 0 0 14px rgba(255,220,130,0.20),
+        0 0 18px rgba(255,205,92,0.45);
+    filter: brightness(1.1);
+}
+
+button.danger,
+.button-danger {
+    border-color: #8f2d22;
+    color: #ffd9d2;
+    background: linear-gradient(to bottom, #4a100b, #220706);
+}
+
+button.danger:hover,
+.button-danger:hover {
+    border-color: #e05d47;
+    background: linear-gradient(to bottom, #6b1b12, #2b0806);
+    box-shadow: 0 0 16px rgba(224,93,71,0.36);
+}
+
+button.secondary,
+.button-secondary {
+    color: #d8d8d8;
+    border-color: #555;
+    background: linear-gradient(to bottom, #202020, #101010);
+}
+
+button.secondary:hover,
+.button-secondary:hover {
+    border-color: #8a8a8a;
+    box-shadow: 0 0 12px rgba(170,170,170,0.22);
 }
 
 .item, .player, .user-row {
@@ -228,6 +573,26 @@ button:hover {
     overflow-x: auto;
 }
 
+.local-action-output,
+#actionOutput {
+    border-color: #6a4a18;
+    background: #080706;
+    color: #d8d8d8;
+}
+
+.local-action-output::before,
+#actionOutput::before {
+    content: "Results";
+    display: block;
+    margin-bottom: 8px;
+    color: #d8c08a;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
 .selected {
     background: #111;
     border: 1px solid #444;
@@ -242,6 +607,43 @@ button:hover {
     color: #e0c28f;
     padding: 10px;
     margin-bottom: 12px;
+    line-height: 1.32;
+}
+
+.warning.info {
+    background: #07131f;
+    border-color: #315b82;
+    color: #cfe6ff;
+}
+
+.warning.warn {
+    background: #211704;
+    border-color: #c6952c;
+    color: #ffe7a3;
+}
+
+.warning.experimental {
+    background: #111026;
+    border-color: #675fd0;
+    color: #d9d4ff;
+}
+
+.warning.danger {
+    background: #240706;
+    border-color: #8f2d22;
+    color: #ffd6d6;
+}
+
+.warning strong,
+.warning b {
+    color: #ffe3a4;
+}
+
+.tool-state-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 12px;
 }
 
 .role-pill {
@@ -334,7 +736,43 @@ a:hover {
     }
 
     .title {
-        font-size: 26px;
+        font-size: 22px;
+    }
+
+    .app-topbar {
+        padding: 10px 14px;
+        flex-wrap: wrap;
+    }
+
+    .topbar-actions,
+    .top-nav {
+        width: 100%;
+    }
+
+    .topbar-actions {
+        align-items: stretch;
+    }
+
+    .top-nav {
+        flex: 1;
+    }
+
+    .mode-chip {
+        justify-content: center;
+    }
+
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-status {
+        justify-content: flex-start;
+    }
+
+    .alpha-badge {
+        margin-left: 6px;
+        font-size: 12px;
     }
 }
 </style>
@@ -344,36 +782,69 @@ a:hover {
 
 <body>
 
+<div class="pull-refresh-indicator" id="pullRefreshIndicator">Pull to refresh</div>
+
 {% if session.user %}
-<img class="banner" src="/static/dune-admin.png" alt="Dune Admin Banner">
+<a class="banner-link" href="/" aria-label="Return to dashboard">
+    <img class="banner" src="/static/dune-admin.png" alt="Dune Admin Banner">
+</a>
 
-<div class="title">
-    Easy Dune Admin
-    <span class="alpha-badge">ALPHA</span>
+<div class="app-topbar">
+    <div class="title">
+        Easy Dune Admin
+        <span class="alpha-badge">ALPHA</span>
+    </div>
+    <div class="topbar-actions">
+        <span class="mode-chip">{{ current_installation_mode_label }}</span>
+        <nav class="top-nav" aria-label="Primary navigation">
+            <a href="/">Dashboard</a>
+            <a href="/online">Who's Online</a>
+            <a href="/map">Live Map</a>
+            {% if session.role == "vip" or session.role == "admin" %}
+            <a href="/vip">VIP Tools</a>
+            {% endif %}
+            {% if session.role == "operator" or session.role == "admin" %}
+            <a href="/grants">Item Grants</a>
+            <a href="/server">Server Management</a>
+            {% endif %}
+            {% if session.role == "admin" %}
+            <a href="/admin">Admin Panel</a>
+            <a href="/infrastructure">Infrastructure</a>
+            <a href="/users">Users</a>
+            <a href="/logs">Logs</a>
+            {% endif %}
+        </nav>
+        <button class="menu-toggle" type="button" id="appMenuToggle" aria-controls="appMenu" aria-expanded="false" title="Server settings">&#9776;</button>
+    </div>
 </div>
 
-<div class="nav">
-    <a href="/">Dashboard</a>
-    <a href="/online">Who's Online</a>
-    <a href="/map">Live Map</a>
-    {% if session.role == "vip" or session.role == "admin" %}
-    <a href="/vip">VIP Tools</a>
-    {% endif %}
-    {% if session.role == "operator" or session.role == "admin" %}
-    <a href="/grants">Item Grants</a>
-    <a href="/server">Server Management</a>
-    {% endif %}
-    {% if session.role == "admin" %}
-    <a href="/admin">Admin Panel</a>
-    <a href="/infrastructure">Infrastructure</a>
-    <a href="/users">Users</a>
-    {% endif %}
-    {% if session.role == "admin" %}
-    <a href="/logs">Logs</a>
-    {% endif %}
-    <a href="/account">My Account</a>
-    <a href="/logout">Logout</a>
-</div>
+<div class="menu-backdrop" id="appMenuBackdrop"></div>
+<aside class="app-menu" id="appMenu" aria-hidden="true">
+    <div class="app-menu-header">
+        <div class="app-menu-title">Menu</div>
+        <button class="menu-close" type="button" id="appMenuClose" title="Close menu">&times;</button>
+    </div>
+
+    <div class="drawer-actions">
+        <a href="/account">My Account</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <form class="server-settings-form" id="installationModeForm">
+        <label for="menuInstallationMode">Server Installation</label>
+        <select id="menuInstallationMode" name="installation_mode">
+            {% for mode_id, mode in installation_modes.items() %}
+            <option value="{{ mode_id }}" {% if mode_id == current_installation_mode %}selected{% endif %}>
+                {{ mode.label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Apply Server Settings</button>
+        <div class="menu-mode-note">
+            Current mode: {{ current_installation_mode_label }}. Changing this affects how Server Management and Infrastructure commands are routed for this session.
+        </div>
+    </form>
+</aside>
 {% endif %}
 
 <div class="container">
@@ -392,6 +863,18 @@ a:hover {
 
 {% if session.user %}
 <script>
+function setAppMenuOpen(open) {
+    const menu = document.getElementById("appMenu");
+    const backdrop = document.getElementById("appMenuBackdrop");
+    const toggle = document.getElementById("appMenuToggle");
+    if (!menu || !backdrop || !toggle) return;
+
+    menu.classList.toggle("open", open);
+    backdrop.classList.toggle("open", open);
+    menu.setAttribute("aria-hidden", open ? "false" : "true");
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
 function footerEscapeHtml(value) {
     return String(value)
         .replaceAll("&", "&amp;")
@@ -432,6 +915,51 @@ async function refreshFooterOnlineUsers() {
     }
 }
 
+document.addEventListener("DOMContentLoaded", function() {
+    const toggle = document.getElementById("appMenuToggle");
+    const close = document.getElementById("appMenuClose");
+    const backdrop = document.getElementById("appMenuBackdrop");
+    const modeForm = document.getElementById("installationModeForm");
+
+    if (toggle) toggle.addEventListener("click", () => setAppMenuOpen(true));
+    if (close) close.addEventListener("click", () => setAppMenuOpen(false));
+    if (backdrop) backdrop.addEventListener("click", () => setAppMenuOpen(false));
+
+    document.querySelectorAll(".top-nav a").forEach(link => {
+        link.addEventListener("click", function() {
+            this.classList.add("nav-gleam");
+        });
+    });
+
+    document.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", function() {
+            this.classList.add("button-gleam");
+            window.setTimeout(() => this.classList.remove("button-gleam"), 220);
+        });
+    });
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") setAppMenuOpen(false);
+    });
+
+    if (modeForm) {
+        modeForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            const data = new FormData(modeForm);
+            const response = await fetch("/api/session-installation-mode", {
+                method: "POST",
+                body: data
+            });
+            const result = await response.json();
+            if (!result.ok) {
+                alert(result.error || "Unable to update server installation mode.");
+                return;
+            }
+            window.location.reload();
+        });
+    }
+});
+
 refreshFooterOnlineUsers();
 setInterval(refreshFooterOnlineUsers, 30000);
 </script>
@@ -446,6 +974,75 @@ if ("serviceWorker" in navigator) {
         });
     });
 }
+
+(function wirePullToRefresh() {
+    const indicator = document.getElementById("pullRefreshIndicator");
+    if (!indicator || !("ontouchstart" in window)) return;
+
+    const ignoredSelector = [
+        "input", "select", "textarea", "button", "a",
+        ".map-frame", ".vip-map-frame", ".online-map-frame",
+        ".app-menu"
+    ].join(",");
+    const refreshDistance = 96;
+    let startY = 0;
+    let pullDistance = 0;
+    let active = false;
+    let ignored = false;
+
+    function setIndicator(distance) {
+        const clamped = Math.max(0, Math.min(distance, refreshDistance + 34));
+        const offset = -70 + (clamped * 0.72);
+        indicator.style.transform = `translate(-50%, ${offset}px)`;
+        indicator.classList.toggle("visible", clamped > 8);
+        indicator.classList.toggle("ready", clamped >= refreshDistance);
+        indicator.textContent = clamped >= refreshDistance ? "Release to refresh" : "Pull to refresh";
+    }
+
+    function resetIndicator() {
+        active = false;
+        pullDistance = 0;
+        setIndicator(0);
+    }
+
+    document.addEventListener("touchstart", function(event) {
+        if (!event.touches || event.touches.length !== 1) return;
+        ignored = Boolean(event.target.closest(ignoredSelector));
+        active = !ignored && window.scrollY <= 0;
+        startY = event.touches[0].clientY;
+        pullDistance = 0;
+    }, { passive: true });
+
+    document.addEventListener("touchmove", function(event) {
+        if (!active || ignored || !event.touches || event.touches.length !== 1) return;
+        if (window.scrollY > 0) {
+            resetIndicator();
+            return;
+        }
+
+        pullDistance = event.touches[0].clientY - startY;
+        if (pullDistance <= 0) {
+            resetIndicator();
+            return;
+        }
+
+        event.preventDefault();
+        setIndicator(pullDistance);
+    }, { passive: false });
+
+    document.addEventListener("touchend", function() {
+        if (!active) return;
+        if (pullDistance >= refreshDistance) {
+            indicator.textContent = "Refreshing...";
+            indicator.classList.add("visible", "ready");
+            window.location.reload();
+            return;
+        }
+        resetIndicator();
+    }, { passive: true });
+
+    document.addEventListener("touchcancel", resetIndicator, { passive: true });
+})();
 </script>
 </body>
 </html>

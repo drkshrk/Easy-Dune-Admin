@@ -179,9 +179,19 @@
 {% endblock %}
 
 {% block content %}
-<h1>Live Arrakis Map</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">World Positioning</div>
+        <h1 class="page-title">Live Arrakis Map</h1>
+        <p class="page-subtitle">Partition-aware map markers, offline teleport targeting, and visual coordinate selection for Arrakis operations.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip experimental">Multi-Partition Experimental</span>
+        {% if session.role == "operator" or session.role == "admin" %}<span class="status-chip warn">Offline Teleport</span>{% endif %}
+    </div>
+</div>
 
-<div class="warning">
+<div class="warning info">
 Map assets expected:<br>
 - <b>/static/arrakis_hb.webp</b> for Hagga Basin<br>
 - <b>/static/deep_desert.webp</b> for Deep Desert<br><br>
@@ -209,7 +219,7 @@ Scroll normally to move down the page. Hold <b>Ctrl</b> on Windows/Linux or <b>C
 
     {% if session.role == "operator" or session.role == "admin" %}
     <h2>Offline Teleport</h2>
-    <div class="warning">
+    <div class="warning experimental">
         Use only for offline characters. Click a player marker to fill this form, or enter values manually.<br><br>
         <b>Experimental:</b> multi-partition map/teleport support is currently untested until additional Survival or Deep Desert instances are available. The partition picker reads observed map names and partition IDs from the database, and map markers are filtered by the selected partition. Click anywhere on the map to populate target X/Y coordinates.
     </div>

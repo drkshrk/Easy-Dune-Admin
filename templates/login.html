@@ -21,10 +21,13 @@
 
 {% block content %}
 <div class="login-shell">
-<img class="login-logo" src="/static/dune-admin.png" alt="Easy Dune Admin">
+<a href="/login" aria-label="Return to login">
+    <img class="login-logo" src="/static/dune-admin.png" alt="Easy Dune Admin">
+</a>
 
 <div class="box">
-<h1>Dune Admin Login</h1>
+<h1 class="page-title">Dune Admin Login</h1>
+<p class="page-subtitle">Sign in and choose the server installation profile for this session.</p>
 
 <form method="post">
     <input name="username" placeholder="Username">
@@ -37,7 +40,7 @@
         </option>
         {% endfor %}
     </select>
-    <div class="warning">
+    <div class="warning info">
         Linux Host and RedBlink Docker Container use local commands. Hyper-V via SSH is experimental and requires EASY_DUNE_HYPERV_SSH_TARGET on the webadmin host.
     </div>
     <button>Login</button>

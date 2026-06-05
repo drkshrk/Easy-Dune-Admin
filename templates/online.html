@@ -106,7 +106,17 @@
 {% endblock %}
 
 {% block content %}
-<h1>Who's Online</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Player Presence</div>
+        <h1 class="page-title">Who's Online</h1>
+        <p class="page-subtitle">Viewer-safe player presence, role-aware online list, and Hagga Basin preview map without teleport controls.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip safe">Viewer Safe</span>
+        <span class="status-chip">Auto Refresh</span>
+    </div>
+</div>
 
 <div class="grid">
     <div class="box">
@@ -117,7 +127,7 @@
 
     <div class="box">
         <h2>Hagga Basin Live Map Preview</h2>
-        <div class="warning">
+        <div class="warning info">
             Viewer-safe preview. Teleport controls are only available from the full Live Map page for operator/admin roles.
         </div>
 

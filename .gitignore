@@ -21,7 +21,13 @@ FETCH_HEAD
 # unpacked reference repos out of releases unless a specific file is deliberately
 # copied into the project and credited.
 *.zip
+*.tar.gz
+*.tgz
+Easy-Dune-Admin-*-source.zip
+Easy-Dune-Admin-*-source.tar.gz
+archive-write-test.tmp
 *.csv
+data/
 reference_*/
 _license_review_*/
 dune-awakening-selfhost-docker-*/

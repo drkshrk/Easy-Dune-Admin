@@ -67,9 +67,19 @@
 {% endblock %}
 
 {% block content %}
-<h1>Infrastructure</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Host & Container Operations</div>
+        <h1 class="page-title">Infrastructure</h1>
+        <p class="page-subtitle">Mode-aware diagnostics, command access, and guarded host tooling for trusted admin sessions.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Admin Only</span>
+        <span class="status-chip">{{ current_installation_mode_label }}</span>
+    </div>
+</div>
 
-<div class="warning">
+<div class="warning warn">
 This page is admin-only. Active mode: <b>{{ current_installation_mode_label }}</b>.<br>
 {% if installation_capabilities.is_linux %}
 These tools can affect the Linux host and RedBlink Docker stack. Keep them disabled unless intentionally testing on a trusted LAN/VPN.
@@ -123,7 +133,7 @@ Hyper-V mode routes normal RedBlink command buttons through SSH, but interactive
 <div class="box">
 <h2>Passwordless Sudo Requirement</h2>
 
-<div class="warning">
+<div class="warning warn">
 Infrastructure installer buttons use <b>sudo -n</b>. This prevents the web request from hanging on an invisible password prompt.
 For these buttons to work, the Linux user running this panel must be allowed to run the needed sudo commands without an interactive password.
 </div>
@@ -142,7 +152,7 @@ For these buttons to work, the Linux user running this panel must be allowed to 
 <pre><code>sudo -l
 sudo -n apt update</code></pre>
 
-<div class="warning">
+<div class="warning danger">
 Do not use <b>NOPASSWD: ALL</b> for this panel. It grants far more host access than Easy Dune Admin needs.
 </div>
 </div>
@@ -159,7 +169,7 @@ Do not use <b>NOPASSWD: ALL</b> for this panel. It grants far more host access t
 <h2>Host Command Runner</h2>
 {% endif %}
 
-<div class="warning">
+<div class="warning info">
 {% if installation_capabilities.container_diagnostics %}
 Runs predefined diagnostics from inside the Easy Dune Admin container. Docker commands use the mounted Docker socket.
 {% else %}
@@ -198,7 +208,7 @@ Enable with <b>ENABLE_HOST_COMMAND_RUNNER=1</b>.
 <div class="box">
 <h2>RedBlink Stack Installer</h2>
 
-<div class="warning">
+<div class="warning warn">
 Guided installer for:<br>
 {{ redblink_repo_url }}<br><br>
 Target path:<br>
@@ -251,7 +261,7 @@ Enable with <b>ENABLE_STACK_INSTALLER=1</b>.
     <button type="submit">8. Install dune Command</button>
 </form>
 
-<div class="warning">
+<div class="warning warn">
     <b>dune init is interactive.</b><br>
     Use the browser shell or SSH for this step. These buttons open the shell and pre-fill the command.
 </div>
@@ -286,7 +296,7 @@ Use the full shell if the guided step cannot handle the interaction.
 <h2>Full Host Shell</h2>
 {% endif %}
 
-<div class="warning">
+<div class="warning danger">
 Full browser shell is extremely powerful. Enable only for trusted admins with <b>ENABLE_HOST_SHELL=1</b>.
 {% if installation_capabilities.is_docker %}
 In Docker mode, this opens a shell inside the Easy Dune Admin container, not the Linux host. Use normal SSH for true host work.
@@ -309,7 +319,7 @@ All commands run with the permissions of the user running this Flask app.
 {% if installation_capabilities.is_hyperv %}
 <div class="box">
 <h2>Hyper-V Shell Note</h2>
-<div class="warning">
+<div class="warning info">
 Interactive VM shell is hidden in Hyper-V mode. Use a normal SSH client for <b>dune manager</b>, <b>dune init</b>, imports, restores, or anything interactive. Non-interactive RedBlink buttons elsewhere in this app route through the configured SSH target.
 </div>
 </div>

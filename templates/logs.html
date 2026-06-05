@@ -2,8 +2,19 @@
 {% block title %}Action Logs{% endblock %}
 
 {% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Audit Trail</div>
+        <h1 class="page-title">Action Logs</h1>
+        <p class="page-subtitle">Recent webadmin actions and operational events. Logs refresh automatically while this page is open.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Admin Only</span>
+        <span class="status-chip">Auto Refresh</span>
+    </div>
+</div>
+
 <div class="box">
-<h1>Action Logs</h1>
 <pre id="logOutput">{{ "\n".join(lines) }}</pre>
 </div>
 {% endblock %}

@@ -208,7 +208,17 @@
 {% endblock %}
 
 {% block content %}
-<h1>Admin Panel</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Advanced Administration</div>
+        <h1 class="page-title">Admin Panel</h1>
+        <p class="page-subtitle">High-impact character, market, vehicle, currency, and progression tools grouped by operational intent.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Admin Only</span>
+        <span class="status-chip experimental">Some Tools WIP</span>
+    </div>
+</div>
 
 <div id="actionOutput" class="msg" style="display:none;"></div>
 
@@ -219,7 +229,7 @@
 <div class="box">
 <h2>Overrepair Gear</h2>
 
-<div class="warning">
+<div class="warning warn">
 This directly edits the database.<br><br>
 The character must be logged off before running this.<br>
 Items must be unequipped and in the character inventory.<br><br>
@@ -254,7 +264,7 @@ If some items fail to overrepair, empty extra inventory, move failed items highe
 </form>
 
 <h3>Single Item Overrepair</h3>
-<div class="warning">
+<div class="warning info">
 Use this for uniques or stubborn items the bulk pass misses. Pick a character, then choose one of that character's discovered inventory rows and item rows, including main or equipped inventory rows when the database exposes them. Items must have current durability; missing max durability can be created by this repair pass. Inventory labels come from the database when present; otherwise the tool falls back to inventory ID and item count.
 </div>
 
@@ -293,7 +303,7 @@ Use this for uniques or stubborn items the bulk pass misses. Pick a character, t
 </form>
 
 <h3>Inventory Browser</h3>
-<div class="warning">
+<div class="warning info">
 Read-only inventory lookup. Pick a character, then select any discovered inventory row to inspect its item rows, positions, stack sizes, quality levels, and durability values. Inventory names are pulled from the database when available and may fall back to inventory IDs.
 </div>
 
@@ -342,7 +352,7 @@ Read-only inventory lookup. Pick a character, then select any discovered invento
 <div class="box">
 <h2>Preset Market Seed</h2>
 
-<div class="warning">
+<div class="warning experimental">
 Experimental admin-only market tool based on IceHunter's MIT-licensed marketbot research, with attribution in the README.<br><br>
 Seeds the exchange with NPC listings owned by the <b>{{ market_bot_class }}</b> bot actor: 2 of each equippable item, 2 of each schematic, and {{ market_resource_stack_size }} of each resource-like stackable.<br><br>
 Also seeds manual ammo/consumable/utility/cartography stock: RocketAmmo, InfantryRocketAmmo, Napalm, Healkit Mk6, Iodine Pill, Sapho Juice, Melange Spiced Wine, Personal Light, and Blank Sinkchart. Manual stock prices use the same multiplier below, so the listed base prices apply when the multiplier is 1x.<br><br>
@@ -498,7 +508,7 @@ Automated buyback and reseed sweeps run once immediately when started, then use 
 <div class="box">
 <h2>Vehicle Module Repair</h2>
 
-<div class="warning">
+<div class="warning experimental">
 Experimental admin-only tool.<br><br>
 This updates CurrentDurability and MaxDurability on every module in dune.vehicle_modules for the selected vehicle.
 It is intended for repairing vehicle modules, not cloning or spawning vehicles.<br><br>
@@ -535,7 +545,7 @@ Recommended first use: test on a low-risk vehicle and confirm in-game behavior a
 <div class="box">
 <h2>Admin Gifts & Character XP</h2>
 
-<div class="warning">
+<div class="warning info">
 Admin-only helper tools.<br><br>
 Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirmed character XP, level, research point, skill point, and bulk skill-module controls live here; unconfirmed journey/class/specialization experiments remain behind the hidden Developer page.
 </div>
@@ -575,7 +585,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkRefillWaterForm">
-    <div class="warning">
+    <div class="warning info">
         RedBlink v1.3.3 helper. Refills water containers/fillables for the selected player using <b>dune admin refill-water</b>. This does not refill the character hydration meter. VIP users get a self-only version of this tool.
     </div>
 
@@ -595,7 +605,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkSpawnVehicleForm">
-    <div class="warning">
+    <div class="warning warn">
         RedBlink v1.3.3 helper. Spawns a selected vehicle template in front of an online player using <b>dune admin spawn-vehicle</b>. This is not a database teleport and expects the target player to be online.
     </div>
 
@@ -627,7 +637,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkSpawnVehicleAtForm">
-    <div class="warning">
+    <div class="warning warn">
         RedBlink v1.3.3 helper. Spawns a selected vehicle template at explicit coordinates using <b>dune admin spawn-vehicle-at</b>. Use the Vehicle Live Map below to double-click a target and populate X/Y. Z is not terrain-aware, so overestimate altitude first.
     </div>
 
@@ -675,7 +685,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkPlayerLocationForm">
-    <div class="warning">
+    <div class="warning info">
         Quick RedBlink lookup for an online player's current location. Useful before spawning vehicles or verifying where a player is standing.
     </div>
 
@@ -692,7 +702,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkSkillModuleForm">
-    <div class="warning">
+    <div class="warning experimental">
         RedBlink v1.3.3 helper. Sets one skill module level for a selected player using <b>dune admin skill-module</b>. This calls RedBlink's command wrapper; relogging may be required before the client reflects the change.
     </div>
 
@@ -725,7 +735,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkKickForm">
-    <div class="warning">
+    <div class="warning warn">
         RedBlink v1.3.3 helper. Kicks one selected player, or every currently online player. Use force only for stuck/offline edge cases where RedBlink refuses a normal kick.<br><br>
         Ban/cheater flag research is hidden on the Developer page until a working ban and unban path is verified.
     </div>
@@ -754,7 +764,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="characterXpForm">
-    <div class="warning">
+    <div class="warning info">
         Character XP controls the actual displayed character level and is separate from specialization XP. It caps at <b>{{ "{:,}".format(character_max_xp) }}</b> XP / level 200 and recalculates skill points plus research points from the new level.
     </div>
 
@@ -773,7 +783,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="characterLevelForm">
-    <div class="warning">
+    <div class="warning warn">
         Set Character Level uses the same level XP curve as Character XP, then recalculates skill points and research points. The character should be offline before changing level.
     </div>
 
@@ -792,7 +802,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="researchPointsForm">
-    <div class="warning">
+    <div class="warning info">
         Sets the selected character's research points directly. Confirmed working; relogging may still be useful if the client UI does not refresh immediately.
     </div>
 
@@ -811,7 +821,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="skillPointsForm">
-    <div class="warning">
+    <div class="warning info">
         Adds usable skill points without changing character level XP. Confirmed working; use reasonable amounts and verify in game.
     </div>
 
@@ -830,7 +840,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="redblinkSkillPointsForm">
-    <div class="warning">
+    <div class="warning experimental">
         Live RabbitMQ command test using RedBlink v1.3.3 <b>dune admin skill-points</b>, which publishes <b>SkillsSetUnspentSkillPoints</b>. This appears to set the current unspent skill point value rather than add to total earned points, so use it for testing and verify the in-game skill UI.
     </div>
 
@@ -850,7 +860,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </form>
 
 <form id="bulkSkillModuleForm">
-    <div class="warning">
+    <div class="warning experimental">
         Bulk RedBlink skill-module preset. Confirmed mostly working in live testing. This sends many <b>dune admin skill-module</b> commands against the selected Player / FLS ID, using RedBlink's current catalog. Relogging, a map restart, or a battlegroup restart may be required before all client state catches up.
     </div>
 
@@ -991,7 +1001,7 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 <div class="box">
 <h2>Vehicle Teleport</h2>
 
-<div class="warning">
+<div class="warning experimental">
 Experimental admin-only tool.<br><br>
 <b>Map restart required:</b> vehicle actors already loaded by the server keep their old in-memory location until the affected map/server instance is restarted.<br><br>
 Ownership is not confirmed in the current schema, so this tool can move any detected supported vehicle actor. Use a database backup and test with a low-risk vehicle first.<br><br>
@@ -1033,7 +1043,7 @@ Aim high on <b>Z</b>. A value below terrain can place the vehicle underground, s
 </form>
 
 <h3>Delete Vehicle Actor</h3>
-<div class="warning">
+<div class="warning danger">
 Emergency cleanup for spawned or stuck vehicles, including RedBlink-spawned cargo containers.<br><br>
 This deletes matching rows from <b>dune.vehicle_modules</b>, <b>dune.vehicles</b>, and <b>dune.actors</b> for the selected allowed vehicle actor. A running map may keep the old object in memory until the affected map/server instance is restarted. Restart the affected map first; if the object still persists, a full battlegroup restart may be required.
 </div>
@@ -1047,14 +1057,14 @@ This deletes matching rows from <b>dune.vehicle_modules</b>, <b>dune.vehicles</b
     <label>Actor ID</label>
     <input type="text" name="actor_id" id="vehicleDeleteActorId" placeholder="Example: 72" required>
 
-    <button type="submit">Delete Vehicle Actor</button>
+    <button class="danger" type="submit">Delete Vehicle Actor</button>
 </form>
 </div>
 
 <div class="box">
 <h2>Vehicle Live Map</h2>
 
-<div class="warning">
+<div class="warning info">
 Only supported vehicle actors are shown here. Click a marker to select the vehicle, drag the map to pan, then double-click the map to set the destination X/Y in the teleport form. Ownership is not confirmed, so use actor ID/class/location to identify the vehicle before moving it. Multi-instance maps depend on verified partition IDs.
 </div>
 

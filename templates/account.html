@@ -2,8 +2,15 @@
 {% block title %}My Account{% endblock %}
 
 {% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Profile</div>
+        <h1 class="page-title">My Account</h1>
+        <p class="page-subtitle">Update your webadmin username or password for this Easy Dune Admin login.</p>
+    </div>
+</div>
+
 <div class="box">
-<h1>My Account</h1>
 
 {% if message %}
 <div class="msg">{{ message }}</div>

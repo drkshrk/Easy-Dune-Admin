@@ -70,6 +70,24 @@ def logout():
     return redirect("/login")
 
 
+@app.route("/api/session-installation-mode", methods=["POST"])
+def api_session_installation_mode():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 403
+
+    installation_mode = request.form.get("installation_mode", DEFAULT_INSTALLATION_MODE).strip().casefold()
+    if installation_mode not in INSTALLATION_MODES:
+        return jsonify({"ok": False, "error": "invalid installation mode"}), 400
+
+    session["installation_mode"] = installation_mode
+    log_action(session["user"], f"changed installation mode to {INSTALLATION_MODES[installation_mode]['label']}")
+    return jsonify({
+        "ok": True,
+        "installation_mode": installation_mode,
+        "label": INSTALLATION_MODES[installation_mode]["label"],
+    })
+
+
 @app.route("/service-worker.js")
 def pwa_service_worker():
     """

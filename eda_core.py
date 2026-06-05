@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.1-alpha
+Panel version: 0.8.2-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.8.1-alpha RedBlink v1.3.3 support:
+0.8.2-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -56,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.8.1-alpha"
+PANEL_VERSION = "0.8.2-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.

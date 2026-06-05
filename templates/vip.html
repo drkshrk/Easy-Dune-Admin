@@ -109,7 +109,17 @@
 {% endblock %}
 
 {% block content %}
-<h1>VIP Tools</h1>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Self-Service Tools</div>
+        <h1 class="page-title">VIP Tools</h1>
+        <p class="page-subtitle">Viewer-safe information plus self-only repairs, teleport support, and approved grants for the linked character.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip safe">Self Only</span>
+        <span class="status-chip warn">Offline Actions</span>
+    </div>
+</div>
 
 <div id="actionOutput" class="msg" style="display:none;"></div>
 
@@ -119,7 +129,7 @@
 
 <div class="box">
 <h2>Linked Character</h2>
-<div class="warning">
+<div class="warning info">
 These tools only act on the in-game character linked to this web account by an admin. The character name must match the game database exactly.
 </div>
 <div class="coord-box" id="vipCharacterSummary">
@@ -129,7 +139,7 @@ These tools only act on the in-game character linked to this web account by an a
 
 <div class="box">
 <h2>Self Water Container Refill</h2>
-<div class="warning">
+<div class="warning info">
 Uses RedBlink v1.3.3's refill-water helper on your linked character only. This refills personal canteens, literjons, and other water fillables tied to your player; it does not refill your character hydration meter.
 </div>
 <form id="vipRefillWaterForm">
@@ -145,7 +155,7 @@ Uses RedBlink v1.3.3's refill-water helper on your linked character only. This r
 
 <div class="box">
 <h2>Self Overrepair</h2>
-<div class="warning">
+<div class="warning warn">
 The character must be logged off. This repairs all inventories owned by your linked character, including equipped/hotbar inventory rows, but only items with a current durability field are touched.<br><br>
 If some items fail to overrepair, empty extra inventory, move failed items higher in the bag, equip items that worked, retry, and verify the SQL output.
 </div>
@@ -159,7 +169,7 @@ If some items fail to overrepair, empty extra inventory, move failed items highe
 
 <div class="box">
 <h2>Give MK6 Scout Thopter</h2>
-<div class="warning">
+<div class="warning info">
 Grants RedBlink template <b>{{ scout_thopter_template }}</b> to your linked character only.
 </div>
 <form id="vipScoutThopterForm">
@@ -169,7 +179,7 @@ Grants RedBlink template <b>{{ scout_thopter_template }}</b> to your linked char
 
 <div class="box">
 <h2>Give Mk6 Medium Ornithopter Kit</h2>
-<div class="warning">
+<div class="warning warn">
 Grants the full Mk6 Medium Ornithopter kit to your linked character only.<br><br>
 Make sure you have at least 23 free inventory slots; 27+ is recommended to reduce overflow or partial grants.
 </div>
@@ -191,7 +201,7 @@ Make sure you have at least 23 free inventory slots; 27+ is recommended to reduc
 
 <div class="box">
 <h2>Self Offline Teleport</h2>
-<div class="warning">
+<div class="warning experimental">
 Use only while your character is offline. Drag the map to pan, hold Ctrl/Command while using the mouse wheel to zoom, then double-click the map to confirm and fill X/Y. Set a safe Z before teleporting.<br><br>
 The emergency return button uses the same configured Hagga Basin safe point as the admin emergency return tool and only targets your linked character.<br><br>
 <b>Experimental:</b> multi-partition map/teleport support is currently untested until additional Survival or Deep Desert instances are available. The partition picker reads observed map names and partition IDs from the database, and map markers are filtered by the selected partition. The server uses your linked character automatically; no player IDs are accepted from the browser.
