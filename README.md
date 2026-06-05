@@ -52,10 +52,6 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 
 ![Live map](images/live-map.png)
 
-### Infrastructure
-
-![Infrastructure](images/infrastructure.png)
-
 ### Docker Infrastructure
 
 ![Docker infrastructure](images/infrastructure-docker.png)
@@ -63,6 +59,10 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 ### VIP Tools
 
 ![VIP tools](images/vip.png)
+
+### Android App
+
+![Android app](images/EDA_apk.png)
 
 ### RedBlink Manager Shell Workflow
 
