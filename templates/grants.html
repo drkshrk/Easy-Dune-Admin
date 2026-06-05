@@ -2,44 +2,10 @@
 {% block title %}Item Grants{% endblock %}
 
 {% block head_extra %}
-<style>
-.grant-table-wrap {
-    max-height: 360px;
-    overflow: auto;
-    border: 1px solid #222;
-    background: #070707;
-    margin: 10px 0 14px;
-}
 
-.grant-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
+<!-- Dynamic link to your Flask static folder -->
+<link rel="stylesheet" href="{{ url_for('static', filename='default.css') }}">
 
-.grant-table th,
-.grant-table td {
-    border-bottom: 1px solid #242424;
-    padding: 7px 8px;
-    text-align: left;
-    vertical-align: top;
-}
-
-.grant-table th {
-    color: #d8c08a;
-    background: #090909;
-    position: sticky;
-    top: 0;
-}
-
-.grant-summary {
-    border: 1px solid #604010;
-    background: #201000;
-    color: #ffd48a;
-    padding: 10px;
-    margin: 10px 0 14px;
-}
-</style>
 {% endblock %}
 
 {% block content %}

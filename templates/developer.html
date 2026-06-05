@@ -3,43 +3,9 @@
 {% block title %}Developer Tools{% endblock %}
 
 {% block head_extra %}
-<style>
-.developer-results {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 14px;
-    margin-top: 14px;
-}
+<!-- Dynamic link to your Flask static folder -->
+<link rel="stylesheet" href="{{ url_for('static', filename='default.css') }}">
 
-.developer-result-card {
-    border: 1px solid #222;
-    background: #060606;
-    padding: 12px;
-    overflow: auto;
-}
-
-.developer-result-card h3 {
-    margin-top: 0;
-}
-
-.developer-result-card table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-}
-
-.developer-result-card th,
-.developer-result-card td {
-    border-bottom: 1px solid #252525;
-    padding: 6px;
-    text-align: left;
-    vertical-align: top;
-}
-
-.developer-result-card th {
-    color: #d8c08a;
-}
-</style>
 {% endblock %}
 
 {% block content %}
