@@ -2,11 +2,15 @@
     display: flex;         /* Activates flexbox layout */
     width: 100%;           /* Spares the full width of the screen */
     border-bottom: 2px solid #3a2a12;
+    height: auto !important;         /* Do NOT use fixed heights like height: 80px */
+    align-items: stretch;
 
 }
 
 .header-box {
-  padding: 10px;
+    padding: 10px;
+    height: auto !important;         /* Do NOT use fixed heights like height: 80px */
+    min-height: 60px;     /* Sets a minimum starting size instead */
 }
 
 /* Box 1 and Box 2 will share the remaining 25% evenly */
@@ -17,9 +21,10 @@
 /* Box 3 takes up exactly 75% of the container */
 .header-box:last-child {
     flex: 0 0 75%;
-    display: flex;              /* Turns Box 3 into a flex container */
-    flex-direction: column;     /* Keeps content flowing top-to-bottom */
-    justify-content: space-between;  /* Pushes all content inside this box to the bottom */
+    display: flex;                          /* Turns Box 3 into a flex container */
+    flex-direction: column;                 /* Keeps content flowing top-to-bottom */
+    justify-content: flex-start !important; /* Forces layout to stack from the top down */
+    height: auto !important;                /* Strips any accidental inherited heights */
 }
 
 body {
@@ -39,10 +44,11 @@ body {
 }
 
 .title {
-    font-size: 28.8px;
+    font-size: 28px;
     color: #ddd;
     text-shadow: 0 0 12px rgba(255,180,80,0.25);
-    padding: 24px;
+    padding-top: 24px;
+    padding-bottom: 24px;
 }
 
 .alpha-badge {
@@ -58,23 +64,28 @@ body {
 }
 
 .nav {
+    display: flex;
+    flex-wrap: wrap;           /* ALLOWS LINKS TO SAFELY WRAP TO NEW LINES */
+    justify-content: left;     /* LEFT-ALIGNS LINKS, EVEN AS THEY WRAP TO NEW LINES */
+    align-items: center;       /* VERTICALLY CENTERS LINKS WITHIN THE NAV HEIGHT, EVEN AS IT GROWS */
     width: 100%;
-    min-height: 100px;     /* Sets the minimum height, but allows it to grow if needed */
-    position: relative;
-    list-style: none;
     margin: 0;
-    padding: 0 24px 18px 24px;
-    gap: 10px;          /* Adds clean spacing between each link link */
-    text-align: left;   /* Text-align forces inline-block child elements to align to a specific side */
+    /*padding: 0px 0px 18px 0px;*/
+    gap: 10px;             /* NATURALLY SPACES LINKS WITHOUT MARGIN BUGS */
+    list-style: none;
+    height: auto !important;
+    min-height: 0 !important;         /* Ensure the height is dynamic not locked */
 }
 
 /* THE SECRET INGREDIENT: An invisible helper element inside the navbar */
-.nav::before {
-  content: "";
+.nav::before, .nav::after {
+/*  content: "";
   display: inline-block;
-  height: 100%;             /* Matches the exact height of the navbar, even as it grows */
-  vertical-align: bottom;   /* Sits firmly at the bottom */
-  position: relative;       /* CRITICAL: Acts as the anchor point for the absolute tooltip position */
+  height: 100%;             
+  vertical-align: bottom;   
+  position: relative;       */
+  content: none !important;
+  display: none !important;
 }
 
 /* 2. Create the Tooltip Text Bubble */
@@ -141,6 +152,7 @@ body {
   padding-bottom: 15px;  /* Safely pushes the text up away from hitting the absolute edge */
   text-decoration: none;
   color: #333;
+  max-height: 44px;
 }
 
 /* Prevents the final link from adding dead space on the right edge */
@@ -150,9 +162,11 @@ body {
 
 .nav a {
     display: inline-block;
+    position: relative;    /*CRITICAL: Keeps tooltips glued to each individual button */
     padding: 12px 18px;
     margin-right: 10px;
     margin-bottom: 10px;
+    max-height: 44px;
 
     background: linear-gradient(180deg, #2b1208 0%, #140808 100%);
     border: 1px solid #8b6b2d;
@@ -179,6 +193,55 @@ body {
         0 0 12px rgba(212,169,77,0.45),
         0 0 22px rgba(180,40,20,0.22);
     transform: translateY(-2px);
+}
+
+.nav a.nav-link {
+  display: inline-block;
+  position: relative;    /* CRITICAL: The tooltip bubble anchors directly to this button */
+  padding: 12px 18px;
+  background: linear-gradient(180deg, #2b1208 0%, #140808 100%);
+  border: 1px solid #8b6b2d;
+  color: #d8c08a;
+  text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  border-radius: 8px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+  margin: 0 !important;  /* Strip legacy margins that cause offset alignment */
+}
+
+.nav a.nav-link:hover {
+  color: #fff4c2;
+  border-color: #d4a94d;
+  background: linear-gradient(180deg, #4a1b0c 0%, #1b0806 100%);
+  box-shadow: 0 0 12px rgba(212,169,77,0.45), 0 0 22px rgba(180,40,20,0.22);
+  transform: translateY(-2px);
+}
+
+/* 5. MODERN DUNE TOOLTIP TEXT BUBBLE */
+.nav a.nav-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 115%;          /* Safely floats right above the button */
+  left: 50%;
+  transform: translateX(-50%) translateY(5px);
+  background-color: #222;  /* Slightly darker blend for Dune UI */
+  border: 1px solid #8b6b2d;
+  color: #fff4c2;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 999;          /* Ensures it stays on top of layout components */
+}
+
+/* 6. TRIGGER TOOLTIP ON HOVER */
+.nav a.nav-link:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .container {
