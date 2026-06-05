@@ -70,7 +70,6 @@ body {
     align-items: center;       /* VERTICALLY CENTERS LINKS WITHIN THE NAV HEIGHT, EVEN AS IT GROWS */
     width: 100%;
     margin: 0;
-    /*padding: 0px 0px 18px 0px;*/
     gap: 10px;             /* NATURALLY SPACES LINKS WITHOUT MARGIN BUGS */
     list-style: none;
     height: auto !important;
@@ -79,11 +78,6 @@ body {
 
 /* THE SECRET INGREDIENT: An invisible helper element inside the navbar */
 .nav::before, .nav::after {
-/*  content: "";
-  display: inline-block;
-  height: 100%;             
-  vertical-align: bottom;   
-  position: relative;       */
   content: none !important;
   display: none !important;
 }
