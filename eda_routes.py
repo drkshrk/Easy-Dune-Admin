@@ -1216,6 +1216,33 @@ def api_easy_dune_admin_clean_install():
         return jsonify({"ok": False, "error": f"Easy Dune Admin clean reinstall failed: {exc}"}), 500
 
 
+@app.route("/api/easy-dune-admin-clean-uninstall", methods=["POST"])
+def api_easy_dune_admin_clean_uninstall():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    if not current_installation_capabilities()["self_update"]:
+        return jsonify({"ok": False, "error": "Easy Dune Admin clean uninstall is available only in Linux Host or Docker mode"}), 403
+
+    if not ENABLE_SELF_UPDATE:
+        return jsonify({"ok": False, "error": "Easy Dune Admin clean uninstall disabled; set ENABLE_SELF_UPDATE=1"}), 403
+
+    confirmation = request.form.get("confirmation", "").strip()
+    if confirmation != "UNINSTALL EDA":
+        return jsonify({"ok": False, "error": "type UNINSTALL EDA to confirm"}), 400
+
+    try:
+        timeout = 90 if current_installation_capabilities()["is_docker"] else 300
+        output = run_infra_command(easy_dune_uninstall_command(), timeout=timeout, cwd=BASE_DIR)
+        log_action(session["user"], "ran Easy Dune Admin clean uninstall")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Easy Dune Admin clean uninstall failed: {exc}"}), 500
+
+
 
 
 @app.route("/api/dashboard-metrics")

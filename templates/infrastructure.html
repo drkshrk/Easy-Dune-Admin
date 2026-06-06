@@ -172,6 +172,27 @@ The updater refuses to run when local Git changes are present, when the running 
 </div>
 {% endif %}
 
+{% if installation_capabilities.self_update %}
+<div class="box">
+<h2>Easy Dune Admin Uninstall</h2>
+
+<div class="warning danger">
+Clean uninstall removes the Easy Dune Admin Docker stack and named webadmin data volume. It leaves the RedBlink stack, RedBlink database, and this host checkout on disk. In Docker mode, a detached uninstaller removes the Easy Dune Admin container as its final step, so this panel will disconnect.
+</div>
+
+{% if enable_self_update and (not installation_capabilities.is_docker or easy_dune_host_dir) %}
+<form id="easyDuneCleanUninstallForm">
+    <input type="hidden" name="confirmation" id="easyDuneCleanUninstallConfirmation">
+    <button type="submit" class="danger">Clean Uninstall Easy Dune Admin</button>
+</form>
+{% elif installation_capabilities.is_docker and not easy_dune_host_dir %}
+<p>Uninstall button needs <b>EASY_DUNE_HOST_DIR</b> set to the absolute host path of this Easy Dune Admin checkout.</p>
+{% else %}
+<p>Uninstall button is disabled. Enable with <b>ENABLE_SELF_UPDATE=1</b>.</p>
+{% endif %}
+</div>
+{% endif %}
+
 {% if installation_capabilities.stack_installer %}
 <div class="box">
 <h2>Passwordless Sudo Requirement</h2>
@@ -420,6 +441,22 @@ if (easyDuneCleanInstallForm) {
 
         document.getElementById("easyDuneCleanInstallConfirmation").value = typed;
         await postForm("/api/easy-dune-admin-clean-install", easyDuneCleanInstallForm);
+    });
+}
+
+const easyDuneCleanUninstallForm = document.getElementById("easyDuneCleanUninstallForm");
+if (easyDuneCleanUninstallForm) {
+    easyDuneCleanUninstallForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const typed = prompt("Clean uninstall removes the Easy Dune Admin Docker stack and named webadmin data volume. RedBlink and this host checkout remain. Type UNINSTALL EDA to continue.");
+        if (typed !== "UNINSTALL EDA") {
+            showOutput("Clean uninstall cancelled.", easyDuneCleanUninstallForm);
+            return;
+        }
+
+        document.getElementById("easyDuneCleanUninstallConfirmation").value = typed;
+        await postForm("/api/easy-dune-admin-clean-uninstall", easyDuneCleanUninstallForm);
     });
 }
 

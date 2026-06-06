@@ -398,6 +398,11 @@ FOLLOW_LOGS=0 ./rebuild_docker.sh
 
 See `DOCKER.md` for Docker mount and production notes.
 
+Clean uninstall is documented in `DOCKER.md`. The Infrastructure page also has
+an admin-only Clean Uninstall panel that removes the Easy Dune Admin Docker
+stack and named webadmin data volume while leaving RedBlink and the host
+checkout untouched.
+
 ### Advanced Local Install
 
 The legacy local Python launch remains available for Linux hosts that prefer

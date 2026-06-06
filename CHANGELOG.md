@@ -12,6 +12,7 @@ All notable changes to Easy Dune Admin are documented here.
 - Replaced the plain footer metadata line with badge chips for Easy Dune Admin version, RedBlink stack target, and current command-routing mode, with the stack/mode badges using the purple status treatment.
 - Changed the default web port from `8088` to `8089` and documented how existing Docker installs can edit `.env` with `nano`, set `EDA_PORT=8089`, and rebuild.
 - Updated future install examples to clone into lowercase `easy-dune-admin`, including matching `EASY_DUNE_HOST_DIR` examples for Linux case-sensitive paths.
+- Added clean uninstall docs and an Infrastructure Clean Uninstall panel that removes the Easy Dune Admin Docker stack and named webadmin data volume while leaving RedBlink and the host checkout intact.
 - Updated version strings to `0.8.4-beta`.
 
 ## 0.8.3-alpha

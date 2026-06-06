@@ -73,6 +73,29 @@ more destructive: after typing `CLEAN INSTALL`, it force-resets the Easy Dune
 Admin checkout to upstream GitHub, removes untracked source/build files, keeps
 `.env` plus common local runtime paths, and then rebuilds Docker.
 
+## Clean Uninstall
+
+The Infrastructure page includes a Clean Uninstall panel for trusted admins.
+After typing `UNINSTALL EDA`, it removes the Easy Dune Admin Docker stack and
+named webadmin data volume. It leaves the RedBlink stack, RedBlink database,
+and this host checkout on disk. In Docker mode, a detached uninstaller removes
+the Easy Dune Admin container as its final step, so the panel disconnects.
+
+Manual clean uninstall from the Docker host:
+
+```bash
+cd /path/to/easy-dune-admin
+docker compose -f docker-compose.yml down -v --remove-orphans
+docker rm -f easy-dune-admin easy-dune-admin-updater easy-dune-admin-uninstaller 2>/dev/null || true
+```
+
+Optional follow-up cleanup:
+
+```bash
+docker image rm easy-dune-admin:0.8.4-beta 2>/dev/null || true
+rm -rf /path/to/easy-dune-admin
+```
+
 Open:
 
 ```text

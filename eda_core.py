@@ -8149,6 +8149,48 @@ echo "Clean reinstall complete. If the browser disconnected, wait a few seconds 
 """
 
 
+def easy_dune_uninstall_script(project_dir, compose_file="docker-compose.yml"):
+    """
+    Build the clean uninstall script for the Easy Dune Admin Docker package.
+
+    This removes the webadmin Compose stack and named data volume, but leaves
+    the host checkout and the RedBlink server stack alone. The Compose down is
+    intentionally the final destructive action because it removes the running
+    webadmin container.
+    """
+    project_dir = shlex.quote(str(project_dir))
+    compose_file = shlex.quote(str(compose_file))
+    return f"""
+set -euo pipefail
+cd {project_dir}
+
+echo "Easy Dune Admin clean uninstall"
+echo "Project directory: {project_dir}"
+echo
+
+if [ ! -f {compose_file} ]; then
+    echo "ERROR: {compose_file} was not found. Run uninstall from the Easy Dune Admin checkout."
+    exit 2
+fi
+
+echo "This removes the Easy Dune Admin Docker container/stack and named webadmin data volume."
+echo "Preserved: this host checkout, .env, RedBlink stack, RedBlink database, and RedBlink Docker containers."
+echo "Final step will remove the Easy Dune Admin container, so the web panel may disconnect."
+echo
+
+echo "Current Easy Dune Admin containers:"
+docker ps -a --filter "name=easy-dune-admin" --format 'table {{{{.Names}}}}\t{{{{.Status}}}}\t{{{{.Image}}}}' || true
+echo
+
+echo "Final step: removing Easy Dune Admin Compose stack, container, and named data volume..."
+docker compose -f {compose_file} down -v --remove-orphans
+docker rm -f easy-dune-admin easy-dune-admin-updater >/dev/null 2>&1 || true
+
+echo
+echo "Clean uninstall complete. The host checkout remains on disk and can be deleted manually if desired."
+"""
+
+
 def easy_dune_self_update_command():
     """
     Build the mode-aware Easy Dune Admin self-update command.
@@ -8318,6 +8360,70 @@ echo "The web panel may disconnect while the updater rebuilds and replaces the c
         easy_dune_clean_install_script(
             EASY_DUNE_SOURCE_DIR,
             str(EASY_DUNE_SOURCE_DIR / "rebuild_docker.sh"),
+        ),
+    ]
+
+
+def easy_dune_uninstall_command():
+    """
+    Build the mode-aware clean uninstall command.
+
+    Docker mode launches a detached sibling container because the final Compose
+    down removes the running webadmin container.
+    """
+    mode = current_installation_mode()
+
+    if mode == "docker":
+        host_dir = EASY_DUNE_HOST_DIR.strip()
+        if not host_dir or not host_dir.startswith("/"):
+            return [
+                "bash",
+                "-lc",
+                (
+                    "echo 'ERROR: Docker clean uninstall needs EASY_DUNE_HOST_DIR set "
+                    "to the absolute host path of this Easy Dune Admin checkout.'; exit 2"
+                ),
+            ]
+
+        uninstaller_name = "easy-dune-admin-uninstaller"
+        uninstall_script = easy_dune_uninstall_script("/work", "./docker-compose.yml")
+        uninstaller_inner_command = f"""
+apk add --no-cache bash docker-cli-compose >/tmp/easy-dune-admin-uninstaller-apk.log 2>&1
+cat >/tmp/easy-dune-admin-uninstall.sh <<'EDA_UNINSTALL_SCRIPT'
+{uninstall_script}
+EDA_UNINSTALL_SCRIPT
+bash /tmp/easy-dune-admin-uninstall.sh
+"""
+        docker_cmd = f"""
+set -euo pipefail
+echo "Starting detached Easy Dune Admin clean uninstaller..."
+echo "Host checkout: {shlex.quote(host_dir)}"
+echo "Uninstaller image: {shlex.quote(EASY_DUNE_UPDATER_IMAGE)}"
+echo
+
+docker rm -f {uninstaller_name} >/dev/null 2>&1 || true
+docker run --rm -d \\
+    --name {uninstaller_name} \\
+    -v /var/run/docker.sock:/var/run/docker.sock \\
+    -v {shlex.quote(host_dir)}:/work \\
+    -w /work \\
+    {shlex.quote(EASY_DUNE_UPDATER_IMAGE)} \\
+    sh -lc {shlex.quote(uninstaller_inner_command)}
+
+echo
+echo "Clean uninstaller started. Follow progress from the Docker host with:"
+echo "docker logs -f {uninstaller_name}"
+echo
+echo "The web panel will disconnect when the uninstaller removes the Easy Dune Admin container as its final step."
+"""
+        return ["bash", "-lc", docker_cmd]
+
+    return [
+        "bash",
+        "-lc",
+        easy_dune_uninstall_script(
+            EASY_DUNE_SOURCE_DIR,
+            str(EASY_DUNE_SOURCE_DIR / "docker-compose.yml"),
         ),
     ]
 
