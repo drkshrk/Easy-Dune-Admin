@@ -376,6 +376,26 @@ webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
 normal rebuilds preserve `users.db`, roles, and logs. Do not run
 `docker compose down -v` unless you intentionally want to reset the webadmin.
 
+Existing Docker installs upgrading from the older `8088` default can change the
+published web port in `.env` and rebuild:
+
+```bash
+cd /path/to/Easy-Dune-Admin
+nano .env
+```
+
+Set or update:
+
+```bash
+EDA_PORT=8089
+```
+
+Save, then apply the port change:
+
+```bash
+FOLLOW_LOGS=0 ./rebuild_docker.sh
+```
+
 See `DOCKER.md` for Docker mount and production notes.
 
 ### Advanced Local Install

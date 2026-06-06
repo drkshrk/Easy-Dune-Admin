@@ -10,6 +10,7 @@ All notable changes to Easy Dune Admin are documented here.
 - Added concise hover tooltips to the top navigation links describing the tools in each section.
 - Changed the current release designator from alpha to beta across panel metadata, README badges, Docker image tag, Android wrapper version, service-worker cache key, and the visible webadmin badge.
 - Replaced the plain footer metadata line with badge chips for Easy Dune Admin version, RedBlink stack target, and current command-routing mode, with the stack/mode badges using the purple status treatment.
+- Changed the default web port from `8088` to `8089` and documented how existing Docker installs can edit `.env` with `nano`, set `EDA_PORT=8089`, and rebuild.
 - Updated version strings to `0.8.4-beta`.
 
 ## 0.8.3-alpha
