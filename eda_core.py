@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.2-alpha
+Panel version: 0.8.3-alpha
 RedBlink stack compatibility target: v1.3.3
 
-0.8.2-alpha RedBlink v1.3.3 support:
+0.8.3-alpha RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -56,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.8.2-alpha"
+PANEL_VERSION = "0.8.3-alpha"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -680,6 +680,53 @@ CHARACTER_LEVEL_XP = {
 # dune-admin progression preset catalog. These intentionally operate only on
 # journey story nodes; they are for testing and small private-server recovery,
 # not a guarantee that every in-game side effect/tag has been reproduced.
+#
+# The Find the Fremen preset is intentionally more explicit than the other
+# roots. Completing only DA_MQ_FindTheFremen can leave repaired/test characters
+# without child rows the client and quest scripts normally see. IceHunter /
+# Ryan Wilson's 0.25.1 progression research identifies the Trials of Aql child
+# nodes and the Prescience/SpiceVision side effect as separate pieces of state,
+# so we name the known side-effect child nodes here instead of depending on
+# those rows having already been spawned by natural gameplay. The parent rows
+# matter too: Dune's own progression presets reference nodes like FourthTest
+# and FourthQuestion, while the reward/tag catalog references terminal nodes
+# like CompleteFourthTest.
+FIND_THE_FREMEN_PRESET_NODES = [
+    "DA_MQ_FindTheFremen",
+    "DA_MQ_FindTheFremen.FirstTest",
+    "DA_MQ_FindTheFremen.FirstTest.FirstQuestion",
+    "DA_MQ_FindTheFremen.FirstTest.FirstQuestion.FindtheCaveentrance",
+    "DA_MQ_FindTheFremen.FirstTest.FirstQuestion.CompleteFirstTest",
+    "DA_MQ_FindTheFremen.SecondTest",
+    "DA_MQ_FindTheFremen.SecondTest.SecondQuestion",
+    "DA_MQ_FindTheFremen.SecondTest.SecondQuestion.FindAltarCave2",
+    "DA_MQ_FindTheFremen.SecondTest.SecondQuestion.CompleteSecondTest",
+    "DA_MQ_FindTheFremen.ThirdTest",
+    "DA_MQ_FindTheFremen.ThirdTest.ThirdQuestion",
+    "DA_MQ_FindTheFremen.ThirdTest.ThirdQuestion.FindAltarCave3",
+    "DA_MQ_FindTheFremen.FourthTest",
+    "DA_MQ_FindTheFremen.FourthTest.FourthQuestion",
+    "DA_MQ_FindTheFremen.FourthTest.FourthQuestion.FindAltarCave4",
+    "DA_MQ_FindTheFremen.FourthTest.FourthQuestion.CompleteFourthTest",
+    "DA_MQ_FindTheFremen.FifthTest",
+    "DA_MQ_FindTheFremen.FifthTest.FifthQuestion",
+    "DA_MQ_FindTheFremen.FifthTest.FifthQuestion.FindAltarCave5",
+    "DA_MQ_FindTheFremen.FifthTest.FifthQuestion.CompleteFifthTest",
+    "DA_MQ_FindTheFremen.SixthTest",
+    "DA_MQ_FindTheFremen.SixthTest.SixthQuestion",
+    "DA_MQ_FindTheFremen.SixthTest.SixthQuestion.FindAltarCave6",
+    "DA_MQ_FindTheFremen.SeventhTest",
+    "DA_MQ_FindTheFremen.SeventhTest.SeventhQuestion",
+    "DA_MQ_FindTheFremen.SeventhTest.SeventhQuestion.FindAltarCave7",
+    "DA_MQ_FindTheFremen.SeventhTest.SeventhQuestion.CompleteSeventhTest",
+    "DA_MQ_FindTheFremen.TheSietch",
+    "DA_MQ_FindTheFremen.TheSietch.SietchLocationParent.SietchLocation",
+    "DA_MQ_FindTheFremen.TheSietch.SietchLocationParent.UnlockDoor",
+    "DA_MQ_FindTheFremen.TheSietch.SietchLocationParent.EscapeTheSietch",
+    "DA_MQ_FindTheFremen.Epilogue",
+    "DA_MQ_FindTheFremen.Epilogue.WaitingForAriste.WaitForTheCall",
+]
+
 PROGRESSION_PRESETS = [
     {
         "id": "skip_npe",
@@ -696,14 +743,14 @@ PROGRESSION_PRESETS = [
     {
         "id": "find_the_fremen",
         "name": "Complete: Find the Fremen",
-        "description": "Completes the Trials of Aql / Fremen discovery root.",
-        "nodes": ["DA_MQ_FindTheFremen"],
+        "description": "Completes the Trials of Aql / Fremen discovery root and known child-node spine.",
+        "nodes": FIND_THE_FREMEN_PRESET_NODES,
     },
     {
         "id": "act1_complete",
         "name": "Complete: Act 1",
         "description": "Applies A New Beginning plus Find the Fremen.",
-        "nodes": ["DA_MQ_ANewBeginning", "DA_MQ_FindTheFremen"],
+        "nodes": ["DA_MQ_ANewBeginning"] + FIND_THE_FREMEN_PRESET_NODES,
     },
     {
         "id": "vermillius_intro",
@@ -960,6 +1007,8 @@ def inject_template_globals():
         "character_max_xp": CHARACTER_MAX_XP,
         "character_max_level": max(CHARACTER_LEVEL_XP),
         "progression_presets": PROGRESSION_PRESETS,
+        "starter_class_options": STARTER_CLASS_OPTIONS,
+        "faction_progression_presets": FACTION_PROGRESSION_PRESETS,
         "default_overrepair_durability": DEFAULT_OVERREPAIR_DURABILITY,
         "default_vehicle_repair_durability": DEFAULT_VEHICLE_REPAIR_DURABILITY,
         "enable_host_command_runner": ENABLE_HOST_COMMAND_RUNNER,
@@ -5130,6 +5179,227 @@ CLASS_PROGRESSION_PRESETS = {
     },
 }
 
+# Starter class research adapted from IceHunter / Ryan Wilson's MIT-licensed
+# dune-admin 0.25.1 source. These values are not account tags: they are FGL
+# skill-module keys stored on the character's DuneCharacter entity. Keep this
+# explicit so admins can adjust a single mapping if Funcom renames a starter
+# ability in a future server build.
+STARTER_CLASS_ABILITIES = {
+    "BeneGesserit": "Skills.Ability.VoiceCompel",
+    "Mentat": "Skills.Ability.PoisonCapsuleLauncher",
+    "Planetologist": "Skills.Ability.SuspensorPad",
+    "Swordmaster": "Skills.Ability.DeflectionSlow",
+    "Trooper": "Skills.Ability.SuspensorGrenade_Reduction",
+}
+
+STARTER_CLASS_OPTIONS = [
+    {"id": job, "label": job}
+    for job in ("BeneGesserit", "Mentat", "Planetologist", "Swordmaster", "Trooper")
+]
+
+# Faction progression research from IceHunter's MIT-licensed dune-admin 0.25.1.
+# These presets remain Developer-only because they advance large story/faction
+# surfaces and may need relog/map/battlegroup restarts before the game UI agrees.
+FACTION_TIER_THRESHOLDS = [
+    0, 99, 249, 499, 999, 1999, 2224, 2524, 2899, 3349, 3874,
+    4474, 5149, 5899, 6724, 7624, 8599, 9649, 10774, 11974, 12474,
+]
+
+FACTION_PROGRESSIONS = {
+    "atreides": {
+        "label": "Atreides",
+        "faction_id": 1,
+        "tags": [
+            "DialogueFlags.Factions.SentToMeetHawat",
+            "DialogueFlags.Factions.AlignedAtreides",
+            "DialogueFlags.Factions.MetHawat",
+            "Contract.Tracking.AtreidesFactionUnlocked",
+            "Contract.Tracking.AtreidesRecruitmentCompleted",
+        ],
+    },
+    "harkonnen": {
+        "label": "Harkonnen",
+        "faction_id": 2,
+        "tags": [
+            "DialogueFlags.Factions.SentToPiterDeVries",
+            "DialogueFlags.Factions.AlignedHarkonnen",
+            "DialogueFlags.Factions.MetPiterDeVries",
+            "Contract.Tracking.HarkonnenFactionUnlocked",
+            "Contract.Tracking.HarkonnenRecruitmentCompleted",
+        ],
+    },
+}
+
+FACTION_PROGRESSION_PRESETS = [
+    {
+        "id": "ch3_start",
+        "label": "Chapter 3 / Rank 5 Start",
+        "target_tier": 5,
+        "description": "Completes faction onboarding and sets House Operator rank.",
+    },
+    {
+        "id": "rank19_eligible",
+        "label": "Rank 19 Eligible",
+        "target_tier": 19,
+        "description": "Adds Landsraad mission progression and sets rank 19 reputation.",
+    },
+]
+
+# Targeted journey side effects from IceHunter / Ryan Wilson's MIT-licensed
+# journey-node tag research. We keep only the roots Easy Dune Admin exposes as
+# buttons rather than bundling the whole generated tag catalog. If another root
+# preset gets promoted later, add its observed side-effect tags here and update
+# README / THIRD_PARTY_NOTICES if the added behavior comes from new research.
+JOURNEY_PRESET_SIDE_EFFECT_TAGS = {
+    "DA_MQ_ANewBeginning": [
+        "BigMoments.Stillsuit.Trigger",
+        "Journey.SpiceDream.TriggerFirstDream",
+        "BigMoments.Base.Trigger",
+        "Contract.Tracking.Journey.EcolabCompleted",
+        "BigMoments.Zantara.CanTrigger",
+        "BigMoments.Bike.Trigger",
+        "Contract.UniqueInstance.Journey.AssembledSandbike",
+        "Contract.Tracking.Journey.ShipwreckCompleted",
+        "Contract.UniqueInstance.Journey.BoughtLiterjon",
+        "Contract.UniqueInstance.ZantaraBounty.Taken",
+        "Contract.UniqueInstance.Journey.ArrivedAtTradepost",
+    ],
+    "DA_MQ_FindTheFremen": [
+        "Journey.Act1.Completed",
+        "JourneySets.Fremkit.Thumper",
+        "JourneySets.Fremkit.Stillsuit",
+        "JourneySets.Fremkit.CryssKnife",
+        "JourneySets.Fremkit.StaticCompactor",
+        "Journey.TheSietch.Progression.Unlocked",
+        "JourneySets.Fremkit.Stilltent",
+        "Journey.TheSietch.Progression.Completed",
+    ],
+}
+
+# Specialization keystone recovery knobs. IceHunter's 0.25.1 research maps 205
+# purchased specialization keystones; the skill-point keystones across that set
+# add 54 total character skill points. Keep both values visible here so server
+# owners can update them if the live game expands the specialization board.
+SPECIALIZATION_KEYSTONE_COUNT = int(os.environ.get("SPECIALIZATION_KEYSTONE_COUNT", "205"))
+SPECIALIZATION_KEYSTONE_SKILL_POINT_BONUS = int(os.environ.get("SPECIALIZATION_KEYSTONE_SKILL_POINT_BONUS", "54"))
+
+CLIMB_THE_RANKS_NODES = [
+    "DA_FQ_ClimbTheRanks.Rank5To20.MeetSponsor",
+    "DA_FQ_ClimbTheRanks.Rank5To20.MeetSponsor.TalkToSponsor",
+    "DA_FQ_ClimbTheRanks.Rank5To20.StartLandsraadOnboarding",
+    "DA_FQ_ClimbTheRanks.Rank5To20.StartLandsraadOnboarding.ReportToMasterOfAssassins",
+    "DA_FQ_ClimbTheRanks.Rank5To20.CompleteLandsraadMission",
+    "DA_FQ_ClimbTheRanks.Rank5To20.CompleteLandsraadMission.CompleteOnboardingJourney1",
+    "DA_FQ_ClimbTheRanks.Rank5To20.CraftAugmentation",
+    "DA_FQ_ClimbTheRanks.Rank5To20.CraftAugmentation.CompleteOnboardingJourney2",
+]
+
+CLIMB_THE_RANKS_STORY_NODES = [
+    "DA_FQ_ClimbTheRanks.HuntingSkorda",
+    "DA_FQ_ClimbTheRanks.HuntingSkorda.FindSkorda",
+    "DA_FQ_ClimbTheRanks.HuntingSkorda.FindSkorda.SkordaInArrakeen",
+    "DA_FQ_ClimbTheRanks.HuntingSkorda.FindSkorda.SkordaInMysaTarrill",
+    "DA_FQ_ClimbTheRanks.HuntingSkorda.FindSkorda.SkordaInOodham",
+    "DA_FQ_ClimbTheRanks.GatheringIntelligence",
+    "DA_FQ_ClimbTheRanks.GatheringIntelligence.TrackDownContainer",
+    "DA_FQ_ClimbTheRanks.GatheringIntelligence.TrackDownContainer.FindCanister",
+    "DA_FQ_ClimbTheRanks.GatheringIntelligence.TrackDownContainer.InvestigateSandflies",
+    "DA_FQ_ClimbTheRanks.GatheringIntelligence.TrackDownContainer.TrackDownPilot",
+    "DA_FQ_ClimbTheRanks.GatheringIntelligence.TrackDownContainer.TrackDownRedScorpion",
+    "DA_FQ_ClimbTheRanks.JoinAHouse",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.ProveYourself",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.ProveYourself.ChooseASide",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.ProveYourself.Rank1Contracts",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.StrikeADeal",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.StrikeADeal.FindTheSpy",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.StrikeADeal.GetSpyMission",
+    "DA_FQ_ClimbTheRanks.JoinAHouse.StrikeADeal.TalkToARecruiter",
+    "DA_FQ_ClimbTheRanks.ClimbTheRanksR2",
+    "DA_FQ_ClimbTheRanks.ClimbTheRanksR2.ContributeToWarEffort_Atreides",
+    "DA_FQ_ClimbTheRanks.ClimbTheRanksR2.ContributeToWarEffort_Atreides.CompleteContractsR2",
+]
+
+FACTION_SIDE_NODES = {
+    "atreides": [
+        "DA_FQ_ClimbTheRanks.TransitionToCh3_Atre",
+        "DA_FQ_ClimbTheRanks.TransitionToCh3_Atre.TheCall",
+        "DA_FQ_ClimbTheRanks.TransitionToCh3_Atre.TheCall.AnswerTheCall",
+        "DA_FQ_ClimbTheRanks.ATestOfLoyalty",
+        "DA_FQ_ClimbTheRanks.ATestOfLoyalty.GetMaximToBackOff",
+        "DA_FQ_ClimbTheRanks.ATestOfLoyalty.GetMaximToBackOff.FindSemuta",
+        "DA_FQ_ClimbTheRanks.InvestigateKytheria_Atreides",
+        "DA_FQ_ClimbTheRanks.InvestigateKytheria_Atreides.InvestigateWreck_Atreides",
+        'DA_FQ_ClimbTheRanks.InvestigateKytheria_Atreides.InvestigateWreck_Atreides.Complete "Track Down Skorda" Contract',
+        "DA_FQ_ClimbTheRanks.InvestigateKytheria_Atreides.InvestigateWreck_Atreides.MeetAndreaGanan",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides.DeviseAPlan_Atreides",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides.DeviseAPlan_Atreides.TellThufirAboutDelphis",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides.PledgeAllegiance_Atreides",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides.PledgeAllegiance_Atreides.PledgeAllegiance_Atreides_Sub",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides.SecureLastContainer_Atreides",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Atreides.SecureLastContainer_Atreides.RecoverSheolContainer_Atreides",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PunishTraitor",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PunishTraitor.ChoosePoisonOrSpare",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PunishTraitor.CompleteWarProfiteerContract",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PunishTraitor.FindBusinessman",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PunishTraitor.TalkToThufirAgain",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PutFindingsToTest",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PutFindingsToTest.MeetThufir",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PutFindingsToTest.ReturnToGanan",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Atreides.PutFindingsToTest.SpeakWithGanan",
+    ],
+    "harkonnen": [
+        "DA_FQ_ClimbTheRanks.TransitionToCh3_Hark",
+        "DA_FQ_ClimbTheRanks.TransitionToCh3_Hark.TheCall",
+        "DA_FQ_ClimbTheRanks.TransitionToCh3_Hark.TheCall.AnswerTheCall",
+        "DA_FQ_ClimbTheRanks.ATestOfTreachery",
+        "DA_FQ_ClimbTheRanks.ATestOfTreachery.GetAntonToBackOff",
+        "DA_FQ_ClimbTheRanks.ATestOfTreachery.GetAntonToBackOff.FindCounterfeitEvidence",
+        "DA_FQ_ClimbTheRanks.InvestigateKytheria_Harkonnen",
+        "DA_FQ_ClimbTheRanks.InvestigateKytheria_Harkonnen.InvestigateWreck_Harkonnen",
+        'DA_FQ_ClimbTheRanks.InvestigateKytheria_Harkonnen.InvestigateWreck_Harkonnen.Complete "Track Down Skorda" Contract',
+        "DA_FQ_ClimbTheRanks.InvestigateKytheria_Harkonnen.InvestigateWreck_Harkonnen.MeetSimoneVonKonig",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen.DeviseAPlan_Harkonnen",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen.DeviseAPlan_Harkonnen.TellPiterAboutEuporia",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen.PledgeAllegiance_Harkonnen",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen.PledgeAllegiance_Harkonnen.PledgeAllegiance_Harkonnen_Sub",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen.SecureLastContainer_Harkonnen",
+        "DA_FQ_ClimbTheRanks.InvestigateDelphis_Harkonnen.SecureLastContainer_Harkonnen.RecoverSheolContainer_Harkonnen",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.LeverageYourFindings",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.LeverageYourFindings.DeliverResults",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.LeverageYourFindings.MeetPiter",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.LeverageYourFindings.ReturnToVonKonig",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.LeverageYourFindings.SpeakWithVonKonig",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.TakeALeap",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.TakeALeap.PoisonOrWarnPiter",
+        "DA_FQ_ClimbTheRanks.PoisonedSpice_Harkonnen.TakeALeap.TalkToPiterAgain",
+    ],
+}
+
+LANDSRAAD_MISSION_NODES = {
+    "atreides": [
+        "DA_SQ_OverlandMap.AtreLandsraadMission",
+        "DA_SQ_OverlandMap.AtreLandsraadMission.AtreMission",
+        "DA_SQ_OverlandMap.AtreLandsraadMission.AtreMission.AtreAccept",
+        "DA_SQ_OverlandMap.AtreLandsraadMission.AtreMission.AtreKeyStone",
+        "DA_SQ_OverlandMap.AtreLandsraadMission.AtreMission.AtreComplete",
+        "DA_SQ_OverlandMap.AtreLandsraadMission.AtreMission.AtreReturn",
+        "DA_SQ_OverlandMap.AtreLandsraadMission.AtreMission.AtreClaimReward",
+    ],
+    "harkonnen": [
+        "DA_SQ_OverlandMap.HarkLandsraadMission",
+        "DA_SQ_OverlandMap.HarkLandsraadMission.HarkMission",
+        "DA_SQ_OverlandMap.HarkLandsraadMission.HarkMission.HarkAccept",
+        "DA_SQ_OverlandMap.HarkLandsraadMission.HarkMission.HarkKeyStone",
+        "DA_SQ_OverlandMap.HarkLandsraadMission.HarkMission.HarkComplete",
+        "DA_SQ_OverlandMap.HarkLandsraadMission.HarkMission.HarkReturn",
+        "DA_SQ_OverlandMap.HarkLandsraadMission.HarkMission.HarkClaimReward",
+    ],
+}
+
 
 def has_developer_access():
     """Return True only after an admin opens the hidden developer panel key gate."""
@@ -5259,6 +5529,961 @@ def build_unlock_advanced_bene_gesserit_sql(character_actor_id):
     return build_class_progression_unlock_sql(character_actor_id, "bene_gesserit_advanced")
 
 
+def build_enable_prescience_sql(character_actor_id):
+    """
+    Enable the persistent Prescience / Spice Vision flag on a character.
+
+    IceHunter's 0.25.1 research shows that completing Find the Fremen is not
+    enough by itself: the game also expects this FGL component to be set on the
+    DuneCharacter entity. This is the likely missing side effect behind the
+    third-combat-skill-slot lockout we saw while testing journey-only edits.
+
+    The nested jsonb update is defensive on purpose. Some characters touched by
+    earlier research tools may not have the expected FSpiceAddictionComponent
+    array shape yet. PostgreSQL's jsonb_set can create the final key, but it
+    still needs the array container at index 1 to exist first; otherwise the UI
+    can report a successful action while the live DuneCharacter state remains
+    unchanged. Returning the component type and before/after status gives admins
+    an audit trail for this dangerous repair button.
+    """
+    actor_id = int(character_actor_id)
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.online_status,
+        ps.life_state,
+        afe.entity_id
+    FROM dune.player_state ps
+    JOIN dune.actor_fgl_entities afe
+      ON afe.actor_id = ps.player_pawn_id
+     AND afe.slot_name = 'DuneCharacter'
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+before_state AS (
+    SELECT
+        sp.character_name,
+        sp.character_actor_id,
+        sp.account_id,
+        sp.online_status,
+        sp.life_state,
+        sp.entity_id AS dune_character_entity_id,
+        COALESCE(jsonb_typeof(fe.components->'FSpiceAddictionComponent'), '') AS before_spice_component_type,
+        COALESCE(
+            fe.components->'FSpiceAddictionComponent'->1->>'SpiceVisionEnabledStatus',
+            ''
+        ) AS before_spice_vision_status
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+),
+updated AS (
+    UPDATE dune.fgl_entities fe
+    SET components = jsonb_set(
+        CASE
+            WHEN jsonb_typeof(fe.components->'FSpiceAddictionComponent') = 'array'
+                THEN fe.components
+            ELSE jsonb_set(
+                fe.components,
+                ARRAY['FSpiceAddictionComponent'],
+                '[{{}}, {{}}]'::jsonb,
+                true
+            )
+        END,
+        ARRAY['FSpiceAddictionComponent','1','SpiceVisionEnabledStatus'],
+        '"FullyEnabled"'::jsonb,
+        true
+    )
+    FROM selected_player sp
+    WHERE fe.entity_id = sp.entity_id
+      AND COALESCE(
+          fe.components->'FSpiceAddictionComponent'->1->>'SpiceVisionEnabledStatus',
+          ''
+      ) <> 'FullyEnabled'
+    RETURNING fe.entity_id
+),
+after_state AS (
+    SELECT
+        sp.character_actor_id,
+        COALESCE(jsonb_typeof(fe.components->'FSpiceAddictionComponent'), '') AS after_spice_component_type,
+        COALESCE(
+            fe.components->'FSpiceAddictionComponent'->1->>'SpiceVisionEnabledStatus',
+            ''
+        ) AS after_spice_vision_status
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+)
+SELECT
+    bs.character_name,
+    bs.character_actor_id,
+    bs.account_id,
+    bs.online_status,
+    bs.life_state,
+    bs.dune_character_entity_id,
+    bs.before_spice_component_type,
+    bs.before_spice_vision_status,
+    ast.after_spice_component_type,
+    ast.after_spice_vision_status,
+    (SELECT COUNT(*) FROM updated) AS rows_updated,
+    'Prescience / third skill slot side effect. Relogging or a map/BG restart may still be required.' AS note
+FROM before_state bs
+JOIN after_state ast ON ast.character_actor_id = bs.character_actor_id;
+"""
+
+
+def build_prescience_diagnostic_sql(character_actor_id):
+    """
+    Read-only state report for the stubborn third-combat-skill-slot lockout.
+
+    This intentionally checks both sides of the current research theory:
+    DuneCharacter FGL state, which IceHunter / Ryan Wilson's 0.25.1 research
+    identifies as the Prescience/SpiceVision unlock state, and journey/tag
+    state, which Easy Dune Admin edits when admin-completing Find the Fremen.
+    Keep this query verbose because it is meant to turn player reports like
+    "still locked" into concrete evidence before another recovery write.
+    """
+    actor_id = int(character_actor_id)
+    nodes_sql = sql_text_array(FIND_THE_FREMEN_PRESET_NODES)
+    tags_sql = sql_text_array(
+        [
+            "Journey.SpiceDream.Completed1",
+            "Journey.Act1.Completed",
+            "JourneySets.Fremkit.Thumper",
+            "JourneySets.Fremkit.Stillsuit",
+            "JourneySets.Fremkit.CryssKnife",
+            "JourneySets.Fremkit.StaticCompactor",
+            "Journey.TheSietch.Progression.Unlocked",
+            "JourneySets.Fremkit.Stilltent",
+            "Journey.TheSietch.Progression.Completed",
+            "Character.Spice.Prescience",
+            "SpiceAddiction.IsSpiceAddicted",
+        ]
+    )
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.player_controller_id,
+        ps.account_id,
+        acc."user" AS fls_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    LEFT JOIN dune.accounts acc ON acc.id = ps.account_id
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+dune_character AS (
+    SELECT
+        sp.character_actor_id,
+        afe.entity_id,
+        fe.components
+    FROM selected_player sp
+    LEFT JOIN dune.actor_fgl_entities afe
+      ON afe.actor_id = sp.character_actor_id
+     AND afe.slot_name = 'DuneCharacter'
+    LEFT JOIN dune.fgl_entities fe ON fe.entity_id = afe.entity_id
+),
+expected_nodes AS (
+    SELECT unnest({nodes_sql}) AS node_id
+),
+node_state AS (
+    SELECT
+        en.node_id,
+        jsn.story_node_id IS NOT NULL AS row_present,
+        COALESCE(jsn.complete_condition_state = 'true'::jsonb, false) AS is_complete,
+        COALESCE(jsn.reveal_condition_state = 'true'::jsonb, false) AS is_revealed,
+        COALESCE(jsn.complete_condition_state::text, 'missing') AS complete_state,
+        COALESCE(jsn.reveal_condition_state::text, 'missing') AS reveal_state
+    FROM expected_nodes en
+    CROSS JOIN selected_player sp
+    LEFT JOIN dune.journey_story_node jsn
+      ON jsn.account_id = sp.account_id
+     AND jsn.story_node_id = en.node_id
+),
+expected_tags AS (
+    SELECT unnest({tags_sql}) AS tag
+),
+tag_state AS (
+    SELECT
+        et.tag,
+        pt.tag IS NOT NULL AS is_present
+    FROM expected_tags et
+    CROSS JOIN selected_player sp
+    LEFT JOIN dune.player_tags pt
+      ON pt.account_id = sp.account_id
+     AND pt.tag = et.tag
+),
+level_keys AS (
+    SELECT string_agg(key, ', ' ORDER BY key) AS flevel_component_keys
+    FROM dune_character dc
+    CROSS JOIN LATERAL jsonb_object_keys(
+        COALESCE(dc.components #> '{{FLevelComponent,1}}', '{{}}'::jsonb)
+    ) AS keys(key)
+)
+SELECT
+    sp.character_name,
+    sp.character_actor_id,
+    sp.player_controller_id,
+    sp.account_id,
+    sp.fls_id,
+    sp.online_status,
+    sp.life_state,
+    dc.entity_id AS dune_character_entity_id,
+    COALESCE(jsonb_typeof(dc.components->'FSpiceAddictionComponent'), '') AS spice_component_type,
+    COALESCE(dc.components->'FSpiceAddictionComponent'->0->>'SpiceVisionEnabledStatus', '') AS spice_status_index_0,
+    COALESCE(dc.components->'FSpiceAddictionComponent'->1->>'SpiceVisionEnabledStatus', '') AS spice_status_index_1,
+    COALESCE(dc.components #>> '{{FLevelComponent,1,StarterSkillTreeTag,TagName}}', '') AS starter_skill_tree_tag,
+    COALESCE((dc.components #>> '{{FLevelComponent,1,TotalSkillPoints}}')::text, '') AS total_skill_points,
+    COALESCE((dc.components #>> '{{FLevelComponent,1,UnspentSkillPoints}}')::text, '') AS unspent_skill_points,
+    COALESCE((dc.components #>> '{{FLevelComponent,1,TotalXPEarned}}')::text, '') AS total_xp_earned,
+    COALESCE(lk.flevel_component_keys, '') AS flevel_component_keys,
+    (SELECT COUNT(*) FROM node_state WHERE row_present) AS fremen_nodes_present,
+    (SELECT COUNT(*) FROM node_state WHERE is_complete) AS fremen_nodes_complete,
+    COALESCE((
+        SELECT string_agg(node_id || ' [complete=' || complete_state || ', reveal=' || reveal_state || ']', E'\\n' ORDER BY node_id)
+        FROM node_state
+        WHERE NOT row_present OR NOT is_complete OR NOT is_revealed
+    ), '') AS fremen_nodes_missing_or_not_true,
+    COALESCE((
+        SELECT string_agg(tag, ', ' ORDER BY tag)
+        FROM tag_state
+        WHERE is_present
+    ), '') AS tags_present,
+    COALESCE((
+        SELECT string_agg(tag, ', ' ORDER BY tag)
+        FROM tag_state
+        WHERE NOT is_present
+    ), '') AS tags_missing,
+    COALESCE(jsonb_pretty(dc.components->'FSpiceAddictionComponent'), '') AS spice_component_json
+FROM selected_player sp
+LEFT JOIN dune_character dc ON dc.character_actor_id = sp.character_actor_id
+LEFT JOIN level_keys lk ON true;
+"""
+
+
+def build_set_starter_class_sql(character_actor_id, starter_class):
+    """
+    Set the FGL starter class tag and grant that class' starter ability.
+
+    This does not complete trainer quests. It only rewrites the DuneCharacter
+    FLevelComponent state the game uses to identify the starter class selected
+    during character creation. Existing non-starter skill investment is left
+    alone, but known starter keys/abilities are removed first so a character
+    does not stack multiple starter classes during tests.
+    """
+    actor_id = int(character_actor_id)
+    job = str(starter_class or "").strip()
+    ability = STARTER_CLASS_ABILITIES.get(job)
+    if not ability:
+        raise ValueError("unknown starter class")
+
+    starter_tag = f"Skills.Key.{job}1"
+    starter_key = f'(TagName="{starter_tag}")'
+    ability_key = f'(TagName="{ability}")'
+    remove_keys = []
+    for old_job, old_ability in STARTER_CLASS_ABILITIES.items():
+        remove_keys.append(f'(TagName="Skills.Key.{old_job}1")')
+        remove_keys.append(f'(TagName="{old_ability}")')
+    remove_keys_sql = sql_text_array(remove_keys)
+
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.online_status,
+        ps.life_state,
+        afe.entity_id
+    FROM dune.player_state ps
+    JOIN dune.actor_fgl_entities afe
+      ON afe.actor_id = ps.player_pawn_id
+     AND afe.slot_name = 'DuneCharacter'
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+before_state AS (
+    SELECT
+        sp.character_name,
+        sp.character_actor_id,
+        sp.account_id,
+        sp.online_status,
+        sp.life_state,
+        COALESCE(fe.components #>> '{{FLevelComponent,1,StarterSkillTreeTag,TagName}}', '') AS before_starter_tag,
+        COALESCE((fe.components #> '{{FLevelComponent,1,ModuleData}}') ? {sql_literal(starter_key)}, false) AS had_new_starter_key,
+        COALESCE((fe.components #> '{{FLevelComponent,1,ModuleData}}') ? {sql_literal(ability_key)}, false) AS had_new_ability_key
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+),
+updated AS (
+    UPDATE dune.fgl_entities fe
+    SET components = jsonb_set(
+        jsonb_set(
+            jsonb_set(
+                jsonb_set(
+                    fe.components,
+                    ARRAY['FLevelComponent','1','ModuleData'],
+                    COALESCE(fe.components #> '{{FLevelComponent,1,ModuleData}}', '{{}}'::jsonb) - {remove_keys_sql},
+                    true
+                ),
+                ARRAY['FLevelComponent','1','StarterSkillTreeTag','TagName'],
+                to_jsonb({sql_literal(starter_tag)}::text),
+                true
+            ),
+            ARRAY['FLevelComponent','1','ModuleData',{sql_literal(starter_key)}],
+            '{{"SkillPointsSpent": 1}}'::jsonb,
+            true
+        ),
+        ARRAY['FLevelComponent','1','ModuleData',{sql_literal(ability_key)}],
+        '{{"SkillPointsSpent": 1}}'::jsonb,
+        true
+    )
+    FROM selected_player sp
+    WHERE fe.entity_id = sp.entity_id
+    RETURNING fe.entity_id
+),
+after_state AS (
+    SELECT
+        sp.character_actor_id,
+        COALESCE(fe.components #>> '{{FLevelComponent,1,StarterSkillTreeTag,TagName}}', '') AS after_starter_tag,
+        COALESCE((fe.components #> '{{FLevelComponent,1,ModuleData}}') ? {sql_literal(starter_key)}, false) AS has_new_starter_key,
+        COALESCE((fe.components #> '{{FLevelComponent,1,ModuleData}}') ? {sql_literal(ability_key)}, false) AS has_new_ability_key
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+)
+SELECT
+    bs.character_name,
+    bs.character_actor_id,
+    bs.account_id,
+    bs.online_status,
+    bs.life_state,
+    {sql_literal(job)} AS starter_class,
+    {sql_literal(starter_tag)} AS granted_starter_tag,
+    {sql_literal(ability)} AS granted_starter_ability,
+    bs.before_starter_tag,
+    ast.after_starter_tag,
+    bs.had_new_starter_key,
+    ast.has_new_starter_key,
+    bs.had_new_ability_key,
+    ast.has_new_ability_key,
+    (SELECT COUNT(*) FROM updated) AS rows_updated,
+    'Developer research tool. Relogging or a map/BG restart may be required.' AS note
+FROM before_state bs
+JOIN after_state ast ON ast.character_actor_id = bs.character_actor_id;
+"""
+
+
+def faction_progression_nodes(faction, preset_id):
+    """Return the journey-node list for a Developer faction preset."""
+    faction_key = str(faction or "").strip().lower()
+    preset_key = str(preset_id or "").strip().lower()
+    if faction_key not in FACTION_PROGRESSIONS:
+        raise ValueError("unknown faction")
+    if preset_key not in {preset["id"] for preset in FACTION_PROGRESSION_PRESETS}:
+        raise ValueError("unknown faction progression preset")
+
+    nodes = []
+    nodes.extend(CLIMB_THE_RANKS_NODES)
+    nodes.extend(CLIMB_THE_RANKS_STORY_NODES)
+    nodes.extend(FACTION_SIDE_NODES[faction_key])
+    if preset_key == "rank19_eligible":
+        nodes.extend(LANDSRAAD_MISSION_NODES[faction_key])
+    return nodes
+
+
+def faction_progression_tags(faction, target_tier):
+    """Return the explicit faction tags written by IceHunter's progression preset."""
+    cfg = FACTION_PROGRESSIONS[faction]
+    tags = list(cfg["tags"])
+    tags.extend([
+        "DialogueFlags.Factions.FactionIntro",
+        "DialogueFlags.Factions.FactionRank1",
+        "DialogueFlags.Factions.FactionRank3",
+        "DialogueFlags.Factions.MetARecruiter",
+        "DialogueFlags.Factions.PlayedAllegianceCinematic",
+        "DialogueFlags.Factions.SeenAnvilCinematic",
+    ])
+    if target_tier >= 19:
+        tags.append("Journey.LandsraadContractsUnlocked")
+    for tier in range(0, 6):
+        tags.append(f"Faction.{cfg['label']}.Tier{tier}")
+    return tags
+
+
+def build_faction_progression_sql(character_actor_id, faction, preset_id, action):
+    """
+    Apply or reverse a faction progression preset.
+
+    This is intentionally Developer-only. It adapts IceHunter's 0.25.1 research:
+    complete faction journey nodes, write observed player tags, set faction
+    alignment/reputation, and rebuild the controller actor's faction component
+    so the in-game rank UI can see the new reputation.
+    """
+    actor_id = int(character_actor_id)
+    faction_key = str(faction or "").strip().lower()
+    preset_key = str(preset_id or "").strip().lower()
+    action_key = str(action or "apply").strip().lower()
+    if faction_key not in FACTION_PROGRESSIONS:
+        raise ValueError("unknown faction")
+    preset = next((row for row in FACTION_PROGRESSION_PRESETS if row["id"] == preset_key), None)
+    if not preset:
+        raise ValueError("unknown faction progression preset")
+    if action_key not in ("apply", "reset"):
+        raise ValueError("unknown faction progression action")
+
+    cfg = FACTION_PROGRESSIONS[faction_key]
+    target_tier = int(preset["target_tier"])
+    target_rep = FACTION_TIER_THRESHOLDS[target_tier] + 1
+    nodes = faction_progression_nodes(faction_key, preset_key)
+    tags = faction_progression_tags(faction_key, target_tier)
+    nodes_sql = sql_text_array(nodes)
+    tags_sql = sql_text_array(tags)
+
+    if action_key == "reset":
+        return f"""
+BEGIN;
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.player_controller_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+removed_tags AS (
+    DELETE FROM dune.player_tags pt
+    USING selected_player sp
+    WHERE pt.account_id = sp.account_id
+      AND pt.tag = ANY({tags_sql})
+    RETURNING pt.tag
+),
+reset_nodes AS (
+    UPDATE dune.journey_story_node jsn
+    SET complete_condition_state = 'false'::jsonb,
+        has_pending_reward = false
+    FROM selected_player sp
+    WHERE jsn.account_id = sp.account_id
+      AND jsn.story_node_id = ANY({nodes_sql})
+    RETURNING jsn.story_node_id
+)
+SELECT
+    sp.character_name,
+    sp.character_actor_id,
+    sp.account_id,
+    {sql_literal(faction_key)} AS faction,
+    {sql_literal(preset_key)} AS preset_id,
+    {sql_literal(action_key)} AS action,
+    (SELECT COUNT(*) FROM removed_tags) AS tags_removed,
+    (SELECT COUNT(*) FROM reset_nodes) AS nodes_reset,
+    'Reset removes tags/nodes only. It does not change faction alignment or reputation.' AS note
+FROM selected_player sp;
+COMMIT;
+"""
+
+    return f"""
+BEGIN;
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.player_controller_id,
+        ps.online_status,
+        ps.life_state,
+        acc."user" AS fls_id
+    FROM dune.player_state ps
+    JOIN dune.accounts acc ON acc.id = ps.account_id
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+completed_nodes AS (
+    SELECT dune.complete_journey_story_nodes_for_player(sp.fls_id, {nodes_sql}) AS ignored
+    FROM selected_player sp
+),
+changed_faction AS (
+    SELECT dune.change_player_faction(
+        sp.player_controller_id::bigint,
+        {cfg["faction_id"]}::smallint,
+        3::smallint,
+        NOW()::timestamp
+    ) AS ignored
+    FROM selected_player sp
+),
+updated_tags AS (
+    SELECT dune.update_player_tags(sp.account_id, {tags_sql}, '{{}}'::text[]) AS ignored
+    FROM selected_player sp
+),
+updated_reputation AS (
+    SELECT dune.set_player_faction_reputation(
+        sp.player_controller_id::bigint,
+        {cfg["faction_id"]}::smallint,
+        {target_rep}::integer
+    ) AS ignored
+    FROM selected_player sp
+),
+reputation_rows AS (
+    SELECT
+        sp.player_controller_id,
+        COALESCE(MAX(CASE WHEN pfr.faction_id = 1 THEN pfr.reputation_amount END), 0) AS atreides_reputation,
+        COALESCE(MAX(CASE WHEN pfr.faction_id = 2 THEN pfr.reputation_amount END), 0) AS harkonnen_reputation
+    FROM selected_player sp
+    LEFT JOIN dune.player_faction_reputation pfr
+      ON pfr.actor_id = sp.player_controller_id
+     AND pfr.faction_id IN (1, 2)
+    GROUP BY sp.player_controller_id
+),
+synced_component AS (
+    UPDATE dune.actors a
+    SET properties = jsonb_set(
+        a.properties,
+        '{{FactionPlayerComponent,m_FactionDataArray}}',
+        jsonb_build_array(
+            jsonb_build_object(
+                'Faction', jsonb_build_object('Name', 'Atreides'),
+                'timestamp', EXTRACT(EPOCH FROM clock_timestamp()),
+                'ReputationAmount', rr.atreides_reputation
+            ),
+            jsonb_build_object(
+                'Faction', jsonb_build_object('Name', 'Harkonnen'),
+                'timestamp', EXTRACT(EPOCH FROM clock_timestamp()),
+                'ReputationAmount', rr.harkonnen_reputation
+            )
+        ),
+        true
+    )
+    FROM reputation_rows rr
+    WHERE a.id = rr.player_controller_id
+    RETURNING a.id
+)
+SELECT
+    sp.character_name,
+    sp.character_actor_id,
+    sp.account_id,
+    sp.player_controller_id,
+    sp.online_status,
+    sp.life_state,
+    {sql_literal(faction_key)} AS faction,
+    {sql_literal(preset_key)} AS preset_id,
+    {target_tier}::integer AS target_tier,
+    {target_rep}::integer AS target_reputation,
+    {len(nodes)}::integer AS journey_nodes_requested,
+    {len(tags)}::integer AS tags_requested,
+    (SELECT COUNT(*) FROM completed_nodes) AS journey_function_calls,
+    (SELECT COUNT(*) FROM changed_faction) AS faction_function_calls,
+    (SELECT COUNT(*) FROM updated_tags) AS tag_function_calls,
+    (SELECT COUNT(*) FROM updated_reputation) AS reputation_function_calls,
+    (SELECT COUNT(*) FROM synced_component) AS faction_component_rows_updated,
+    'Developer faction fast-forward. Relogging or a map/BG restart may be required.' AS note
+FROM selected_player sp;
+COMMIT;
+"""
+
+
+def character_level_curve_values_sql():
+    """Return the character XP curve as an inline SQL VALUES table."""
+    rows = ",\n        ".join(
+        f"({level}, {xp})"
+        for level, xp in sorted(CHARACTER_LEVEL_XP.items())
+    )
+    return f"(VALUES\n        {rows}\n    ) AS curve(level, xp_required)"
+
+
+def build_reset_skill_modules_sql(character_actor_id, reset_scope="keep_starter"):
+    """
+    Remove learned skill-module state from a character's DuneCharacter entity.
+
+    This is a rewritten recovery-oriented cousin of IceHunter's per-job reset
+    research. Instead of bundling their generated module catalog, this supports
+    a broad reset that either preserves only the starter-class module entry or
+    clears ModuleData entirely. Use it only for recovery/testing.
+    """
+    actor_id = int(character_actor_id)
+    scope = str(reset_scope or "keep_starter").strip().lower()
+    if scope not in ("keep_starter", "clear_all"):
+        raise ValueError("unknown skill reset scope")
+
+    if scope == "clear_all":
+        replacement_sql = "'{}'::jsonb"
+    else:
+        replacement_sql = """
+        COALESCE((
+            SELECT jsonb_object_agg(kv.key, kv.value)
+            FROM jsonb_each(COALESCE(fe.components #> '{FLevelComponent,1,ModuleData}', '{}'::jsonb)) AS kv(key, value)
+            WHERE kv.key = format(
+                '(TagName="%s")',
+                fe.components #>> '{FLevelComponent,1,StarterSkillTreeTag,TagName}'
+            )
+        ), '{}'::jsonb)
+        """
+
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.online_status,
+        ps.life_state,
+        afe.entity_id
+    FROM dune.player_state ps
+    JOIN dune.actor_fgl_entities afe
+      ON afe.actor_id = ps.player_pawn_id
+     AND afe.slot_name = 'DuneCharacter'
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+before_state AS (
+    SELECT
+        sp.character_name,
+        sp.character_actor_id,
+        sp.account_id,
+        sp.online_status,
+        sp.life_state,
+        COALESCE(fe.components #>> '{{FLevelComponent,1,StarterSkillTreeTag,TagName}}', '') AS starter_tag,
+        (
+            SELECT COUNT(*)
+            FROM jsonb_object_keys(COALESCE(fe.components #> '{{FLevelComponent,1,ModuleData}}', '{{}}'::jsonb))
+        ) AS before_module_count
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+),
+updated AS (
+    UPDATE dune.fgl_entities fe
+    SET components = jsonb_set(
+        fe.components,
+        '{{FLevelComponent,1,ModuleData}}',
+        {replacement_sql},
+        true
+    )
+    FROM selected_player sp
+    WHERE fe.entity_id = sp.entity_id
+    RETURNING fe.entity_id
+),
+after_state AS (
+    SELECT
+        sp.character_actor_id,
+        (
+            SELECT COUNT(*)
+            FROM jsonb_object_keys(COALESCE(fe.components #> '{{FLevelComponent,1,ModuleData}}', '{{}}'::jsonb))
+        ) AS after_module_count
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+)
+SELECT
+    bs.character_name,
+    bs.character_actor_id,
+    bs.account_id,
+    bs.online_status,
+    bs.life_state,
+    {sql_literal(scope)} AS reset_scope,
+    bs.starter_tag,
+    bs.before_module_count,
+    ast.after_module_count,
+    (bs.before_module_count - ast.after_module_count) AS module_entries_removed,
+    (SELECT COUNT(*) FROM updated) AS rows_updated,
+    'Developer recovery tool. Relogging or a map/BG restart may be required.' AS note
+FROM before_state bs
+JOIN after_state ast ON ast.character_actor_id = bs.character_actor_id;
+"""
+
+
+def build_specialization_keystone_recovery_sql(character_actor_id, action):
+    """
+    Grant or reset all purchased specialization keystones and repair skill points.
+
+    The browser supplies a character pawn actor ID; the purchased keystone table
+    uses the player's controller actor ID, so this resolves both before writing.
+    """
+    actor_id = int(character_actor_id)
+    action_key = str(action or "").strip().lower()
+    if action_key not in ("grant", "reset"):
+        raise ValueError("unknown keystone action")
+
+    curve_sql = character_level_curve_values_sql()
+    if action_key == "grant":
+        mutation_sql = f"""
+inserted_keystones AS (
+    INSERT INTO dune.purchased_specialization_keystones (player_id, keystone_id)
+    SELECT
+        sp.player_controller_id,
+        generate_series(1, {SPECIALIZATION_KEYSTONE_COUNT})::smallint
+    FROM selected_player sp
+    ON CONFLICT DO NOTHING
+    RETURNING keystone_id
+),
+target_points AS (
+    SELECT
+        ss.*,
+        (ss.current_level + {SPECIALIZATION_KEYSTONE_SKILL_POINT_BONUS})::bigint AS after_total_skill_points,
+        GREATEST(
+            (ss.current_level + {SPECIALIZATION_KEYSTONE_SKILL_POINT_BONUS}) - ss.spent_nonstarter_skill_points - 1,
+            0
+        )::bigint AS after_unspent_skill_points
+    FROM skill_state ss
+),
+"""
+        changed_count_select = "(SELECT COUNT(*) FROM inserted_keystones)"
+        note = "Granted missing purchased keystones and repaired skill point totals."
+    else:
+        mutation_sql = """
+deleted_keystones AS (
+    DELETE FROM dune.purchased_specialization_keystones psk
+    USING selected_player sp
+    WHERE psk.player_id = sp.player_controller_id
+    RETURNING psk.keystone_id
+),
+target_points AS (
+    SELECT
+        ss.*,
+        ss.current_level::bigint AS after_total_skill_points,
+        GREATEST(ss.current_level - ss.spent_nonstarter_skill_points - 1, 0)::bigint AS after_unspent_skill_points
+    FROM skill_state ss
+),
+"""
+        changed_count_select = "(SELECT COUNT(*) FROM deleted_keystones)"
+        note = "Deleted purchased keystones and repaired skill point totals back to XP-derived baseline."
+
+    return f"""
+BEGIN;
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.player_controller_id,
+        ps.account_id,
+        ps.online_status,
+        ps.life_state,
+        afe.entity_id
+    FROM dune.player_state ps
+    JOIN dune.actor_fgl_entities afe
+      ON afe.actor_id = ps.player_pawn_id
+     AND afe.slot_name = 'DuneCharacter'
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+skill_state AS (
+    SELECT
+        sp.*,
+        COALESCE((fe.components #>> '{{FLevelComponent,1,TotalXPEarned}}')::bigint, 0) AS total_xp,
+        COALESCE((fe.components #>> '{{FLevelComponent,1,TotalSkillPoints}}')::bigint, 0) AS before_total_skill_points,
+        COALESCE((fe.components #>> '{{FLevelComponent,1,UnspentSkillPoints}}')::bigint, 0) AS before_unspent_skill_points,
+        COALESCE((
+            SELECT SUM((entry.value->>'SkillPointsSpent')::bigint)
+            FROM jsonb_each(COALESCE(fe.components #> '{{FLevelComponent,1,ModuleData}}', '{{}}'::jsonb)) AS entry(key, value)
+            WHERE entry.key != format(
+                '(TagName="%s")',
+                fe.components #>> '{{FLevelComponent,1,StarterSkillTreeTag,TagName}}'
+            )
+        ), 0) AS spent_nonstarter_skill_points,
+        COALESCE((
+            SELECT MAX(curve.level)
+            FROM {curve_sql}
+            WHERE curve.xp_required <= COALESCE((fe.components #>> '{{FLevelComponent,1,TotalXPEarned}}')::bigint, 0)
+        ), 0)::bigint AS current_level
+    FROM selected_player sp
+    JOIN dune.fgl_entities fe ON fe.entity_id = sp.entity_id
+),
+{mutation_sql}
+updated_level_component AS (
+    UPDATE dune.fgl_entities fe
+    SET components = jsonb_set(
+        jsonb_set(
+            fe.components,
+            '{{FLevelComponent,1,TotalSkillPoints}}',
+            to_jsonb(tp.after_total_skill_points),
+            true
+        ),
+        '{{FLevelComponent,1,UnspentSkillPoints}}',
+        to_jsonb(tp.after_unspent_skill_points),
+        true
+    )
+    FROM target_points tp
+    WHERE fe.entity_id = tp.entity_id
+    RETURNING fe.entity_id
+)
+SELECT
+    tp.character_name,
+    tp.character_actor_id,
+    tp.player_controller_id,
+    tp.account_id,
+    tp.online_status,
+    tp.life_state,
+    {sql_literal(action_key)} AS action,
+    tp.total_xp,
+    tp.current_level,
+    {changed_count_select} AS keystone_rows_changed,
+    tp.before_total_skill_points,
+    tp.after_total_skill_points,
+    tp.before_unspent_skill_points,
+    tp.after_unspent_skill_points,
+    tp.spent_nonstarter_skill_points,
+    (SELECT COUNT(*) FROM updated_level_component) AS level_component_rows_updated,
+    {sql_literal(note + " Relogging or a map/BG restart may be required.")} AS note
+FROM target_points tp;
+COMMIT;
+"""
+
+
+def build_delete_tutorials_sql(character_actor_id):
+    """Delete tutorial rows for the selected character/player ID."""
+    actor_id = int(character_actor_id)
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+deleted AS (
+    DELETE FROM dune.tutorial_per_player tpp
+    USING selected_player sp
+    WHERE tpp.player_id = sp.character_actor_id
+    RETURNING tpp.tutorial_id
+)
+SELECT
+    sp.character_name,
+    sp.character_actor_id,
+    sp.account_id,
+    sp.online_status,
+    sp.life_state,
+    COUNT(deleted.tutorial_id) AS tutorial_rows_deleted,
+    'Developer recovery tool. This only clears tutorial_per_player rows.' AS note
+FROM selected_player sp
+LEFT JOIN deleted ON TRUE
+GROUP BY sp.character_name, sp.character_actor_id, sp.account_id, sp.online_status, sp.life_state;
+"""
+
+
+def build_wipe_codex_sql(character_actor_id):
+    """
+    Wipe mnemonic/codex lesson rows for the selected character account.
+
+    The live stack exposes a database routine for this, so Easy Dune Admin keeps
+    the wrapper explicit and reports the target account rather than guessing at
+    every lore/mnemonic table shape.
+    """
+    actor_id = int(character_actor_id)
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id AS character_actor_id,
+        ps.account_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+),
+wipe_call AS (
+    SELECT dune.delete_mnemonic_recall_lesson_all(sp.account_id) AS ignored
+    FROM selected_player sp
+)
+SELECT
+    sp.character_name,
+    sp.character_actor_id,
+    sp.account_id,
+    sp.online_status,
+    sp.life_state,
+    (SELECT COUNT(*) FROM wipe_call) AS wipe_function_calls,
+    'Developer recovery tool. Calls dune.delete_mnemonic_recall_lesson_all for the selected account.' AS note
+FROM selected_player sp;
+"""
+
+
+def build_reset_fremen_epilogue_sql(fls_id):
+    """
+    Reset only the Find the Fremen Epilogue subtree for recovery testing.
+
+    This is intentionally narrower than the full Find the Fremen preset reset.
+    It is for the state the project owner hit while testing the third skill
+    slot: the Trials were available again, but the Epilogue still displayed as
+    complete. Upstream IceHunter / Ryan Wilson reset code uses explicit JSON
+    false for reset rows, so this targeted repair does the same instead of
+    writing an empty JSON object. It also removes Journey.Act1.Completed because
+    that tag is emitted by the Epilogue completion side effect.
+    """
+    safe_fls = sql_literal(str(fls_id).strip())
+    epilogue_root = sql_literal("DA_MQ_FindTheFremen.Epilogue")
+    return f"""
+BEGIN;
+DO $$
+DECLARE
+    v_fls_id text := {safe_fls}::text;
+    v_account_id bigint;
+    v_rows integer := 0;
+    v_cooldowns integer := 0;
+BEGIN
+    IF NOT dune.is_player_offline(v_fls_id) THEN
+        RAISE EXCEPTION 'Cannot reset Find the Fremen Epilogue because the player is online.';
+    END IF;
+
+    SELECT id INTO v_account_id
+    FROM dune.accounts
+    WHERE "user" = v_fls_id;
+
+    IF v_account_id IS NULL THEN
+        RAISE EXCEPTION 'No account found for FLS id %', v_fls_id;
+    END IF;
+
+    CREATE TEMP TABLE IF NOT EXISTS eda_epilogue_reset_result (
+        action text,
+        account_id bigint,
+        epilogue_rows_reset integer,
+        cooldown_rows_deleted integer,
+        tags_removed integer,
+        note text
+    ) ON COMMIT DROP;
+    TRUNCATE eda_epilogue_reset_result;
+
+    UPDATE dune.journey_story_node
+    SET
+        complete_condition_state = 'false'::jsonb,
+        reveal_condition_state = 'false'::jsonb,
+        has_pending_reward = false
+    WHERE account_id = v_account_id
+      AND (
+          story_node_id = {epilogue_root}
+          OR story_node_id LIKE {epilogue_root} || '.%'
+      );
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+
+    DELETE FROM dune.journey_story_node_cooldown
+    WHERE account_id = v_account_id
+      AND (
+          story_node_id = {epilogue_root}
+          OR story_node_id LIKE {epilogue_root} || '.%'
+      );
+    GET DIAGNOSTICS v_cooldowns = ROW_COUNT;
+
+    PERFORM dune.update_player_tags(v_account_id, '{{}}'::text[], ARRAY['Journey.Act1.Completed']::text[]);
+
+    INSERT INTO eda_epilogue_reset_result
+    VALUES (
+        'reset_find_the_fremen_epilogue',
+        v_account_id,
+        v_rows,
+        v_cooldowns,
+        1,
+        'Forced DA_MQ_FindTheFremen.Epilogue and child rows to explicit false, cleared pending rewards/cooldowns, and removed Journey.Act1.Completed. Relog or restart the affected map before retrying.'
+    );
+END $$;
+SELECT
+    action,
+    account_id,
+    epilogue_rows_reset,
+    cooldown_rows_deleted,
+    tags_removed,
+    note
+FROM eda_epilogue_reset_result;
+COMMIT;
+"""
+
+
 def build_progression_preset_sql(fls_id, preset_id, action):
     """
     Build admin-only SQL to apply or reset a curated journey-node preset.
@@ -5279,6 +6504,93 @@ def build_progression_preset_sql(fls_id, preset_id, action):
     nodes_sql = sql_text_array(preset["nodes"])
     safe_preset_id = sql_literal(preset["id"])
     safe_preset_name = sql_literal(preset["name"])
+    side_effect_tags = []
+    for root_node in preset["nodes"]:
+        for tag in JOURNEY_PRESET_SIDE_EFFECT_TAGS.get(root_node, []):
+            if tag not in side_effect_tags:
+                side_effect_tags.append(tag)
+    side_effect_tags_sql = sql_text_array(side_effect_tags)
+    needs_prescience_fix = any(
+        node == "DA_MQ_FindTheFremen" or node.startswith("DA_MQ_FindTheFremen.")
+        for node in preset["nodes"]
+    )
+    apply_note = "Completed root nodes plus existing child rows one at a time and applied known side-effect tags. Relog after applying."
+    prescience_sql = ""
+    reset_prescience_sql = ""
+    if needs_prescience_fix:
+        apply_note = (
+            "Completed root nodes plus existing child rows one at a time, applied known "
+            "side-effect tags, and applied the Prescience / Spice Vision FGL side effect. "
+            "Relog after applying."
+        )
+        prescience_sql = f"""
+WITH selected_player AS (
+    SELECT ps.player_pawn_id AS character_actor_id
+    FROM dune.player_state ps
+    JOIN dune.accounts acc ON acc.id = ps.account_id
+    WHERE acc."user" = {safe_fls}
+),
+updated_prescience AS (
+    UPDATE dune.fgl_entities fe
+    SET components = jsonb_set(
+        CASE
+            WHEN jsonb_typeof(fe.components->'FSpiceAddictionComponent') = 'array'
+                THEN fe.components
+            ELSE jsonb_set(
+                fe.components,
+                ARRAY['FSpiceAddictionComponent'],
+                '[{{}}, {{}}]'::jsonb,
+                true
+            )
+        END,
+        ARRAY['FSpiceAddictionComponent','1','SpiceVisionEnabledStatus'],
+        '"FullyEnabled"'::jsonb,
+        true
+    )
+    FROM selected_player sp
+    WHERE fe.entity_id = (
+        SELECT entity_id
+        FROM dune.actor_fgl_entities
+        WHERE actor_id = sp.character_actor_id
+          AND slot_name = 'DuneCharacter'
+    )
+      AND COALESCE(
+          fe.components->'FSpiceAddictionComponent'->1->>'SpiceVisionEnabledStatus',
+          ''
+      ) <> 'FullyEnabled'
+    RETURNING fe.entity_id
+)
+UPDATE eda_progression_result
+SET touched_rows = touched_rows + (SELECT COUNT(*) FROM updated_prescience),
+    note = note || ' Prescience rows updated: ' || (SELECT COUNT(*) FROM updated_prescience)::text || '.';
+"""
+        reset_prescience_sql = f"""
+WITH selected_player AS (
+    SELECT ps.player_pawn_id AS character_actor_id
+    FROM dune.player_state ps
+    JOIN dune.accounts acc ON acc.id = ps.account_id
+    WHERE acc."user" = {safe_fls}
+),
+reset_prescience AS (
+    UPDATE dune.fgl_entities fe
+    SET components = fe.components #- ARRAY['FSpiceAddictionComponent','1','SpiceVisionEnabledStatus']
+    FROM selected_player sp
+    WHERE fe.entity_id = (
+        SELECT entity_id
+        FROM dune.actor_fgl_entities
+        WHERE actor_id = sp.character_actor_id
+          AND slot_name = 'DuneCharacter'
+    )
+      AND COALESCE(
+          fe.components->'FSpiceAddictionComponent'->1->>'SpiceVisionEnabledStatus',
+          ''
+      ) <> ''
+    RETURNING fe.entity_id
+)
+UPDATE eda_progression_result
+SET touched_rows = touched_rows + (SELECT COUNT(*) FROM reset_prescience),
+    note = note || ' Prescience FGL reset rows: ' || (SELECT COUNT(*) FROM reset_prescience)::text || '.';
+"""
 
     if requested_action == "apply":
         # Complete root nodes plus existing child nodes one row at a time. A
@@ -5312,6 +6624,7 @@ BEGIN
         preset_name text,
         root_nodes integer,
         touched_rows integer,
+        side_effect_tags integer,
         note text
     ) ON COMMIT DROP;
     TRUNCATE eda_progression_result;
@@ -5381,15 +6694,22 @@ BEGIN
         {safe_preset_name}::text,
         array_length(v_root_nodes, 1),
         v_rows,
-        'Completed root nodes plus existing child rows one at a time. Relog after applying.'
+        COALESCE(array_length({side_effect_tags_sql}, 1), 0),
+        {sql_literal(apply_note)}::text
     );
+
+    IF COALESCE(array_length({side_effect_tags_sql}, 1), 0) > 0 THEN
+        PERFORM dune.update_player_tags(v_account_id, {side_effect_tags_sql}, '{{}}'::text[]);
+    END IF;
 END $$;
+{prescience_sql}
 SELECT
     action,
     preset_id,
     preset_name,
     root_nodes,
     touched_rows,
+    side_effect_tags,
     note
 FROM eda_progression_result;
 COMMIT;
@@ -5423,6 +6743,7 @@ BEGIN
         preset_name text,
         root_nodes integer,
         touched_rows integer,
+        side_effect_tags integer,
         note text
     ) ON COMMIT DROP;
     TRUNCATE eda_progression_result;
@@ -5458,15 +6779,26 @@ BEGIN
         {safe_preset_name}::text,
         array_length(v_root_nodes, 1),
         v_rows,
-        'Reset root nodes plus existing child rows one at a time. Relog after resetting.'
+        COALESCE(array_length({side_effect_tags_sql}, 1), 0),
+        'Reset root nodes plus existing child rows one at a time and removed known side-effect tags. Relog after resetting.'
     );
+
+    IF COALESCE(array_length({side_effect_tags_sql}, 1), 0) > 0 THEN
+        PERFORM dune.update_player_tags(v_account_id, '{{}}'::text[], {side_effect_tags_sql});
+    END IF;
+
+    IF {str(needs_prescience_fix).lower()} THEN
+        PERFORM dune.update_player_tags(v_account_id, '{{}}'::text[], ARRAY['Character.Spice.Prescience']::text[]);
+    END IF;
 END $$;
+{reset_prescience_sql}
 SELECT
     action,
     preset_id,
     preset_name,
     root_nodes,
     touched_rows,
+    side_effect_tags,
     note
 FROM eda_progression_result;
 COMMIT;

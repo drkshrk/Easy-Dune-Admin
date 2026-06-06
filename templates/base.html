@@ -827,6 +827,9 @@ a:hover {
 
     <div class="drawer-actions">
         <a href="/account">My Account</a>
+        {% if session.role == "admin" %}
+        <a href="/developer">Developer Tools</a>
+        {% endif %}
         <a href="/logout">Logout</a>
     </div>
 

@@ -27,6 +27,7 @@
     border: 1px solid #333;
     cursor: grab;
     overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .map-frame.dragging {
@@ -487,9 +488,32 @@ function setZoomAroundPoint(newZoom, clientX, clientY) {
     frame.scrollTop = mapY * currentZoom - (clientY - rect.top);
 }
 
+function mapTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+}
+
+function mapTouchMidpoint(touches) {
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+}
+
 function wireMapMouseControls() {
     const frame = document.getElementById("mapFrame");
     if (!frame) return;
+
+    let suppressNextMapClick = false;
+    let touchMode = null;
+    let touchStartDistance = 0;
+    let touchStartZoom = currentZoom;
+    let touchDragStartX = 0;
+    let touchDragStartY = 0;
+    let touchDragScrollLeft = 0;
+    let touchDragScrollTop = 0;
+    let touchMoved = 0;
 
     frame.addEventListener("wheel", function(event) {
         if (!event.ctrlKey && !event.metaKey) {
@@ -522,6 +546,11 @@ function wireMapMouseControls() {
     });
 
     frame.addEventListener("click", function(event) {
+        if (suppressNextMapClick) {
+            suppressNextMapClick = false;
+            return;
+        }
+
         const moved =
             Math.abs(event.clientX - dragStartX) +
             Math.abs(event.clientY - dragStartY);
@@ -530,6 +559,74 @@ function wireMapMouseControls() {
         if (moved < 8) {
             fillTeleportTargetFromMapClick(event);
         }
+    });
+
+    frame.addEventListener("touchstart", function(event) {
+        if (event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchMoved = 0;
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            frame.classList.add("dragging");
+        } else if (event.touches.length === 2) {
+            touchMode = "pinch";
+            touchStartDistance = mapTouchDistance(event.touches);
+            touchStartZoom = currentZoom;
+            suppressNextMapClick = true;
+            frame.classList.add("dragging");
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchmove", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 2) {
+            const midpoint = mapTouchMidpoint(event.touches);
+            const nextDistance = mapTouchDistance(event.touches);
+            if (touchStartDistance > 0) {
+                setZoomAroundPoint(touchStartZoom * (nextDistance / touchStartDistance), midpoint.x, midpoint.y);
+            }
+            suppressNextMapClick = true;
+            event.preventDefault();
+            return;
+        }
+
+        if (touchMode === "pan" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            const dx = touch.clientX - touchDragStartX;
+            const dy = touch.clientY - touchDragStartY;
+            touchMoved = Math.max(touchMoved, Math.abs(dx) + Math.abs(dy));
+            frame.scrollLeft = touchDragScrollLeft - dx;
+            frame.scrollTop = touchDragScrollTop - dy;
+            if (touchMoved > 8) suppressNextMapClick = true;
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchend", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchMoved = 0;
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            return;
+        }
+
+        if (event.touches.length === 0) {
+            touchMode = null;
+            frame.classList.remove("dragging");
+        }
+    });
+
+    frame.addEventListener("touchcancel", function() {
+        touchMode = null;
+        suppressNextMapClick = true;
+        frame.classList.remove("dragging");
     });
 
     window.addEventListener("mousemove", function(event) {

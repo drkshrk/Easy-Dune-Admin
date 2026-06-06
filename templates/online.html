@@ -10,6 +10,8 @@
     background: #020202;
     border: 1px solid #333;
     cursor: grab;
+    overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .online-map-frame.dragging {
@@ -240,28 +242,57 @@ async function refreshOnlinePreviewMap() {
     renderOnlineMapMarkers();
 }
 
+function setOnlineZoomAroundPoint(newZoom, clientX, clientY) {
+    const frame = document.getElementById("onlineMapFrame");
+    const oldZoom = onlineMapZoom;
+    const nextZoom = Math.max(0.05, Math.min(0.60, newZoom));
+
+    if (nextZoom === oldZoom) return;
+
+    const rect = frame.getBoundingClientRect();
+    const mapX = (frame.scrollLeft + (clientX - rect.left)) / oldZoom;
+    const mapY = (frame.scrollTop + (clientY - rect.top)) / oldZoom;
+
+    onlineMapZoom = nextZoom;
+    document.getElementById("onlineMapZoom").value = Math.round(onlineMapZoom * 100);
+    document.getElementById("onlineZoomReadout").textContent = `${Math.round(onlineMapZoom * 100)}%`;
+
+    renderOnlineMapMarkers();
+
+    frame.scrollLeft = mapX * onlineMapZoom - (clientX - rect.left);
+    frame.scrollTop = mapY * onlineMapZoom - (clientY - rect.top);
+}
+
+function onlineTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+}
+
+function onlineTouchMidpoint(touches) {
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+}
+
 function wireOnlineMapMouseControls() {
     const frame = document.getElementById("onlineMapFrame");
     if (!frame) return;
 
+    let touchMode = null;
+    let touchStartDistance = 0;
+    let touchStartZoom = onlineMapZoom;
+    let touchDragStartX = 0;
+    let touchDragStartY = 0;
+    let touchDragScrollLeft = 0;
+    let touchDragScrollTop = 0;
+
     frame.addEventListener("wheel", function(event) {
         event.preventDefault();
 
-        const oldZoom = onlineMapZoom;
-        const newZoom = Math.max(0.05, Math.min(0.60, oldZoom * (event.deltaY < 0 ? 1.12 : 0.88)));
-
-        const rect = frame.getBoundingClientRect();
-        const mapX = (frame.scrollLeft + (event.clientX - rect.left)) / oldZoom;
-        const mapY = (frame.scrollTop + (event.clientY - rect.top)) / oldZoom;
-
-        onlineMapZoom = newZoom;
-        document.getElementById("onlineMapZoom").value = Math.round(onlineMapZoom * 100);
-        document.getElementById("onlineZoomReadout").textContent = `${Math.round(onlineMapZoom * 100)}%`;
-
-        renderOnlineMapMarkers();
-
-        frame.scrollLeft = mapX * onlineMapZoom - (event.clientX - rect.left);
-        frame.scrollTop = mapY * onlineMapZoom - (event.clientY - rect.top);
+        const zoomStep = event.deltaY < 0 ? 1.12 : 0.88;
+        setOnlineZoomAroundPoint(onlineMapZoom * zoomStep, event.clientX, event.clientY);
     }, { passive: false });
 
     frame.addEventListener("mousedown", function(event) {
@@ -285,6 +316,65 @@ function wireOnlineMapMouseControls() {
 
     window.addEventListener("mouseup", function() {
         onlineDragging = false;
+        frame.classList.remove("dragging");
+    });
+
+    frame.addEventListener("touchstart", function(event) {
+        if (event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            frame.classList.add("dragging");
+        } else if (event.touches.length === 2) {
+            touchMode = "pinch";
+            touchStartDistance = onlineTouchDistance(event.touches);
+            touchStartZoom = onlineMapZoom;
+            frame.classList.add("dragging");
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchmove", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 2) {
+            const midpoint = onlineTouchMidpoint(event.touches);
+            const nextDistance = onlineTouchDistance(event.touches);
+            if (touchStartDistance > 0) {
+                setOnlineZoomAroundPoint(touchStartZoom * (nextDistance / touchStartDistance), midpoint.x, midpoint.y);
+            }
+            event.preventDefault();
+            return;
+        }
+
+        if (touchMode === "pan" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            frame.scrollLeft = touchDragScrollLeft - (touch.clientX - touchDragStartX);
+            frame.scrollTop = touchDragScrollTop - (touch.clientY - touchDragStartY);
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchend", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            return;
+        }
+
+        if (event.touches.length === 0) {
+            touchMode = null;
+            frame.classList.remove("dragging");
+        }
+    });
+
+    frame.addEventListener("touchcancel", function() {
+        touchMode = null;
         frame.classList.remove("dragging");
     });
 }

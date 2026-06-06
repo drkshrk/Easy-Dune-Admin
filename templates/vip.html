@@ -13,6 +13,7 @@
     border: 1px solid #333;
     cursor: grab;
     overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .vip-map-frame.dragging {
@@ -417,28 +418,56 @@ function confirmVipTeleportTarget(event) {
     document.getElementById("vipTeleportPartitionId").value = target.partitionId;
 }
 
-function zoomVipMapAtPointer(event) {
+function setVipZoomAroundPoint(newZoom, clientX, clientY) {
     const frame = document.getElementById("vipMapFrame");
     const oldZoom = vipMapZoom;
-    const newZoom = Math.max(0.05, Math.min(1.00, oldZoom * (event.deltaY < 0 ? 1.12 : 0.88)));
+    const nextZoom = Math.max(0.05, Math.min(1.00, newZoom));
+
+    if (nextZoom === oldZoom) return;
 
     const rect = frame.getBoundingClientRect();
-    const mapX = (frame.scrollLeft + (event.clientX - rect.left)) / oldZoom;
-    const mapY = (frame.scrollTop + (event.clientY - rect.top)) / oldZoom;
+    const mapX = (frame.scrollLeft + (clientX - rect.left)) / oldZoom;
+    const mapY = (frame.scrollTop + (clientY - rect.top)) / oldZoom;
 
-    vipMapZoom = newZoom;
+    vipMapZoom = nextZoom;
     document.getElementById("vipMapZoom").value = Math.round(vipMapZoom * 100);
     document.getElementById("vipZoomReadout").textContent = `${Math.round(vipMapZoom * 100)}%`;
 
     refreshVipMapMarkers();
 
-    frame.scrollLeft = mapX * vipMapZoom - (event.clientX - rect.left);
-    frame.scrollTop = mapY * vipMapZoom - (event.clientY - rect.top);
+    frame.scrollLeft = mapX * vipMapZoom - (clientX - rect.left);
+    frame.scrollTop = mapY * vipMapZoom - (clientY - rect.top);
+}
+
+function zoomVipMapAtPointer(event) {
+    const zoomStep = event.deltaY < 0 ? 1.12 : 0.88;
+    setVipZoomAroundPoint(vipMapZoom * zoomStep, event.clientX, event.clientY);
+}
+
+function vipTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+}
+
+function vipTouchMidpoint(touches) {
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
 }
 
 function wireVipMapControls() {
     const frame = document.getElementById("vipMapFrame");
     if (!frame) return;
+
+    let touchMode = null;
+    let touchStartDistance = 0;
+    let touchStartZoom = vipMapZoom;
+    let touchDragStartX = 0;
+    let touchDragStartY = 0;
+    let touchDragScrollLeft = 0;
+    let touchDragScrollTop = 0;
 
     frame.addEventListener("wheel", function(event) {
         if (!event.ctrlKey && !event.metaKey) {
@@ -466,6 +495,65 @@ function wireVipMapControls() {
 
     window.addEventListener("mouseup", function() {
         vipMapDragging = false;
+        frame.classList.remove("dragging");
+    });
+
+    frame.addEventListener("touchstart", function(event) {
+        if (event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            frame.classList.add("dragging");
+        } else if (event.touches.length === 2) {
+            touchMode = "pinch";
+            touchStartDistance = vipTouchDistance(event.touches);
+            touchStartZoom = vipMapZoom;
+            frame.classList.add("dragging");
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchmove", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 2) {
+            const midpoint = vipTouchMidpoint(event.touches);
+            const nextDistance = vipTouchDistance(event.touches);
+            if (touchStartDistance > 0) {
+                setVipZoomAroundPoint(touchStartZoom * (nextDistance / touchStartDistance), midpoint.x, midpoint.y);
+            }
+            event.preventDefault();
+            return;
+        }
+
+        if (touchMode === "pan" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            frame.scrollLeft = touchDragScrollLeft - (touch.clientX - touchDragStartX);
+            frame.scrollTop = touchDragScrollTop - (touch.clientY - touchDragStartY);
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchend", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            return;
+        }
+
+        if (event.touches.length === 0) {
+            touchMode = null;
+            frame.classList.remove("dragging");
+        }
+    });
+
+    frame.addEventListener("touchcancel", function() {
+        touchMode = null;
         frame.classList.remove("dragging");
     });
 

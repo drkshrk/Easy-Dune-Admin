@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.8.2-alpha
+Panel version: 0.8.3-alpha
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -270,6 +270,9 @@ Mobile / PWA:
 - Optional sideloadable Android APK wrapper lives in android-app/. It opens
   your existing Easy Dune Admin server in a native WebView and stores only the
   server URL on the phone.
+- Admin users can reach Developer Tools from the hamburger menu in the
+  Android/PWA UI. The page still requires the separate Developer key before
+  any research commands are visible.
 
 Android PWA install:
 
@@ -366,7 +369,7 @@ Browse to:
 
 http://SERVER-IP:8088
 
-Docker is the primary supported install method as of 0.8.2-alpha. Runtime
+Docker is the primary supported install method as of 0.8.3-alpha. Runtime
 webadmin state is stored in the named Docker volume easy-dune-admin-data, so
 normal rebuilds preserve users.db, roles, and logs. Do not run
 docker compose down -v unless you intentionally want to reset the webadmin.
@@ -576,7 +579,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.2-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.3-alpha
 
 Preserve local runtime data:
 
@@ -625,7 +628,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.8.2-alpha: Easy Dune Admin now adds a more polished
+Current highlight for 0.8.3-alpha: Easy Dune Admin now adds a more polished
 role-aware console shell, connected navigation, pull-to-refresh support,
 Gradle-wrapper Android builds, and stronger visual separation for routine,
 experimental, and dangerous tools.

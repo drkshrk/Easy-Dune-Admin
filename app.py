@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.2-alpha
+Panel version: 0.8.3-alpha
 RedBlink stack compatibility target: v1.3.3
 
 Small launcher for the Flask/Socket.IO application. The 0.7.0+ refactor moves

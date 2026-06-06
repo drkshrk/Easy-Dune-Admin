@@ -1,8 +1,8 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.8.2-alpha
+## 0.8.3-alpha
 
 ### Changed
 
@@ -16,7 +16,16 @@ All notable changes to Easy Dune Admin are documented here.
 - Marked destructive actions more clearly, including vehicle deletion, user deletion, container emptying, progression resets, and dangerous Developer-page actions.
 - Cleaned up Server Management by replacing separate paired grids with a dense two-column module board that packs shorter panels upward and removes large voids at wide or zoomed-out browser views.
 - Added Android App screenshot placement to the README and removed the older standard Infrastructure screenshot block while keeping Docker Infrastructure.
-- Updated version strings to `0.8.2-alpha`.
+- Added Developer-only Prescience / third combat skill slot repair based on IceHunter / Ryan Wilson's MIT-licensed 0.25.1 progression research.
+- Added Developer-only starter class FGL state controls for Bene Gesserit, Mentat, Planetologist, Swordmaster, and Trooper.
+- Added Admin-only Atreides/Harkonnen faction progression presets for Chapter 3 / Rank 5 and Rank 19 eligibility, including faction alignment, reputation, tags, journey nodes, and controller faction component sync.
+- Moved faction progression presets from the hidden Developer page into the Admin Panel progression tool grid so confirmed faction recovery tools sit with XP, skill point, and skill-module controls without creating extra page voids.
+- Added Developer-only progression recovery tools for skill ModuleData resets, all-keystone grant/reset with skill-point repair, tutorial-row deletion, and codex/mnemonic recall wipe.
+- Updated Find the Fremen journey preset application to also apply the known IceHunter / Ryan Wilson Trials-of-Aql node spine, including Fourth Trial parent/objective rows, plus the Prescience / Spice Vision FGL side effect; the standalone Prescience button remains as a repair path and now has a read-only diagnostic report for older test characters.
+- Updated Find the Fremen reset behavior to remove the Prescience / Spice Vision repair state and the likely Prescience gameplay tag so players can retry the Trials naturally after research-only progression edits.
+- Added a Developer-only Find the Fremen Epilogue reset that forces the Epilogue subtree to explicit incomplete state, clears pending rewards/cooldowns, and removes `Journey.Act1.Completed` for recovery after partial progression resets.
+- Updated Developer progression copy to separate legacy tag cleanup from newer community-tested progression research.
+- Updated version strings to `0.8.3-alpha`.
 
 ## 0.8.1-alpha
 

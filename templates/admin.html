@@ -12,6 +12,8 @@
     margin-top: 12px;
     cursor: grab;
     user-select: none;
+    overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .ornithopter-map-frame.is-dragging {
@@ -543,11 +545,11 @@ Recommended first use: test on a low-risk vehicle and confirm in-game behavior a
 <div class="admin-stack">
 
 <div class="box">
-<h2>Admin Gifts & Character XP</h2>
+<h2>Admin Gifts & Character Progression</h2>
 
 <div class="warning info">
 Admin-only helper tools.<br><br>
-Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirmed character XP, level, research point, skill point, and bulk skill-module controls live here; unconfirmed journey/class/specialization experiments remain behind the hidden Developer page.
+Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirmed character XP, level, research point, skill point, bulk skill-module, and faction progression controls live here; unconfirmed journey/class/specialization experiments remain behind the hidden Developer page.
 </div>
 
 <div class="admin-tool-grid">
@@ -887,6 +889,41 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 
     <button type="submit">Run Bulk Skill Module Preset</button>
     <pre id="bulkSkillModuleOutput" class="coord-box">Bulk skill-module output will appear here. Large presets can take a few minutes because each module is sent as its own RedBlink command.</pre>
+</form>
+
+<form id="factionProgressionForm">
+    <div class="warning experimental">
+        Community-tested IceHunter 0.25.1 faction progression research. This completes faction journey nodes, writes faction tags, changes faction alignment, sets reputation, and rebuilds the controller faction component. Keep the player offline; relogging or map/BG restarts may be required.
+    </div>
+
+    <label>Character</label>
+    <select id="factionProgressionCharacterSelect" onchange="fillFactionProgressionActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="factionProgressionActorId" required>
+
+    <label>Faction</label>
+    <select name="faction" id="factionProgressionFaction" required>
+        <option value="atreides">Atreides</option>
+        <option value="harkonnen">Harkonnen</option>
+    </select>
+
+    <label>Preset</label>
+    <select name="preset_id" id="factionProgressionPresetId" required>
+        {% for preset in faction_progression_presets %}
+        <option value="{{ preset.id }}">{{ preset.label }} - {{ preset.description }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Action</label>
+    <select name="action" id="factionProgressionAction" required>
+        <option value="apply">Apply faction preset</option>
+        <option value="reset">Reset faction preset tags/nodes only</option>
+    </select>
+
+    <button class="danger" type="submit">Run Faction Progression Preset</button>
 </form>
 
 <form id="solariGrantForm">
@@ -1326,6 +1363,22 @@ bulkSkillModuleForm.addEventListener("submit", async function(event) {
     } finally {
         if (button) button.disabled = false;
     }
+});
+
+const factionProgressionForm = document.getElementById("factionProgressionForm");
+factionProgressionForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const action = document.getElementById("factionProgressionAction").value || "apply";
+    const faction = document.getElementById("factionProgressionFaction");
+    const preset = document.getElementById("factionProgressionPresetId");
+    const factionLabel = faction && faction.selectedOptions.length ? faction.selectedOptions[0].textContent : "selected faction";
+    const presetLabel = preset && preset.selectedOptions.length ? preset.selectedOptions[0].textContent : "selected preset";
+    if (!confirm(`${action === "reset" ? "Reset" : "Apply"} ${factionLabel} progression preset: ${presetLabel}? This changes faction/story state and may require relogging or a restart. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/faction-progression", factionProgressionForm);
 });
 
 const solariGrantForm = document.getElementById("solariGrantForm");

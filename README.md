@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.8.2--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.8.3--alpha-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-alpha-orange">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.8.2-alpha`
+Current panel version: `0.8.3-alpha`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -134,8 +134,13 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 - Item grants target the selected player/account inventory path and do not use map partition IDs
 - WIP/unconfirmed Developer-only specialization tools for Combat, Crafting, Gathering, Exploration, and Sabotage tracks. These now target character pawn actor IDs, can add XP to one track, grant missing all-track rows at 0 XP for testing, or max all tracks plus discovered keystones.
 - Developer-only specialization reset for one track or all tracks plus keystones
-- WIP/experimental Developer-only Class Progression preset dropdown for observed trainer/class unlock tag bundles. Currently appears nonfunctional for actual in-game class unlocks because the account tags alone are not sufficient; advanced trainer unlocks appear to require full multi-quest chains rather than one completion tag. The hidden `/developer` page also includes removal actions for the Planetologist, Trooper, and Advanced Bene Gesserit test tags.
-- Experimental Developer-only progression preset apply/reset tools for curated journey roots. These are for testing/research only because advancing journey rows this way can currently lock the character out of the 3rd combat skill slot.
+- Developer-only legacy Class Progression tag cleanup for Planetologist, Trooper, and Advanced Bene Gesserit test tags. The old tag-only apply path remains hidden because tags alone are not sufficient for real class unlocks.
+- Developer-only starter class FGL state tool based on IceHunter / Ryan Wilson's MIT-licensed 0.25.1 progression research. It sets `StarterSkillTreeTag` and grants the selected starter ability for Bene Gesserit, Mentat, Planetologist, Swordmaster, or Trooper.
+- Developer-only Prescience / third combat skill slot repair/diagnostic tool, based on IceHunter / Ryan Wilson's MIT-licensed 0.25.1 progression research, that enables the DuneCharacter `SpiceVisionEnabledStatus` side effect used by Find the Fremen and reports FGL, tag, and journey-node state.
+- Admin-only faction progression presets for Atreides/Harkonnen Chapter 3 / Rank 5 and Rank 19 eligibility. These complete faction journey nodes, write faction tags, set faction alignment/reputation, and rebuild the controller faction component.
+- Experimental Developer-only progression preset apply/reset tools for curated journey roots. Find the Fremen applies the known Trials-of-Aql node spine plus the Prescience repair path because root journey rows alone may miss required side effects; resetting it also removes the Prescience repair state so the Trials can be retried naturally.
+- Developer-only Find the Fremen Epilogue reset for recovery cases where the Trials are available again but the Epilogue remains marked complete after broader progression edits.
+- Developer-only progression recovery tools for resetting skill ModuleData, granting/resetting all specialization keystones with skill-point repair, deleting tutorial rows, and wiping codex/mnemonic recall state.
 - Progression edits may require relogging, restarting the affected map, or restarting the battlegroup. Restarts can appear slow, and login may briefly show an error before recovering.
 
 ### Market Tools
@@ -255,6 +260,7 @@ Restore/import/delete database actions are intentionally not exposed yet.
 - Authenticated pages and API responses remain network-first and are not intentionally cached for offline admin-data viewing
 - Keep mobile access behind LAN/VPN or other private access controls; do not expose the panel directly to the public internet
 - Optional sideloadable Android APK wrapper lives in [`android-app/`](android-app/README_ANDROID.md). It opens your existing Easy Dune Admin server in a native WebView and stores only the server URL on the phone.
+- Admin users can reach Developer Tools from the hamburger menu in the Android/PWA UI. The page still requires the separate Developer key before any research commands are visible.
 
 Android PWA install:
 
@@ -357,7 +363,7 @@ Browse to:
 http://SERVER-IP:8088
 ```
 
-Docker is the primary supported install method as of `0.8.2-alpha`. Runtime
+Docker is the primary supported install method as of `0.8.3-alpha`. Runtime
 webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
 normal rebuilds preserve `users.db`, roles, and logs. Do not run
 `docker compose down -v` unless you intentionally want to reset the webadmin.
@@ -503,7 +509,7 @@ See `DOCKER.md` for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.2-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.3-alpha
 ```
 
 Preserve local runtime data:
@@ -611,7 +617,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.8.2-alpha`: Easy Dune Admin now adds a more polished role-aware console shell, connected navigation, pull-to-refresh support, Gradle-wrapper Android builds, and stronger visual separation for routine, experimental, and dangerous tools.
+Current highlight for `0.8.3-alpha`: Easy Dune Admin now adds a more polished role-aware console shell, connected navigation, pull-to-refresh support, Gradle-wrapper Android builds, and stronger visual separation for routine, experimental, and dangerous tools.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

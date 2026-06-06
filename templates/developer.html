@@ -86,7 +86,7 @@ Unlocked for this browser session. Many tools here are incomplete and dangerous 
 <div class="box">
 <h2>Class Progression Research</h2>
 <div class="warning experimental">
-WIP / Experimental: this currently appears nonfunctional for actual in-game class unlocks. It only applies or removes observed account tags for research. Testing shows those tags alone are not sufficient. Advanced trainer unlocks appear to require full multi-quest chains, not one completion tag, and leaving test tags in place can prevent the normal class journey from appearing after objectives are completed.
+Legacy tag cleanup plus newer IceHunter 0.25.1 progression research. The old tag-only class actions are known to be incomplete and mainly remain here so test tags can be removed. The newer starter-class and Prescience actions edit FGL component state and are community-tested research paths, but still high-impact. Keep players offline where practical and expect relogs or map/BG restarts.
 </div>
 
 <form id="classProgressionForm">
@@ -109,6 +109,46 @@ WIP / Experimental: this currently appears nonfunctional for actual in-game clas
     </select>
 
     <button type="submit">Run Class Progression Action</button>
+</form>
+
+<form id="starterClassForm">
+    <div class="warning experimental">
+        Sets <b>StarterSkillTreeTag</b> and grants the selected class starter ability in the DuneCharacter FGL skill data. This is not the same as completing trainer quest chains.
+    </div>
+
+    <label>Character</label>
+    <select id="starterClassCharacterSelect" onchange="fillStarterClassActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="starterClassActorId" required>
+
+    <label>Starter Class</label>
+    <select name="starter_class" id="starterClassId" required>
+        {% for starter in starter_class_options %}
+        <option value="{{ starter.id }}">{{ starter.label }}</option>
+        {% endfor %}
+    </select>
+
+    <button class="danger" type="submit">Set Starter Class FGL State</button>
+</form>
+
+<form id="prescienceForm">
+    <div class="warning experimental">
+        Enables the Prescience / Spice Vision FGL side effect used by Find the Fremen, based on IceHunter / Ryan Wilson's 0.25.1 progression research. This may help repair third combat skill slot state after journey-only testing. Use Inspect Prescience State to verify FGL, tag, and journey-node state before another repair attempt.
+    </div>
+
+    <label>Character</label>
+    <select id="prescienceCharacterSelect" onchange="fillPrescienceActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="prescienceActorId" required>
+
+    <button class="danger" type="submit">Enable Prescience / Third Slot State</button>
+    <button type="button" id="prescienceDiagnosticButton">Inspect Prescience State</button>
 </form>
 </div>
 
@@ -200,7 +240,7 @@ Developer-only progression tools. These directly edit progression-related data a
 <div class="box">
 <h2>Journey Progression Presets</h2>
 <div class="warning danger">
-Experimental journey presets edit journey story-node completion state. Use for testing/research only, not normal gameplay: advancing journey rows this way can currently lock the character out of the 3rd combat skill slot. Journey side effects may not be fully reproduced. Relogging, a map restart, or a full battlegroup restart may be required.
+Experimental journey presets edit journey story-node completion state. Find the Fremen also applies the known IceHunter / Ryan Wilson Trials-of-Aql node spine plus the Prescience / Spice Vision FGL repair path, but this is still testing/research only, not normal gameplay. Resetting Find the Fremen now also removes the Prescience repair state so a player can retry the Trials naturally. Journey side effects may not be fully reproduced. Relogging, a map restart, or a full battlegroup restart may be required.
 </div>
 
 <form id="progressionPresetForm">
@@ -226,6 +266,74 @@ Experimental journey presets edit journey story-node completion state. Use for t
     </select>
 
     <button class="danger" type="submit">Run Progression Preset</button>
+    <button class="danger" type="button" id="resetFremenEpilogueButton">Reset Find the Fremen Epilogue Only</button>
+</form>
+</div>
+
+<div class="box">
+<h2>Progression Recovery Tools</h2>
+<div class="warning danger">
+Developer-only recovery tools inspired by community-tested IceHunter progression research. These can remove skill state, rewrite specialization keystone purchases, clear tutorials, or wipe codex/mnemonic recall. Use only on backups or deliberate test characters; relogging or map/BG restarts may be required.
+</div>
+
+<form id="resetSkillModulesForm">
+    <label>Character</label>
+    <select id="resetSkillModulesCharacterSelect" onchange="fillResetSkillModulesActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="resetSkillModulesActorId" required>
+
+    <label>Reset Scope</label>
+    <select name="reset_scope" id="resetSkillModulesScope" required>
+        <option value="keep_starter">Remove learned modules, keep starter class module</option>
+        <option value="clear_all">Clear all ModuleData entries</option>
+    </select>
+
+    <button class="danger" type="submit">Reset Skill Module State</button>
+</form>
+
+<form id="keystoneRecoveryForm">
+    <label>Character</label>
+    <select id="keystoneRecoveryCharacterSelect" onchange="fillKeystoneRecoveryActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="keystoneRecoveryActorId" required>
+
+    <label>Keystone Action</label>
+    <select name="action" id="keystoneRecoveryAction" required>
+        <option value="grant">Grant all specialization keystones and repair skill points</option>
+        <option value="reset">Reset all specialization keystones and repair skill points</option>
+    </select>
+
+    <button class="danger" type="submit">Run Keystone Recovery</button>
+</form>
+
+<form id="tutorialRecoveryForm">
+    <label>Character</label>
+    <select id="tutorialRecoveryCharacterSelect" onchange="fillTutorialRecoveryActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="tutorialRecoveryActorId" required>
+
+    <button class="danger" type="submit">Delete Tutorial Rows</button>
+</form>
+
+<form id="codexRecoveryForm">
+    <label>Character</label>
+    <select id="codexRecoveryCharacterSelect" onchange="fillCodexRecoveryActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID</label>
+    <input type="text" name="character_actor_id" id="codexRecoveryActorId" required>
+
+    <button class="danger" type="submit">Wipe Codex / Mnemonic Recall</button>
 </form>
 </div>
 
@@ -326,11 +434,17 @@ Experimental and unconfirmed: this looks up and edits <b>dune.cheater_tracking</
 async function loadDeveloperCharacters() {
     const chars = await fetchCharacters(true);
     fillCharacterSelect("classProgressionCharacterSelect", chars);
+    fillCharacterSelect("starterClassCharacterSelect", chars);
+    fillCharacterSelect("prescienceCharacterSelect", chars);
     fillCharacterSelect("xpCharacterSelect", chars);
     fillCharacterSelect("specializationGrantAllCharacterSelect", chars);
     fillCharacterSelect("specializationMaxCharacterSelect", chars);
     fillCharacterSelect("specializationResetCharacterSelect", chars);
     fillCharacterSelect("progressionCharacterSelect", chars);
+    fillCharacterSelect("resetSkillModulesCharacterSelect", chars);
+    fillCharacterSelect("keystoneRecoveryCharacterSelect", chars);
+    fillCharacterSelect("tutorialRecoveryCharacterSelect", chars);
+    fillCharacterSelect("codexRecoveryCharacterSelect", chars);
     fillCharacterSelect("banLookupCharacterSelect", chars);
     fillCharacterSelect("flagCheaterCharacterSelect", chars);
     fillCharacterSelect("unflagCheaterCharacterSelect", chars);
@@ -497,6 +611,35 @@ classProgressionForm.addEventListener("submit", async function(event) {
     await postForm("/api/class-progression-unlock", classProgressionForm);
 });
 
+const starterClassForm = document.getElementById("starterClassForm");
+starterClassForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const starter = document.getElementById("starterClassId");
+    const label = starter && starter.selectedOptions.length ? starter.selectedOptions[0].textContent : "selected starter class";
+    if (!confirm(`Set this character's starter class FGL state to ${label}? This rewrites starter skill state and may require a relog or restart. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/developer-set-starter-class", starterClassForm);
+});
+
+const prescienceForm = document.getElementById("prescienceForm");
+prescienceForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Enable Prescience / Spice Vision FGL state for this character? This can affect third skill slot behavior and may require relogging or a restart. Continue?")) {
+        return;
+    }
+
+    await postForm("/api/developer-enable-prescience", prescienceForm);
+});
+
+const prescienceDiagnosticButton = document.getElementById("prescienceDiagnosticButton");
+prescienceDiagnosticButton.addEventListener("click", async function() {
+    await postForm("/api/developer-prescience-diagnostic", prescienceForm);
+});
+
 const specializationXpForm = document.getElementById("specializationXpForm");
 specializationXpForm.addEventListener("submit", async function(event) {
     event.preventDefault();
@@ -556,6 +699,63 @@ progressionPresetForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/progression-preset", progressionPresetForm);
+});
+
+const resetFremenEpilogueButton = document.getElementById("resetFremenEpilogueButton");
+resetFremenEpilogueButton.addEventListener("click", async function() {
+    if (!confirm("Reset only the Find the Fremen Epilogue state for this player? This forces Epilogue rows to incomplete, clears pending rewards/cooldowns, and removes Journey.Act1.Completed. Continue?")) {
+        return;
+    }
+
+    await postForm("/api/developer-reset-fremen-epilogue", progressionPresetForm);
+});
+
+const resetSkillModulesForm = document.getElementById("resetSkillModulesForm");
+resetSkillModulesForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const scope = document.getElementById("resetSkillModulesScope");
+    const scopeLabel = scope && scope.selectedOptions.length ? scope.selectedOptions[0].textContent : "selected skill reset";
+    if (!confirm(`${scopeLabel}? This rewrites DuneCharacter ModuleData and may remove learned skills. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/developer-reset-skill-modules", resetSkillModulesForm);
+});
+
+const keystoneRecoveryForm = document.getElementById("keystoneRecoveryForm");
+keystoneRecoveryForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const action = document.getElementById("keystoneRecoveryAction");
+    const label = action && action.selectedOptions.length ? action.selectedOptions[0].textContent : "selected keystone recovery";
+    if (!confirm(`${label}? This rewrites purchased keystones and skill point totals. Continue?`)) {
+        return;
+    }
+
+    await postForm("/api/developer-keystone-recovery", keystoneRecoveryForm);
+});
+
+const tutorialRecoveryForm = document.getElementById("tutorialRecoveryForm");
+tutorialRecoveryForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Delete all tutorial_per_player rows for this character? Continue?")) {
+        return;
+    }
+
+    await postForm("/api/developer-delete-tutorials", tutorialRecoveryForm);
+});
+
+const codexRecoveryForm = document.getElementById("codexRecoveryForm");
+codexRecoveryForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Wipe codex / mnemonic recall data for this character's account? Continue?")) {
+        return;
+    }
+
+    await postForm("/api/developer-wipe-codex", codexRecoveryForm);
 });
 </script>
 {% endif %}

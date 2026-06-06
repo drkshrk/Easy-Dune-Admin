@@ -1678,6 +1678,157 @@ def api_unlock_advanced_bene_gesserit():
         return jsonify({"ok": False, "error": f"Advanced Bene Gesserit unlock failed: {exc}"}), 500
 
 
+@app.route("/api/developer-enable-prescience", methods=["POST"])
+def api_developer_enable_prescience():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+
+    try:
+        sql = build_enable_prescience_sql(character_actor_id)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"developer enable prescience for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Prescience enable failed: {exc}"}), 500
+
+
+@app.route("/api/developer-prescience-diagnostic", methods=["POST"])
+def api_developer_prescience_diagnostic():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+
+    try:
+        sql = build_prescience_diagnostic_sql(character_actor_id)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"developer inspect prescience state for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Prescience diagnostic failed: {exc}"}), 500
+
+
+@app.route("/api/developer-set-starter-class", methods=["POST"])
+def api_developer_set_starter_class():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    starter_class = request.form.get("starter_class", "").strip()
+
+    try:
+        sql = build_set_starter_class_sql(character_actor_id, starter_class)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"developer set starter class {starter_class} for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Starter class update failed: {exc}"}), 500
+
+
+@app.route("/api/faction-progression", methods=["POST"])
+@app.route("/api/developer-faction-progression", methods=["POST"])
+def api_faction_progression():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    faction = request.form.get("faction", "").strip()
+    preset_id = request.form.get("preset_id", "").strip()
+    action = request.form.get("action", "").strip()
+
+    try:
+        sql = build_faction_progression_sql(character_actor_id, faction, preset_id, action)
+        output = run_psql_script(sql, timeout=120)
+        log_action(session["user"], f"{action} faction progression {faction}/{preset_id} for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Faction progression failed: {exc}"}), 500
+
+
+@app.route("/api/developer-reset-skill-modules", methods=["POST"])
+def api_developer_reset_skill_modules():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    reset_scope = request.form.get("reset_scope", "").strip()
+
+    try:
+        sql = build_reset_skill_modules_sql(character_actor_id, reset_scope)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"developer reset skill modules {reset_scope} for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Skill module reset failed: {exc}"}), 500
+
+
+@app.route("/api/developer-keystone-recovery", methods=["POST"])
+def api_developer_keystone_recovery():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    action = request.form.get("action", "").strip()
+
+    try:
+        sql = build_specialization_keystone_recovery_sql(character_actor_id, action)
+        output = run_psql_script(sql, timeout=90)
+        log_action(session["user"], f"developer {action} all specialization keystones for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Keystone recovery failed: {exc}"}), 500
+
+
+@app.route("/api/developer-delete-tutorials", methods=["POST"])
+def api_developer_delete_tutorials():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+
+    try:
+        sql = build_delete_tutorials_sql(character_actor_id)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"developer delete tutorials for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Tutorial delete failed: {exc}"}), 500
+
+
+@app.route("/api/developer-wipe-codex", methods=["POST"])
+def api_developer_wipe_codex():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+
+    try:
+        sql = build_wipe_codex_sql(character_actor_id)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"developer wipe codex for actor {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Codex wipe failed: {exc}"}), 500
+
+
 @app.route("/api/give-character-xp", methods=["POST"])
 def api_give_character_xp():
     if not logged_in():
@@ -1768,6 +1919,26 @@ def api_progression_preset():
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Progression preset failed: {exc}"}), 500
+
+
+@app.route("/api/developer-reset-fremen-epilogue", methods=["POST"])
+def api_developer_reset_fremen_epilogue():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    fls_id = request.form.get("fls_id", "").strip()
+    if not fls_id:
+        return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+
+    try:
+        sql = build_reset_fremen_epilogue_sql(fls_id)
+        output = run_psql_script(sql, timeout=60)
+        log_action(session["user"], f"developer reset Find the Fremen Epilogue for {fls_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Find the Fremen Epilogue reset failed: {exc}"}), 500
 
 
 @app.route("/api/give-scout-thopter", methods=["POST"])

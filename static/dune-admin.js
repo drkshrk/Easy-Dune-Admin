@@ -247,6 +247,7 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("redblinkSkillPointsCharacterSelect", chars);
     fillCharacterSelect("xpCharacterSelect", chars);
     fillCharacterSelect("bulkSkillModuleCharacterSelect", chars);
+    fillCharacterSelect("factionProgressionCharacterSelect", chars);
     fillCharacterSelect("specializationGrantAllCharacterSelect", chars);
     fillCharacterSelect("specializationMaxCharacterSelect", chars);
     fillCharacterSelect("specializationResetCharacterSelect", chars);
@@ -975,11 +976,60 @@ function fillClassProgressionActorId() {
     if (input && c) input.value = c.character_actor_id || "";
 }
 
+function fillStarterClassActorId() {
+    const sel = document.getElementById("starterClassCharacterSelect");
+    const input = document.getElementById("starterClassActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillPrescienceActorId() {
+    const sel = document.getElementById("prescienceCharacterSelect");
+    const input = document.getElementById("prescienceActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
 function fillProgressionPlayerId() {
     const sel = document.getElementById("progressionCharacterSelect");
     const input = document.getElementById("progressionPlayerId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
+}
+
+function fillFactionProgressionActorId() {
+    const sel = document.getElementById("factionProgressionCharacterSelect");
+    const input = document.getElementById("factionProgressionActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillResetSkillModulesActorId() {
+    const sel = document.getElementById("resetSkillModulesCharacterSelect");
+    const input = document.getElementById("resetSkillModulesActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillKeystoneRecoveryActorId() {
+    const sel = document.getElementById("keystoneRecoveryCharacterSelect");
+    const input = document.getElementById("keystoneRecoveryActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillTutorialRecoveryActorId() {
+    const sel = document.getElementById("tutorialRecoveryCharacterSelect");
+    const input = document.getElementById("tutorialRecoveryActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillCodexRecoveryActorId() {
+    const sel = document.getElementById("codexRecoveryCharacterSelect");
+    const input = document.getElementById("codexRecoveryActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
 }
 
 function fillBanLookupQuery() {
@@ -1650,6 +1700,19 @@ function setOrnithopterAdminMapZoomAroundPoint(newZoom, clientX, clientY) {
     frame.scrollTop = (sourceY * nextZoom) - (clientY - rect.top);
 }
 
+function ornithopterAdminTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+}
+
+function ornithopterAdminTouchMidpoint(touches) {
+    return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+}
+
 function wireOrnithopterAdminMapControls() {
     const frame = document.getElementById("ornithopterMapFrame");
     const canvas = document.getElementById("ornithopterMapCanvas");
@@ -1657,9 +1720,18 @@ function wireOrnithopterAdminMapControls() {
     if (!frame || !canvas || ornithopterAdminMapControlsWired) return;
     ornithopterAdminMapControlsWired = true;
 
+    let touchMode = null;
+    let touchStartDistance = 0;
+    let touchStartZoom = ornithopterAdminMapZoom;
+    let touchDragStartX = 0;
+    let touchDragStartY = 0;
+    let touchDragScrollLeft = 0;
+    let touchDragScrollTop = 0;
+
     frame.addEventListener("dblclick", fillOrnithopterTargetFromAdminMapClick);
 
     frame.addEventListener("pointerdown", function(event) {
+        if (event.pointerType === "touch") return;
         if (event.button !== 0 || event.target.closest(".ornithopter-marker")) return;
 
         ornithopterAdminMapDragging = true;
@@ -1672,6 +1744,7 @@ function wireOrnithopterAdminMapControls() {
     });
 
     frame.addEventListener("pointermove", function(event) {
+        if (event.pointerType === "touch") return;
         if (!ornithopterAdminMapDragging) return;
 
         event.preventDefault();
@@ -1680,6 +1753,7 @@ function wireOrnithopterAdminMapControls() {
     });
 
     frame.addEventListener("pointerup", function(event) {
+        if (event.pointerType === "touch") return;
         if (!ornithopterAdminMapDragging) return;
 
         ornithopterAdminMapDragging = false;
@@ -1690,6 +1764,7 @@ function wireOrnithopterAdminMapControls() {
     });
 
     frame.addEventListener("pointercancel", function(event) {
+        if (event.pointerType === "touch") return;
         ornithopterAdminMapDragging = false;
         frame.classList.remove("is-dragging");
         if (frame.hasPointerCapture(event.pointerId)) {
@@ -1716,6 +1791,71 @@ function wireOrnithopterAdminMapControls() {
             event.clientY
         );
     }, { passive: false });
+
+    frame.addEventListener("touchstart", function(event) {
+        if (event.target.closest(".ornithopter-marker")) return;
+
+        if (event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            frame.classList.add("is-dragging");
+        } else if (event.touches.length === 2) {
+            touchMode = "pinch";
+            touchStartDistance = ornithopterAdminTouchDistance(event.touches);
+            touchStartZoom = ornithopterAdminMapZoom;
+            frame.classList.add("is-dragging");
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchmove", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 2) {
+            const midpoint = ornithopterAdminTouchMidpoint(event.touches);
+            const nextDistance = ornithopterAdminTouchDistance(event.touches);
+            if (touchStartDistance > 0) {
+                setOrnithopterAdminMapZoomAroundPoint(
+                    touchStartZoom * (nextDistance / touchStartDistance),
+                    midpoint.x,
+                    midpoint.y
+                );
+            }
+            event.preventDefault();
+            return;
+        }
+
+        if (touchMode === "pan" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            frame.scrollLeft = touchDragScrollLeft - (touch.clientX - touchDragStartX);
+            frame.scrollTop = touchDragScrollTop - (touch.clientY - touchDragStartY);
+            event.preventDefault();
+        }
+    }, { passive: false });
+
+    frame.addEventListener("touchend", function(event) {
+        if (touchMode === "pinch" && event.touches.length === 1) {
+            const touch = event.touches[0];
+            touchMode = "pan";
+            touchDragStartX = touch.clientX;
+            touchDragStartY = touch.clientY;
+            touchDragScrollLeft = frame.scrollLeft;
+            touchDragScrollTop = frame.scrollTop;
+            return;
+        }
+
+        if (event.touches.length === 0) {
+            touchMode = null;
+            frame.classList.remove("is-dragging");
+        }
+    });
+
+    frame.addEventListener("touchcancel", function() {
+        touchMode = null;
+        frame.classList.remove("is-dragging");
+    });
 }
 
 function renderOrnithopterAdminMap() {

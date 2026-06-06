@@ -78,6 +78,10 @@ https://eda.example.com
 No rooted phone is required. To update an existing sideloaded install, build a
 new `EDA.apk` and install it over the old one.
 
+Admin users can reach Developer Tools from the webadmin hamburger menu inside
+the Android app. The Developer page still requires the separate Developer key
+before research commands are visible.
+
 ## Release Packaging
 
 - Commit the Android wrapper source under `android-app/`.

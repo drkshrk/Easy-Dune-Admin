@@ -35,11 +35,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Repository: https://github.com/Icehunter/dune-admin
 
 Market seeding research, exchange insert flow, market category mask mapping,
-progression-system research, progression preset structure, specialization XP
-track/cap research, character-level XP curve research, the admin New Player Kit
-starter pack recipe, and the bundled `data/icehunter-item-data.json` catalog
-are derived from or adapted from IceHunter / Ryan Wilson's MIT-licensed
-`dune-admin` project.
+progression-system research, progression preset structure, starter-class FGL
+state research, Prescience/SpiceVision side-effect research, faction
+progression/faction-component sync research, skill-module reset research,
+specialization keystone research, tutorial/codex recovery research,
+specialization XP track/cap research, character-level XP curve research, the
+admin New Player Kit starter pack recipe, and the bundled
+`data/icehunter-item-data.json` catalog are derived from or adapted from
+IceHunter / Ryan Wilson's MIT-licensed `dune-admin` project.
 
 Copyright (c) 2026 Ryan Wilson
 
