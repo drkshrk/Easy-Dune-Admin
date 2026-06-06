@@ -838,6 +838,37 @@ def api_vip_refill_water():
         return jsonify({"ok": False, "error": f"VIP refill water failed: {exc}"}), 500
 
 
+@app.route("/api/vip-give-hydration-water-packs", methods=["POST"])
+def api_vip_give_hydration_water_packs():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not can_use_vip_tools():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    try:
+        character = get_self_character_for_user(session["user"])
+        if not character.get("fls_id"):
+            return jsonify({"ok": False, "error": "linked character FLS/account ID not found"}), 400
+
+        output = grant_item(
+            character["fls_id"],
+            HYDRATION_WATER_PACK_ITEM_ID,
+            HYDRATION_WATER_PACK_QUANTITY,
+            "1.0",
+        )
+
+        log_action(
+            session["user"],
+            f"vip grant hydration water packs to own character {character['character_name']}",
+        )
+
+        return jsonify({"ok": True, "output": output})
+
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"VIP hydration water pack grant failed: {exc}"}), 500
+
+
 @app.route("/api/emergency-return", methods=["POST"])
 def api_emergency_return():
     if not logged_in():
@@ -1135,6 +1166,56 @@ def api_installer_step():
         return jsonify({"ok": False, "error": f"Installer step failed: {exc}"}), 500
 
 
+@app.route("/api/easy-dune-admin-update", methods=["POST"])
+def api_easy_dune_admin_update():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    if not current_installation_capabilities()["self_update"]:
+        return jsonify({"ok": False, "error": "Easy Dune Admin update is available only in Linux Host or Docker mode"}), 403
+
+    if not ENABLE_SELF_UPDATE:
+        return jsonify({"ok": False, "error": "Easy Dune Admin update disabled; set ENABLE_SELF_UPDATE=1"}), 403
+
+    try:
+        timeout = 90 if current_installation_capabilities()["is_docker"] else 900
+        output = run_infra_command(easy_dune_self_update_command(), timeout=timeout, cwd=BASE_DIR)
+        log_action(session["user"], "ran Easy Dune Admin GitHub update and Docker rebuild")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Easy Dune Admin update failed: {exc}"}), 500
+
+
+@app.route("/api/easy-dune-admin-clean-install", methods=["POST"])
+def api_easy_dune_admin_clean_install():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    if not current_installation_capabilities()["self_update"]:
+        return jsonify({"ok": False, "error": "Easy Dune Admin clean reinstall is available only in Linux Host or Docker mode"}), 403
+
+    if not ENABLE_SELF_UPDATE:
+        return jsonify({"ok": False, "error": "Easy Dune Admin clean reinstall disabled; set ENABLE_SELF_UPDATE=1"}), 403
+
+    confirmation = request.form.get("confirmation", "").strip()
+    if confirmation != "CLEAN INSTALL":
+        return jsonify({"ok": False, "error": "type CLEAN INSTALL to confirm"}), 400
+
+    try:
+        timeout = 90 if current_installation_capabilities()["is_docker"] else 900
+        output = run_infra_command(easy_dune_clean_install_command(), timeout=timeout, cwd=BASE_DIR)
+        log_action(session["user"], "ran Easy Dune Admin clean reinstall from GitHub and Docker rebuild")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Easy Dune Admin clean reinstall failed: {exc}"}), 500
+
+
 
 
 @app.route("/api/dashboard-metrics")
@@ -1216,6 +1297,30 @@ def api_grant_new_player_kit():
         return jsonify({"ok": True, "output": "\n\n---\n\n".join(outputs)})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"New player starter kit grant failed: {exc}"}), 500
+
+
+@app.route("/api/grant-hydration-water-packs", methods=["POST"])
+def api_grant_hydration_water_packs():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    player_id = request.form.get("player_id", "").strip()
+    if not player_id:
+        return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+
+    try:
+        output = grant_item(
+            player_id,
+            HYDRATION_WATER_PACK_ITEM_ID,
+            HYDRATION_WATER_PACK_QUANTITY,
+            "1.0",
+        )
+        log_action(session["user"], f"grant hydration water packs to {player_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Hydration water pack grant failed: {exc}"}), 500
 
 
 @app.route("/api/grant-builder-supply-pack", methods=["POST"])

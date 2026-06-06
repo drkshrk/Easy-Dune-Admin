@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.3-alpha
+Panel version: 0.8.4-beta
 RedBlink stack compatibility target: v1.3.3
 
-0.8.3-alpha RedBlink v1.3.3 support:
+0.8.4-beta RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -56,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.8.3-alpha"
+PANEL_VERSION = "0.8.4-beta"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -102,6 +102,18 @@ REDBLINK_VEHICLE_SPAWN_TEMPLATES = {
 DEFAULT_WATER_REFILL_AMOUNT = int(os.environ.get("DEFAULT_WATER_REFILL_AMOUNT", "1000000"))
 
 BASE_DIR = Path(__file__).resolve().parent
+EASY_DUNE_REPO_URL = "https://github.com/n00bgames/Easy-Dune-Admin"
+EASY_DUNE_REBUILD_SCRIPT = BASE_DIR / "rebuild_docker.sh"
+EASY_DUNE_HOST_DIR = os.environ.get("EASY_DUNE_HOST_DIR", "").strip()
+EASY_DUNE_SOURCE_DIR = Path(
+    os.environ.get(
+        "EASY_DUNE_SOURCE_DIR",
+        "/host-easy-dune-admin" if Path("/host-easy-dune-admin").exists() else str(BASE_DIR),
+    )
+).resolve()
+EASY_DUNE_UPDATER_IMAGE = os.environ.get("EASY_DUNE_UPDATER_IMAGE", "docker:27.5.1-cli")
+EDA_BUILD_REVISION = os.environ.get("EDA_BUILD_REVISION", "unknown").strip()
+EDA_BUILD_DIRTY = os.environ.get("EDA_BUILD_DIRTY", "unknown").strip()
 
 # Local webadmin state. In the normal non-container install this stays next to
 # the app for backward compatibility. In the Docker package, docker-compose sets
@@ -260,6 +272,7 @@ DEVELOPER_KEY_HASH = os.environ.get(
 ENABLE_HOST_COMMAND_RUNNER = os.environ.get("ENABLE_HOST_COMMAND_RUNNER", "0") == "1"
 ENABLE_HOST_SHELL = os.environ.get("ENABLE_HOST_SHELL", "0") == "1"
 ENABLE_STACK_INSTALLER = os.environ.get("ENABLE_STACK_INSTALLER", "0") == "1"
+ENABLE_SELF_UPDATE = os.environ.get("ENABLE_SELF_UPDATE", "0") == "1"
 
 # Where the RedBlink stack should be cloned/managed by the installer.
 REDBLINK_REPO_URL = "https://github.com/Red-Blink/dune-awakening-selfhost-docker.git"
@@ -377,6 +390,14 @@ NEW_PLAYER_STARTER_KIT = [
 # Admin-only Solari grant. Keep this as the SolarisCoin template id so money
 # gifts use the same grant path as item grants instead of direct SQL edits.
 SOLARIS_COIN_ITEM_ID = "SolarisCoin"
+
+# RedBlink item-grant helper path for hydration recovery. The older
+# `dune admin refill-water` command fills containers/fillables but does not
+# affect the character hydration meter. This consumable water-pack grant gives
+# players inventory water they can consume for personal hydration without direct
+# database edits.
+HYDRATION_WATER_PACK_ITEM_ID = "WaterPack_Consumable"
+HYDRATION_WATER_PACK_QUANTITY = 250
 
 # Preset Solari amounts exposed in the admin dropdown. Server owners can tune
 # these values without touching the route logic below.
@@ -1014,6 +1035,13 @@ def inject_template_globals():
         "enable_host_command_runner": ENABLE_HOST_COMMAND_RUNNER,
         "enable_host_shell": ENABLE_HOST_SHELL,
         "enable_stack_installer": ENABLE_STACK_INSTALLER,
+        "enable_self_update": ENABLE_SELF_UPDATE,
+        "easy_dune_repo_url": EASY_DUNE_REPO_URL,
+        "easy_dune_project_dir": str(EASY_DUNE_SOURCE_DIR),
+        "easy_dune_host_dir": EASY_DUNE_HOST_DIR,
+        "easy_dune_updater_image": EASY_DUNE_UPDATER_IMAGE,
+        "eda_build_revision": EDA_BUILD_REVISION,
+        "eda_build_dirty": EDA_BUILD_DIRTY,
         "redblink_repo_url": REDBLINK_REPO_URL,
         "redblink_install_dir": str(REDBLINK_INSTALL_DIR),
         "map_configs": MAP_CONFIGS,
@@ -1284,6 +1312,7 @@ def current_installation_capabilities():
         "host_diagnostics": mode == "linux",
         "container_diagnostics": mode == "docker",
         "interactive_vm_shell": mode == "linux",
+        "self_update": mode in ("linux", "docker"),
     }
 
 
@@ -7778,6 +7807,519 @@ def run_infra_command(cmd, timeout=60, cwd=None):
         + "\nSTDERR:\n" + proc.stderr
         + f"\nExit code: {proc.returncode}"
     )
+
+
+def easy_dune_update_script(
+    project_dir,
+    rebuild_script="./rebuild_docker.sh",
+    running_build_revision="unknown",
+    running_build_dirty="unknown",
+):
+    """
+    Build the fixed self-update shell script for a real Easy Dune Admin checkout.
+
+    Attribution note: the final rebuild/restart step delegates to this
+    repository's GPLv3 `rebuild_docker.sh`, which wraps the root Docker Compose
+    package for Easy Dune Admin. The script intentionally refuses dirty Git
+    worktrees before pulling so local server-owner edits are not overwritten.
+    """
+    project_dir = shlex.quote(str(project_dir))
+    rebuild_script = shlex.quote(str(rebuild_script))
+    running_build_revision = shlex.quote(str(running_build_revision or "unknown"))
+    running_build_dirty = shlex.quote(str(running_build_dirty or "unknown"))
+    return f"""
+set -euo pipefail
+cd {project_dir}
+git config --global --add safe.directory "$(pwd)" >/dev/null 2>&1 || true
+
+echo "Easy Dune Admin self-update"
+echo "Project directory: {project_dir}"
+echo
+
+if [ ! -d .git ]; then
+    echo "ERROR: This directory is not a Git checkout. Use SSH/manual update for this install."
+    exit 2
+fi
+
+if [ ! -f {rebuild_script} ]; then
+    echo "ERROR: rebuild_docker.sh was not found in this checkout."
+    exit 2
+fi
+
+if [ ! -x {rebuild_script} ]; then
+    chmod +x {rebuild_script} 2>/dev/null || true
+fi
+
+echo "Git remote:"
+git remote -v || true
+echo
+
+echo "Current revision:"
+before_revision="$(git rev-parse HEAD)"
+before_revision_short="$(git rev-parse --short HEAD)"
+echo "$before_revision_short"
+echo
+
+running_build_revision={running_build_revision}
+running_build_dirty={running_build_dirty}
+if [ "$running_build_dirty" = "1" ]; then
+    echo "Running Docker image was built from a dirty checkout. Refusing automatic update to avoid replacing a devbuild."
+    echo "Push/build clean source first, or use Clean Reinstall if you intentionally want to replace this install."
+    exit 0
+fi
+
+if [ "$running_build_revision" != "unknown" ] && [ "$running_build_revision" != "$before_revision" ]; then
+    echo "Running Docker image revision does not match the mounted host checkout. Refusing automatic update."
+    echo "Running image: $running_build_revision"
+    echo "Host checkout: $before_revision"
+    echo "Rebuild from the matching checkout, push the devbuild, or use Clean Reinstall if replacement is intentional."
+    exit 0
+fi
+echo
+
+if [ -n "$(git status --porcelain)" ]; then
+    echo "ERROR: Local changes are present. Commit, stash, or back them up before using the web updater."
+    echo
+    git status --short
+    exit 3
+fi
+
+echo "Fetching latest GitHub source..."
+git fetch --prune origin
+echo
+
+upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name '@{{u}}' 2>/dev/null || true)"
+if [ -z "$upstream_ref" ]; then
+    current_branch="$(git branch --show-current)"
+    if [ -n "$current_branch" ] && git rev-parse --verify "origin/$current_branch" >/dev/null 2>&1; then
+        upstream_ref="origin/$current_branch"
+    else
+        echo "ERROR: This checkout has no upstream branch. Set an upstream or update manually."
+        exit 4
+    fi
+fi
+
+echo "Upstream revision:"
+git rev-parse --short "$upstream_ref"
+echo
+
+read ahead_count behind_count <<EOF
+$(git rev-list --left-right --count HEAD..."$upstream_ref")
+EOF
+
+echo "Git relationship to upstream: ahead $ahead_count, behind $behind_count"
+echo
+
+if [ "$ahead_count" -gt 0 ] && [ "$behind_count" -eq 0 ]; then
+    echo "You are ahead of GitHub. Refusing to update because that would downgrade this dev/local build."
+    echo "Push your current build first, or update manually if you intentionally want to replace it."
+    exit 0
+fi
+
+if [ "$ahead_count" -gt 0 ] && [ "$behind_count" -gt 0 ]; then
+    echo "ERROR: Local checkout and GitHub have diverged. Refusing automatic update to avoid replacing local work."
+    echo "Resolve the branch manually, then rebuild Docker."
+    exit 4
+fi
+
+if [ "$behind_count" -eq 0 ]; then
+    echo "You are already on the current version. No Docker rebuild or daemon restart was needed."
+    exit 0
+fi
+
+echo "Fast-forwarding local checkout..."
+git pull --ff-only
+echo
+
+echo "New revision:"
+after_revision="$(git rev-parse HEAD)"
+after_revision_short="$(git rev-parse --short HEAD)"
+echo "$after_revision_short"
+echo
+
+if [ "$before_revision" = "$after_revision" ]; then
+    echo "You are already on the current version. No Docker rebuild or daemon restart was needed."
+    exit 0
+fi
+
+echo "Rebuilding Docker image and restarting Easy Dune Admin daemon..."
+FOLLOW_LOGS=0 {rebuild_script}
+
+echo
+echo "Update complete. If the browser disconnected, wait a few seconds and refresh."
+"""
+
+
+def easy_dune_update_preflight_script(
+    project_dir,
+    running_build_revision="unknown",
+    running_build_dirty="unknown",
+):
+    """
+    Build the synchronous Docker-mode preflight script.
+
+    Exit codes:
+    - 0: a safe update is available; start the detached updater.
+    - 10: no detached updater is needed because the update was safely aborted.
+    - anything else: hard failure.
+    """
+    project_dir = shlex.quote(str(project_dir))
+    running_build_revision = shlex.quote(str(running_build_revision or "unknown"))
+    running_build_dirty = shlex.quote(str(running_build_dirty or "unknown"))
+    return f"""
+set -euo pipefail
+cd {project_dir}
+git config --global --add safe.directory "$(pwd)" >/dev/null 2>&1 || true
+
+echo "Easy Dune Admin update preflight"
+echo "Project directory: {project_dir}"
+echo
+
+if [ ! -d .git ]; then
+    echo "ERROR: This directory is not a Git checkout. Use Clean Reinstall or update manually."
+    exit 2
+fi
+
+before_revision="$(git rev-parse HEAD)"
+before_revision_short="$(git rev-parse --short HEAD)"
+echo "Host checkout revision: $before_revision_short"
+
+running_build_revision={running_build_revision}
+running_build_dirty={running_build_dirty}
+echo "Running image revision: $running_build_revision"
+echo "Running image dirty: $running_build_dirty"
+echo
+
+if [ "$running_build_dirty" = "1" ]; then
+    echo "Update aborted: running Docker image was built from dirty source, so it may be a devbuild."
+    echo "Push/build clean source first, or use Clean Reinstall if you intentionally want to replace it."
+    exit 10
+fi
+
+if [ "$running_build_revision" != "unknown" ] && [ "$running_build_revision" != "$before_revision" ]; then
+    echo "Update aborted: running Docker image revision does not match the mounted host checkout."
+    echo "Running image: $running_build_revision"
+    echo "Host checkout: $before_revision"
+    echo "Rebuild from the matching checkout, push the devbuild, or use Clean Reinstall if replacement is intentional."
+    exit 10
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+    echo "Update aborted: local Git changes are present."
+    echo
+    git status --short
+    exit 10
+fi
+
+echo "Fetching latest GitHub source..."
+git fetch --prune origin
+echo
+
+upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name '@{{u}}' 2>/dev/null || true)"
+if [ -z "$upstream_ref" ]; then
+    current_branch="$(git branch --show-current)"
+    if [ -n "$current_branch" ] && git rev-parse --verify "origin/$current_branch" >/dev/null 2>&1; then
+        upstream_ref="origin/$current_branch"
+    else
+        echo "ERROR: This checkout has no upstream branch. Set an upstream or update manually."
+        exit 4
+    fi
+fi
+
+upstream_revision="$(git rev-parse --short "$upstream_ref")"
+echo "Upstream revision: $upstream_revision"
+
+read ahead_count behind_count <<EOF
+$(git rev-list --left-right --count HEAD..."$upstream_ref")
+EOF
+
+echo "Git relationship to upstream: ahead $ahead_count, behind $behind_count"
+echo
+
+if [ "$ahead_count" -gt 0 ] && [ "$behind_count" -eq 0 ]; then
+    echo "Update aborted: your installed source is ahead of the current GitHub source."
+    echo "Push the newer build first, or use Clean Reinstall if you intentionally want to replace it with GitHub."
+    exit 10
+fi
+
+if [ "$ahead_count" -gt 0 ] && [ "$behind_count" -gt 0 ]; then
+    echo "ERROR: local checkout and GitHub have diverged. Resolve manually before updating."
+    exit 4
+fi
+
+if [ "$behind_count" -eq 0 ]; then
+    echo "You are already on the current version. No Docker rebuild or daemon restart was needed."
+    exit 10
+fi
+
+echo "Preflight passed: GitHub has a newer safe update. Starting detached updater next."
+"""
+
+
+def easy_dune_clean_install_script(project_dir, rebuild_script="./rebuild_docker.sh"):
+    """
+    Build the break-glass clean reinstall script.
+
+    This intentionally discards local source changes and untracked files so a
+    damaged install can be forced back to the upstream GitHub package. It keeps
+    `.env`, common local runtime state, and Docker named volumes intact.
+    """
+    project_dir = shlex.quote(str(project_dir))
+    rebuild_script = shlex.quote(str(rebuild_script))
+    return f"""
+set -euo pipefail
+cd {project_dir}
+git config --global --add safe.directory "$(pwd)" >/dev/null 2>&1 || true
+
+echo "Easy Dune Admin clean reinstall"
+echo "Project directory: {project_dir}"
+echo
+
+if [ ! -d .git ]; then
+    echo "ERROR: This directory is not a Git checkout. Clone Easy Dune Admin manually, then run rebuild_docker.sh."
+    exit 2
+fi
+
+echo "This will discard local source changes and untracked files in the Easy Dune Admin checkout."
+echo "Preserved paths: .env, users.db, logs/, data/, android-app/local.properties, android-app/app/release/"
+echo
+
+echo "Git remote:"
+git remote -v || true
+echo
+
+echo "Fetching latest GitHub source..."
+git fetch --prune origin
+echo
+
+upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name '@{{u}}' 2>/dev/null || true)"
+if [ -z "$upstream_ref" ]; then
+    current_branch="$(git branch --show-current)"
+    if [ -n "$current_branch" ] && git rev-parse --verify "origin/$current_branch" >/dev/null 2>&1; then
+        upstream_ref="origin/$current_branch"
+    elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+        upstream_ref="origin/main"
+    elif git rev-parse --verify origin/master >/dev/null 2>&1; then
+        upstream_ref="origin/master"
+    else
+        echo "ERROR: No usable upstream branch found. Update manually."
+        exit 4
+    fi
+fi
+
+echo "Reset target:"
+echo "$upstream_ref $(git rev-parse --short "$upstream_ref")"
+echo
+
+if [ -f .env ]; then
+    cp -p .env /tmp/easy-dune-admin.env.keep
+fi
+
+echo "Forcing checkout to upstream package..."
+git reset --hard "$upstream_ref"
+git clean -fdx \\
+    -e .env \\
+    -e users.db \\
+    -e 'logs/' \\
+    -e 'data/' \\
+    -e 'android-app/local.properties' \\
+    -e 'android-app/app/release/'
+
+if [ -f /tmp/easy-dune-admin.env.keep ]; then
+    cp -p /tmp/easy-dune-admin.env.keep .env
+fi
+
+if [ ! -f {rebuild_script} ]; then
+    echo "ERROR: rebuild_docker.sh was not found after reset."
+    exit 2
+fi
+
+chmod +x {rebuild_script} docker/entrypoint.sh 2>/dev/null || true
+
+echo
+echo "Clean reinstall source reset complete:"
+git rev-parse --short HEAD
+echo
+
+echo "Rebuilding Docker image and restarting Easy Dune Admin daemon..."
+FOLLOW_LOGS=0 {rebuild_script}
+
+echo
+echo "Clean reinstall complete. If the browser disconnected, wait a few seconds and refresh."
+"""
+
+
+def easy_dune_self_update_command():
+    """
+    Build the mode-aware Easy Dune Admin self-update command.
+
+    Linux Host mode runs the update inline from the local checkout. Docker mode
+    starts a detached updater container because the web container may be stopped
+    and replaced while the rebuild is still running.
+    """
+    mode = current_installation_mode()
+
+    if mode == "docker":
+        host_dir = EASY_DUNE_HOST_DIR.strip()
+        if not host_dir or not host_dir.startswith("/"):
+            return [
+                "bash",
+                "-lc",
+                (
+                    "echo 'ERROR: Docker self-update needs EASY_DUNE_HOST_DIR set "
+                    "to the absolute host path of this Easy Dune Admin checkout.'; exit 2"
+                ),
+            ]
+
+        updater_name = "easy-dune-admin-updater"
+        preflight_script = easy_dune_update_preflight_script(
+            "/work",
+            EDA_BUILD_REVISION,
+            EDA_BUILD_DIRTY,
+        )
+        updater_script = easy_dune_update_script(
+            "/work",
+            "./rebuild_docker.sh",
+            EDA_BUILD_REVISION,
+            EDA_BUILD_DIRTY,
+        )
+        updater_inner_command = f"""
+apk add --no-cache bash git docker-cli-compose >/tmp/easy-dune-admin-updater-apk.log 2>&1
+cat >/tmp/easy-dune-admin-update.sh <<'EDA_UPDATE_SCRIPT'
+{updater_script}
+EDA_UPDATE_SCRIPT
+bash /tmp/easy-dune-admin-update.sh
+"""
+        preflight_inner_command = f"""
+apk add --no-cache bash git docker-cli-compose >/tmp/easy-dune-admin-updater-apk.log 2>&1
+cat >/tmp/easy-dune-admin-preflight.sh <<'EDA_PREFLIGHT_SCRIPT'
+{preflight_script}
+EDA_PREFLIGHT_SCRIPT
+bash /tmp/easy-dune-admin-preflight.sh
+"""
+        docker_cmd = f"""
+set -euo pipefail
+echo "Running Easy Dune Admin update preflight..."
+echo "Host checkout: {shlex.quote(host_dir)}"
+echo "Updater image: {shlex.quote(EASY_DUNE_UPDATER_IMAGE)}"
+echo
+
+set +e
+docker run --rm \\
+    -v /var/run/docker.sock:/var/run/docker.sock \\
+    -v {shlex.quote(host_dir)}:/work \\
+    -w /work \\
+    {shlex.quote(EASY_DUNE_UPDATER_IMAGE)} \\
+    sh -lc {shlex.quote(preflight_inner_command)}
+preflight_status=$?
+set -e
+
+if [ "$preflight_status" -eq 10 ]; then
+    echo
+    echo "Detached updater was not started."
+    exit 0
+fi
+
+if [ "$preflight_status" -ne 0 ]; then
+    echo
+    echo "ERROR: update preflight failed with exit code $preflight_status."
+    exit "$preflight_status"
+fi
+
+echo
+echo "Starting detached Easy Dune Admin updater container..."
+
+docker rm -f {updater_name} >/dev/null 2>&1 || true
+docker run -d \\
+    --name {updater_name} \\
+    -v /var/run/docker.sock:/var/run/docker.sock \\
+    -v {shlex.quote(host_dir)}:/work \\
+    -w /work \\
+    {shlex.quote(EASY_DUNE_UPDATER_IMAGE)} \\
+    sh -lc {shlex.quote(updater_inner_command)}
+
+echo
+echo "Updater started. Follow progress from the Docker host with:"
+echo "docker logs -f {updater_name}"
+echo
+echo "The web panel may disconnect while the updater rebuilds and replaces the container."
+"""
+        return ["bash", "-lc", docker_cmd]
+
+    return [
+        "bash",
+        "-lc",
+        easy_dune_update_script(
+            EASY_DUNE_SOURCE_DIR,
+            str(EASY_DUNE_SOURCE_DIR / "rebuild_docker.sh"),
+            EDA_BUILD_REVISION,
+            EDA_BUILD_DIRTY,
+        ),
+    ]
+
+
+def easy_dune_clean_install_command():
+    """
+    Build the mode-aware clean reinstall command.
+
+    Docker mode delegates to the same detached updater-container pattern as the
+    normal updater so the current web container can be replaced mid-run.
+    """
+    mode = current_installation_mode()
+
+    if mode == "docker":
+        host_dir = EASY_DUNE_HOST_DIR.strip()
+        if not host_dir or not host_dir.startswith("/"):
+            return [
+                "bash",
+                "-lc",
+                (
+                    "echo 'ERROR: Docker clean reinstall needs EASY_DUNE_HOST_DIR set "
+                    "to the absolute host path of this Easy Dune Admin checkout.'; exit 2"
+                ),
+            ]
+
+        updater_name = "easy-dune-admin-updater"
+        reinstall_script = easy_dune_clean_install_script("/work", "./rebuild_docker.sh")
+        updater_inner_command = f"""
+apk add --no-cache bash git docker-cli-compose >/tmp/easy-dune-admin-updater-apk.log 2>&1
+cat >/tmp/easy-dune-admin-clean-install.sh <<'EDA_CLEAN_INSTALL_SCRIPT'
+{reinstall_script}
+EDA_CLEAN_INSTALL_SCRIPT
+bash /tmp/easy-dune-admin-clean-install.sh
+"""
+        docker_cmd = f"""
+set -euo pipefail
+echo "Starting detached Easy Dune Admin clean reinstall container..."
+echo "Host checkout: {shlex.quote(host_dir)}"
+echo "Updater image: {shlex.quote(EASY_DUNE_UPDATER_IMAGE)}"
+echo
+
+docker rm -f {updater_name} >/dev/null 2>&1 || true
+docker run -d \\
+    --name {updater_name} \\
+    -v /var/run/docker.sock:/var/run/docker.sock \\
+    -v {shlex.quote(host_dir)}:/work \\
+    -w /work \\
+    {shlex.quote(EASY_DUNE_UPDATER_IMAGE)} \\
+    sh -lc {shlex.quote(updater_inner_command)}
+
+echo
+echo "Clean reinstall started. Follow progress from the Docker host with:"
+echo "docker logs -f {updater_name}"
+echo
+echo "The web panel may disconnect while the updater rebuilds and replaces the container."
+"""
+        return ["bash", "-lc", docker_cmd]
+
+    return [
+        "bash",
+        "-lc",
+        easy_dune_clean_install_script(
+            EASY_DUNE_SOURCE_DIR,
+            str(EASY_DUNE_SOURCE_DIR / "rebuild_docker.sh"),
+        ),
+    ]
 
 
 def prereq_report():

@@ -606,6 +606,22 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
     <button type="submit">Refill Water Containers</button>
 </form>
 
+<form id="hydrationWaterPackForm">
+    <div class="warning info">
+        Grants <b>WaterPack_Consumable x250</b> with RedBlink's normal item grant command. This is intended to fill the player's personal hydration meter through inventory consumables, unlike the container-only refill helper.
+    </div>
+
+    <label>Character</label>
+    <select id="hydrationWaterPackCharacterSelect" onchange="fillHydrationWaterPackPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="hydrationWaterPackPlayerId" required>
+
+    <button type="submit">Grant Hydration Water Packs</button>
+</form>
+
 <form id="redblinkSpawnVehicleForm">
     <div class="warning warn">
         RedBlink v1.3.3 helper. Spawns a selected vehicle template in front of an online player using <b>dune admin spawn-vehicle</b>. This is not a database teleport and expects the target player to be online.
@@ -1212,6 +1228,17 @@ redblinkRefillWaterForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/redblink-admin-command", redblinkRefillWaterForm);
+});
+
+const hydrationWaterPackForm = document.getElementById("hydrationWaterPackForm");
+hydrationWaterPackForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Grant WaterPack_Consumable x250 to this character using the item grant command? This is intended for personal hydration.")) {
+        return;
+    }
+
+    await postForm("/api/grant-hydration-water-packs", hydrationWaterPackForm);
 });
 
 const redblinkSpawnVehicleForm = document.getElementById("redblinkSpawnVehicleForm");

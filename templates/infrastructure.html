@@ -129,6 +129,49 @@ Hyper-V mode routes normal RedBlink command buttons through SSH, but interactive
 
 <div id="actionOutput" class="msg" style="display:none;"></div>
 
+{% if installation_capabilities.self_update %}
+<div class="box">
+<h2>Easy Dune Admin Update</h2>
+
+<div class="warning warn">
+Pulls the latest Easy Dune Admin source from:<br>
+{{ easy_dune_repo_url }}<br><br>
+Running build revision:<br>
+{{ eda_build_revision }}{% if eda_build_dirty == "1" %} (dirty/devbuild){% endif %}<br><br>
+{% if installation_capabilities.is_docker %}
+Host checkout:<br>
+{{ easy_dune_host_dir or "EASY_DUNE_HOST_DIR is not configured" }}<br><br>
+Mounted checkout:<br>
+{{ easy_dune_project_dir }}<br><br>
+Docker mode starts a detached <b>easy-dune-admin-updater</b> container from <b>{{ easy_dune_updater_image }}</b>, then that updater runs the Git pull and Docker rebuild while this web container is replaced.
+{% else %}
+Local checkout:<br>
+{{ easy_dune_project_dir }}<br><br>
+Then rebuilds the Docker package and restarts the Easy Dune Admin daemon with <b>rebuild_docker.sh</b>.
+{% endif %}
+The updater refuses to run when local Git changes are present, when the running image was built from dirty source, or when the running image revision does not match the mounted checkout.
+</div>
+
+{% if enable_self_update and (not installation_capabilities.is_docker or easy_dune_host_dir) %}
+<form id="easyDuneSelfUpdateForm">
+    <button type="submit" class="danger">Pull Latest + Rebuild Docker</button>
+</form>
+
+<form id="easyDuneCleanInstallForm">
+    <input type="hidden" name="confirmation" id="easyDuneCleanInstallConfirmation">
+    <div class="warning danger">
+        Clean reinstall force-resets this Easy Dune Admin checkout to GitHub, removes untracked source/build files, preserves <b>.env</b> and common runtime data, then rebuilds Docker. Use only when the install directory needs to be repaired or intentionally replaced.
+    </div>
+    <button type="submit" class="danger">Clean Reinstall from GitHub</button>
+</form>
+{% elif installation_capabilities.is_docker and not easy_dune_host_dir %}
+<p>Update button needs <b>EASY_DUNE_HOST_DIR</b> set to the absolute host path of this Easy Dune Admin checkout.</p>
+{% else %}
+<p>Update button is disabled. Enable with <b>ENABLE_SELF_UPDATE=1</b>.</p>
+{% endif %}
+</div>
+{% endif %}
+
 {% if installation_capabilities.stack_installer %}
 <div class="box">
 <h2>Passwordless Sudo Requirement</h2>
@@ -352,6 +395,33 @@ document.querySelectorAll(".installerStepForm").forEach(form => {
         await postForm("/api/installer-step", form);
     });
 });
+
+const easyDuneSelfUpdateForm = document.getElementById("easyDuneSelfUpdateForm");
+if (easyDuneSelfUpdateForm) {
+    easyDuneSelfUpdateForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        if (!confirm("Pull latest Easy Dune Admin source, rebuild Docker, and restart the daemon? In Docker mode this starts a detached updater container. The panel may briefly disconnect.")) return;
+
+        await postForm("/api/easy-dune-admin-update", easyDuneSelfUpdateForm);
+    });
+}
+
+const easyDuneCleanInstallForm = document.getElementById("easyDuneCleanInstallForm");
+if (easyDuneCleanInstallForm) {
+    easyDuneCleanInstallForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const typed = prompt("Clean reinstall will discard local Easy Dune Admin source changes and untracked build files, then rebuild Docker. Type CLEAN INSTALL to continue.");
+        if (typed !== "CLEAN INSTALL") {
+            showOutput("Clean reinstall cancelled.", easyDuneCleanInstallForm);
+            return;
+        }
+
+        document.getElementById("easyDuneCleanInstallConfirmation").value = typed;
+        await postForm("/api/easy-dune-admin-clean-install", easyDuneCleanInstallForm);
+    });
+}
 
 let termStarted = false;
 let terminalSocket = null;

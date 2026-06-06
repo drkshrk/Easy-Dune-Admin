@@ -26,13 +26,11 @@ body {
 
 .banner {
     width: 100%;
-    height: 33.5vw;
-    max-height: 560px;
-    min-height: 140px;
+    height: clamp(180px, 14vw, 480px);
     display: block;
     border: 0;
     border-bottom: 2px solid #3a2a12;
-    object-fit: cover;
+    object-fit: fill;
     object-position: center;
 }
 
@@ -71,7 +69,7 @@ body {
     white-space: nowrap;
 }
 
-.alpha-badge {
+.beta-badge {
     display: inline-block;
     margin-left: 12px;
     padding: 4px 10px;
@@ -716,6 +714,46 @@ a:hover {
     border-top: 1px solid #222;
 }
 
+.footer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.footer-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid #444;
+    border-radius: 999px;
+    background: #111;
+    color: #ddd;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.footer-badge.version {
+    color: #fff4c2;
+    border-color: #d4a94d;
+    background: #2b1208;
+}
+
+.footer-badge.redblink {
+    color: #d9d4ff;
+    border-color: #675fd0;
+    background: #111026;
+}
+
+.footer-badge.mode {
+    color: #d9d4ff;
+    border-color: #675fd0;
+    background: #111026;
+}
+
 .footer-online {
     display: flex;
     flex-wrap: wrap;
@@ -770,7 +808,7 @@ a:hover {
         justify-content: flex-start;
     }
 
-    .alpha-badge {
+    .beta-badge {
         margin-left: 6px;
         font-size: 12px;
     }
@@ -792,26 +830,26 @@ a:hover {
 <div class="app-topbar">
     <div class="title">
         Easy Dune Admin
-        <span class="alpha-badge">ALPHA</span>
+        <span class="beta-badge">BETA</span>
     </div>
     <div class="topbar-actions">
         <span class="mode-chip">{{ current_installation_mode_label }}</span>
         <nav class="top-nav" aria-label="Primary navigation">
-            <a href="/">Dashboard</a>
-            <a href="/online">Who's Online</a>
-            <a href="/map">Live Map</a>
+            <a href="/" title="Server overview, system metrics, world totals, and recent status.">Dashboard</a>
+            <a href="/online" title="Current player list, online status, account links, and viewer-safe presence.">Who's Online</a>
+            <a href="/map" title="Live world map with player, vehicle, base markers, and teleport targeting.">Live Map</a>
             {% if session.role == "vip" or session.role == "admin" %}
-            <a href="/vip">VIP Tools</a>
+            <a href="/vip" title="Self-service linked-character tools, repairs, approved grants, water, and teleport support.">VIP Tools</a>
             {% endif %}
             {% if session.role == "operator" or session.role == "admin" %}
-            <a href="/grants">Item Grants</a>
-            <a href="/server">Server Management</a>
+            <a href="/grants" title="Operator item search, grants, vehicle kits, supply packs, and inventory helper tools.">Item Grants</a>
+            <a href="/server" title="RedBlink server controls, map runtime tools, restarts, autoscaler, and admin helpers.">Server Management</a>
             {% endif %}
             {% if session.role == "admin" %}
-            <a href="/admin">Admin Panel</a>
-            <a href="/infrastructure">Infrastructure</a>
-            <a href="/users">Users</a>
-            <a href="/logs">Logs</a>
+            <a href="/admin" title="High-impact admin tools for progression, currency, market, vehicles, XP, and recovery.">Admin Panel</a>
+            <a href="/infrastructure" title="Host and Docker diagnostics, shell, installer, updater, and clean reinstall tools.">Infrastructure</a>
+            <a href="/users" title="Web account management, roles, VIP character links, and password resets.">Users</a>
+            <a href="/logs" title="Recent Easy Dune Admin action log entries for auditing admin activity.">Logs</a>
             {% endif %}
         </nav>
         <button class="menu-toggle" type="button" id="appMenuToggle" aria-controls="appMenu" aria-expanded="false" title="Server settings">&#9776;</button>
@@ -861,7 +899,13 @@ a:hover {
         <span>Loading...</span>
     </div>
     {% endif %}
-    Easy Dune Admin {{ panel_version }} - RedBlink Stack {{ redblink_stack_version }}{% if session.user %} - Mode: {{ current_installation_mode_label }}{% endif %}
+    <div class="footer-badges" aria-label="Application status">
+        <span class="footer-badge version" title="Easy Dune Admin panel version">Easy Dune Admin {{ panel_version }}</span>
+        <span class="footer-badge redblink" title="Targeted RedBlink stack compatibility">RedBlink Stack {{ redblink_stack_version }}</span>
+        {% if session.user %}
+        <span class="footer-badge mode" title="Current command routing mode">{{ current_installation_mode_label }}</span>
+        {% endif %}
+    </div>
 </div>
 
 {% if session.user %}

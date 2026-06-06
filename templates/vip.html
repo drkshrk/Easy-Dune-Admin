@@ -100,6 +100,19 @@
     margin-bottom: 0;
 }
 
+.vip-water-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
+
+.vip-water-grid form {
+    border: 1px solid #222;
+    padding: 10px;
+    background: #060606;
+}
+
 @media (max-width: 1100px) {
     .vip-tool-columns,
     .vip-teleport-workbench {
@@ -139,15 +152,25 @@ These tools only act on the in-game character linked to this web account by an a
 </div>
 
 <div class="box">
-<h2>Self Water Container Refill</h2>
+<h2>Self Water Tools</h2>
 <div class="warning info">
-Uses RedBlink v1.3.3's refill-water helper on your linked character only. This refills personal canteens, literjons, and other water fillables tied to your player; it does not refill your character hydration meter.
+Container refill uses RedBlink v1.3.3's refill-water helper on your linked character only. Hydration water packs use RedBlink's normal item grant command and add <b>WaterPack_Consumable x250</b> to your inventory for personal hydration.
 </div>
+
+<div class="vip-water-grid">
 <form id="vipRefillWaterForm">
     <label>Water Amount</label>
     <input type="number" name="amount" min="1" step="1" value="{{ default_water_refill_amount }}" required>
     <button type="submit">Refill My Water Containers</button>
 </form>
+
+<form id="vipHydrationWaterPackForm">
+    <div class="coord-box">
+        Grants WaterPack_Consumable x250 to your linked character.
+    </div>
+    <button type="submit">Grant My Hydration Water Packs</button>
+</form>
+</div>
 </div>
 
 </div>
@@ -645,6 +668,12 @@ document.getElementById("vipRefillWaterForm").addEventListener("submit", async f
     event.preventDefault();
     if (!confirm("Refill water for your linked character?")) return;
     await postForm("/api/vip-refill-water", this);
+});
+
+document.getElementById("vipHydrationWaterPackForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    if (!confirm("Grant WaterPack_Consumable x250 to your linked character for personal hydration?")) return;
+    await postForm("/api/vip-give-hydration-water-packs", this);
 });
 
 document.getElementById("vipScoutThopterForm").addEventListener("submit", async function(event) {

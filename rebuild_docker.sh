@@ -32,6 +32,21 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
+if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    export EDA_BUILD_REVISION="$(git rev-parse HEAD)"
+    if [ -n "$(git status --porcelain)" ]; then
+        export EDA_BUILD_DIRTY="1"
+    else
+        export EDA_BUILD_DIRTY="0"
+    fi
+else
+    export EDA_BUILD_REVISION="unknown"
+    export EDA_BUILD_DIRTY="unknown"
+fi
+
+echo "Build source revision: ${EDA_BUILD_REVISION}"
+echo "Build source dirty: ${EDA_BUILD_DIRTY}"
+
 echo "Stopping existing Easy Dune Admin stack..."
 docker compose -f "${COMPOSE_FILE}" down
 
@@ -55,6 +70,6 @@ echo
 
 if [ "${FOLLOW_LOGS}" = "1" ]; then
     echo "Following logs for service: ${SERVICE_NAME}"
-    echo "Press Ctrl+C to stop watching logs; the container will keep running."
+    echo "Press Ctrl+C to quit watching logs. Daemon continues to run detached."
     docker compose -f "${COMPOSE_FILE}" logs -f "${SERVICE_NAME}"
 fi

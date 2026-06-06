@@ -235,6 +235,7 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("lasgunCharacterSelect", chars);
     fillCharacterSelect("newPlayerKitCharacterSelect", chars);
     fillCharacterSelect("redblinkWaterCharacterSelect", chars);
+    fillCharacterSelect("hydrationWaterPackCharacterSelect", chars);
     fillCharacterSelect("redblinkVehicleCharacterSelect", chars);
     fillCharacterSelect("redblinkVehicleAtCharacterSelect", chars);
     fillCharacterSelect("redblinkLocationCharacterSelect", chars);
@@ -787,6 +788,13 @@ function fillNewPlayerKitPlayerId() {
 function fillRedblinkWaterPlayerId() {
     const sel = document.getElementById("redblinkWaterCharacterSelect");
     const input = document.getElementById("redblinkWaterPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
+}
+
+function fillHydrationWaterPackPlayerId() {
+    const sel = document.getElementById("hydrationWaterPackCharacterSelect");
+    const input = document.getElementById("hydrationWaterPackPlayerId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
 }

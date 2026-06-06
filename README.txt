@@ -7,13 +7,13 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.8.3-alpha
+Panel version: 0.8.4-beta
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
 Python: 3.11+
 
-This alpha is intended for private/LAN/VPN-hosted self-hosted servers.
+This beta is intended for private/LAN/VPN-hosted self-hosted servers.
 
 Easy Dune Admin is an independent webadmin project built to support RedBlink's
 MIT-licensed dune-awakening-selfhost-docker stack:
@@ -369,7 +369,7 @@ Browse to:
 
 http://SERVER-IP:8088
 
-Docker is the primary supported install method as of 0.8.3-alpha. Runtime
+Docker is the primary supported install method as of 0.8.4-beta. Runtime
 webadmin state is stored in the named Docker volume easy-dune-admin-data, so
 normal rebuilds preserve users.db, roles, and logs. Do not run
 docker compose down -v unless you intentionally want to reset the webadmin.
@@ -579,7 +579,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.3-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.4-beta
 
 Preserve local runtime data:
 
@@ -628,7 +628,7 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.8.3-alpha: Easy Dune Admin now adds a more polished
+Current highlight for 0.8.4-beta: Easy Dune Admin now adds a more polished
 role-aware console shell, connected navigation, pull-to-refresh support,
 Gradle-wrapper Android builds, and stronger visual separation for routine,
 experimental, and dangerous tools.

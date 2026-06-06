@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.8.3--alpha-blue">
+  <img src="https://img.shields.io/badge/version-0.8.4--beta-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
-  <img src="https://img.shields.io/badge/status-alpha-orange">
+  <img src="https://img.shields.io/badge/status-beta-blue">
   <img src="https://img.shields.io/badge/platform-Linux-lightgrey">
   <img src="https://img.shields.io/badge/python-3.11+-blue">
 </p>
@@ -21,11 +21,11 @@
 
 ## Status
 
-Current panel version: `0.8.3-alpha`
+Current panel version: `0.8.4-beta`
 
 Target RedBlink Stack: `v1.3.3`
 
-This alpha is intended for private/LAN/VPN-hosted self-hosted servers.
+This beta is intended for private/LAN/VPN-hosted self-hosted servers.
 
 Easy Dune Admin is an independent webadmin project built to support
 RedBlink's MIT-licensed
@@ -122,6 +122,7 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 - Mk6 Medium Ornithopter grant
 - Medium thopter kit includes 250 rockets, one RepairTool5, and 500 WeldingMaterial
 - Admin-only Lightning Gun kit grant using the normal RedBlink item grant command
+- Admin-only hydration water-pack grant using RedBlink's normal item grant command for `WaterPack_Consumable x250`
 - Admin-only SolarisCoin grant with preset amount dropdown
 - Admin-only Solari Coin inventory-stack lookup, add, and set-exact correction tools
 - Admin-only Solari Credit lookup, add, and set-exact correction tools for the live exchange/bank balance
@@ -176,6 +177,7 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 - Self-only overrepair across all inventories owned by the linked character, including equipped/hotbar rows with current durability
 - Self-only offline teleport using the linked character account/FLS ID
 - Self-only Mk6 Scout and Mk6 Medium Ornithopter grants
+- Self-only hydration water-pack grant for `WaterPack_Consumable x250`
 
 ### Server Management
 
@@ -247,6 +249,7 @@ Restore/import/delete database actions are intentionally not exposed yet.
 
 - Host diagnostics
 - Docker diagnostics
+- Easy Dune Admin GitHub update + Docker rebuild for Linux Host and Docker installs
 - Guided RedBlink installer
 - Browser-based host shell
 - Open Shell + `dune init`
@@ -354,8 +357,13 @@ chmod +x rebuild_docker.sh docker/entrypoint.sh
 ./rebuild_docker.sh
 ```
 
-Set `REDBLINK_HOST_DIR` in `.env` to the host path where RedBlink's stack lives.
-The default web port is `8088`.
+Before first start, edit `.env`:
+
+- Set `REDBLINK_HOST_DIR` to the host path where RedBlink's stack lives.
+- Set `EASY_DUNE_HOST_DIR` to the absolute host path of this Easy Dune Admin checkout if you want the Docker-mode Infrastructure update button.
+- Change `DUNE_SECRET_KEY` before sharing the panel outside your own machine.
+- Keep `ENABLE_SELF_UPDATE=1` for the one-click Infrastructure updater, or set it to `0` to hide that button.
+- The default web port is `8088`; change `EDA_PORT` if needed.
 
 Browse to:
 
@@ -363,7 +371,7 @@ Browse to:
 http://SERVER-IP:8088
 ```
 
-Docker is the primary supported install method as of `0.8.3-alpha`. Runtime
+Docker is the primary supported install method as of `0.8.4-beta`. Runtime
 webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
 normal rebuilds preserve `users.db`, roles, and logs. Do not run
 `docker compose down -v` unless you intentionally want to reset the webadmin.
@@ -467,6 +475,34 @@ Optional high-trust infrastructure features:
 export ENABLE_HOST_COMMAND_RUNNER=1
 export ENABLE_STACK_INSTALLER=1
 export ENABLE_HOST_SHELL=1
+export ENABLE_SELF_UPDATE=1
+```
+
+With `ENABLE_SELF_UPDATE=1`, the Infrastructure page can pull the latest Easy
+Dune Admin source from GitHub, refuse a dirty local checkout, run
+`FOLLOW_LOGS=0 ./rebuild_docker.sh`, and restart the webadmin Docker daemon.
+Linux Host mode runs that update inline. Docker mode starts a detached
+`easy-dune-admin-updater` container against `EASY_DUNE_HOST_DIR` so the updater
+can keep running while the webadmin container is rebuilt and replaced.
+If the local checkout is ahead of GitHub or diverged from its upstream branch,
+the updater refuses to run so a devbuild is not replaced by an older pushed
+release.
+Docker rebuilds stamp the image with the Git revision and dirty-state used to
+build it. The normal updater also refuses when the running image was built from
+dirty source or when the running image revision does not match the mounted host
+checkout. In Docker mode, those checks run as a foreground preflight first, so
+the panel reports when an update was aborted instead of only saying the detached
+updater started.
+
+The neighboring Clean Reinstall button is the repair path for a damaged install
+or an intentional forced replacement. It requires typing `CLEAN INSTALL`, resets
+the checkout to upstream GitHub, removes untracked source/build files, preserves
+`.env` and common local runtime paths, then rebuilds Docker.
+
+Docker-mode self-update also needs the absolute host checkout path:
+
+```bash
+export EASY_DUNE_HOST_DIR=/path/to/Easy-Dune-Admin
 ```
 
 Optional RedBlink installer target override:
@@ -509,7 +545,7 @@ See `DOCKER.md` for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.3-alpha
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.4-beta
 ```
 
 Preserve local runtime data:
@@ -523,7 +559,7 @@ Then update:
 ```bash
 git pull
 cp .env.docker.example .env   # only if .env does not already exist
-nano .env                     # verify REDBLINK_HOST_DIR and secrets
+nano .env                     # verify REDBLINK_HOST_DIR, EASY_DUNE_HOST_DIR, and secrets
 ./rebuild_docker.sh
 ```
 
@@ -617,7 +653,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.8.3-alpha`: Easy Dune Admin now adds a more polished role-aware console shell, connected navigation, pull-to-refresh support, Gradle-wrapper Android builds, and stronger visual separation for routine, experimental, and dangerous tools.
+Current highlight for `0.8.4-beta`: Easy Dune Admin now adds a more polished role-aware console shell, connected navigation, pull-to-refresh support, Gradle-wrapper Android builds, and stronger visual separation for routine, experimental, and dangerous tools.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 
