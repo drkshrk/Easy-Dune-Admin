@@ -6,6 +6,16 @@ All notable changes to Easy Dune Admin are documented here.
 
 ### Changed
 
+- Rebuilt the Easy Dune Admin banner asset as a wide `4096x576` header, removed the baked-in black matte, tightened the responsive banner height, and bumped the service-worker cache key for the new image.
+- Added concise hover tooltips to the top navigation links describing the tools in each section.
+- Changed the current release designator from alpha to beta across panel metadata, README badges, Docker image tag, Android wrapper version, service-worker cache key, and the visible webadmin badge.
+- Replaced the plain footer metadata line with badge chips for Easy Dune Admin version, RedBlink stack target, and current command-routing mode, with the stack/mode badges using the purple status treatment.
+- Updated version strings to `0.8.4-beta`.
+
+## 0.8.3-alpha
+
+### Changed
+
 - Added a more polished shared console shell with structured page headers, concise subtitles, and role/mode status chips across major pages.
 - Reworked the authenticated navigation into a connected top navbar with role-restricted links omitted automatically, while keeping the hamburger drawer for account and server installation settings.
 - Added hover glow and click gleam feedback to navigation links and buttons for a more deliberate admin-console feel.
@@ -30,7 +40,7 @@ All notable changes to Easy Dune Admin are documented here.
 - Updated Find the Fremen reset behavior to remove the Prescience / Spice Vision repair state and the likely Prescience gameplay tag so players can retry the Trials naturally after research-only progression edits.
 - Added a Developer-only Find the Fremen Epilogue reset that forces the Epilogue subtree to explicit incomplete state, clears pending rewards/cooldowns, and removes `Journey.Act1.Completed` for recovery after partial progression resets.
 - Updated Developer progression copy to separate legacy tag cleanup from newer community-tested progression research.
-- Updated version strings to `0.8.4-beta`.
+- Updated version strings to `0.8.3-alpha`.
 
 ## 0.8.1-alpha
 
