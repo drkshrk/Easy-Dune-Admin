@@ -66,7 +66,7 @@ Studio's SDK Manager.
 7. Enter the Easy Dune Admin URL, for example:
 
 ```text
-http://SERVER-IP:8088
+http://SERVER-IP:8089
 ```
 
 or:
@@ -90,7 +90,7 @@ before research commands are visible.
 - Suggested release wording:
 
 ```text
-Optional Android WebView wrapper. Sideload at your own discretion. Android will block the first install attempt because this APK is not from Google Play; allow installs from that source if you trust this release. The APK stores only the configured Easy Dune Admin server URL and defaults to http://127.0.0.1:8088.
+Optional Android WebView wrapper. Sideload at your own discretion. Android will block the first install attempt because this APK is not from Google Play; allow installs from that source if you trust this release. The APK stores only the configured Easy Dune Admin server URL and defaults to http://127.0.0.1:8089.
 ```
 
 ## Notes
@@ -99,4 +99,4 @@ Optional Android WebView wrapper. Sideload at your own discretion. Android will 
 - Keep the webadmin private. Do not expose it directly to the public internet.
 - Use HTTPS or a VPN if you later run it outside a trusted LAN.
 - The APK stores only the server URL in Android app preferences.
-- The distributed default URL is `http://127.0.0.1:8088` so prebuilt APKs do not expose any private LAN topology.
+- The distributed default URL is `http://127.0.0.1:8089` so prebuilt APKs do not expose any private LAN topology.

@@ -86,11 +86,11 @@ def install_werkzeug_quit_message_patch():
 if __name__ == "__main__":
     install_ctrl_c_message_stream_patch()
     install_werkzeug_quit_message_patch()
-    print("Easy Dune Admin listening on http://0.0.0.0:8088")
+    print("Easy Dune Admin listening on http://0.0.0.0:8089")
     print("Press Ctrl+C to quit watching this process. Docker daemon/container continues when launched detached.")
     socketio.run(
         app,
         host="0.0.0.0",
-        port=8088,
+        port=8089,
         allow_unsafe_werkzeug=True,
     )

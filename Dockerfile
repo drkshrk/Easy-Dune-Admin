@@ -54,10 +54,10 @@ COPY docker/entrypoint.sh /usr/local/bin/easy-dune-admin-entrypoint.sh
 RUN chmod +x /usr/local/bin/easy-dune-admin-entrypoint.sh
 
 VOLUME ["/data"]
-EXPOSE 8088
+EXPOSE 8089
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/login', timeout=3).read()"
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8089/login', timeout=3).read()"
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/easy-dune-admin-entrypoint.sh"]
 CMD ["python", "app.py"]

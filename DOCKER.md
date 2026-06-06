@@ -76,7 +76,7 @@ Admin checkout to upstream GitHub, removes untracked source/build files, keeps
 Open:
 
 ```text
-http://SERVER-IP:8088
+http://SERVER-IP:8089
 ```
 
 ## Production Notes

@@ -268,7 +268,7 @@ Restore/import/delete database actions are intentionally not exposed yet.
 Android PWA install:
 
 1. Connect the phone to the same LAN or VPN as the Easy Dune Admin server.
-2. Open Chrome on Android and browse to `http://SERVER-IP:8088`.
+2. Open Chrome on Android and browse to `http://SERVER-IP:8089`.
 3. Log in once so Chrome sees the app as usable.
 4. Open Chrome's menu and choose `Install app` or `Add to Home screen`.
 5. Launch Easy Dune Admin from the new home-screen icon.
@@ -320,7 +320,7 @@ Android APK sideload:
 4. When prompted, open the Android settings screen for that file manager/browser and allow installs from that source.
 5. Return to the APK and continue the install.
 6. Launch Easy Dune Admin.
-7. Enter your LAN/VPN/HTTPS Easy Dune Admin URL, such as `http://SERVER-IP:8088` or `https://eda.example.com`.
+7. Enter your LAN/VPN/HTTPS Easy Dune Admin URL, such as `http://SERVER-IP:8089` or `https://eda.example.com`.
 
 No rooted phone is required. To update an existing sideloaded install, build a new `EDA.apk` and install it over the old one.
 
@@ -328,7 +328,7 @@ Release packaging note:
 
 - The Android wrapper source lives in `android-app/` and should be committed with the repository.
 - The built `EDA.apk` is ignored by Git and should be attached to GitHub Releases only as an optional convenience artifact.
-- Suggested release wording: `Optional Android WebView wrapper. Sideload at your own discretion. Android will block the first install attempt because this APK is not from Google Play; allow installs from that source if you trust this release. The APK stores only the configured Easy Dune Admin server URL and defaults to http://127.0.0.1:8088.`
+- Suggested release wording: `Optional Android WebView wrapper. Sideload at your own discretion. Android will block the first install attempt because this APK is not from Google Play; allow installs from that source if you trust this release. The APK stores only the configured Easy Dune Admin server URL and defaults to http://127.0.0.1:8089.`
 
 ---
 
@@ -363,12 +363,12 @@ Before first start, edit `.env`:
 - Set `EASY_DUNE_HOST_DIR` to the absolute host path of this Easy Dune Admin checkout if you want the Docker-mode Infrastructure update button.
 - Change `DUNE_SECRET_KEY` before sharing the panel outside your own machine.
 - Keep `ENABLE_SELF_UPDATE=1` for the one-click Infrastructure updater, or set it to `0` to hide that button.
-- The default web port is `8088`; change `EDA_PORT` if needed.
+- The default web port is `8089`; change `EDA_PORT` if needed.
 
 Browse to:
 
 ```text
-http://SERVER-IP:8088
+http://SERVER-IP:8089
 ```
 
 Docker is the primary supported install method as of `0.8.4-beta`. Runtime
@@ -398,7 +398,7 @@ chmod +x start.sh restart.sh shutdown.sh
 Browse to:
 
 ```text
-http://127.0.0.1:8088
+http://127.0.0.1:8089
 ```
 
 ---

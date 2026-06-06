@@ -65,7 +65,7 @@ docker compose -f "${COMPOSE_FILE}" up --build -d
 echo
 echo "Docker rebuild complete."
 echo "Open the webadmin at the port configured by EDA_PORT, usually:"
-echo "  http://SERVER-IP:8088"
+echo "  http://SERVER-IP:8089"
 echo
 
 if [ "${FOLLOW_LOGS}" = "1" ]; then

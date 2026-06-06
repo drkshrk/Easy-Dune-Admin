@@ -30,7 +30,7 @@ import android.widget.TextView;
 public class MainActivity extends Activity {
     private static final String PREFS_NAME = "easy_dune_admin_android";
     private static final String KEY_SERVER_URL = "server_url";
-    private static final String DEFAULT_SERVER_URL = "http://127.0.0.1:8088";
+    private static final String DEFAULT_SERVER_URL = "http://127.0.0.1:8089";
 
     private SharedPreferences prefs;
     private LinearLayout root;
@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
         input.setSelectAllOnFocus(true);
         input.setTextColor(Color.WHITE);
         input.setHintTextColor(Color.GRAY);
-        input.setHint("http://SERVER-IP:8088");
+        input.setHint("http://SERVER-IP:8089");
         input.setBackgroundColor(Color.rgb(18, 18, 18));
         root.addView(input, matchWrap());
 
@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
                 .setTitle("Easy Dune Admin URL")
-                .setMessage("Use your LAN or VPN URL, for example http://SERVER-IP:8088.")
+                .setMessage("Use your LAN or VPN URL, for example http://SERVER-IP:8089.")
                 .setView(input)
                 .setPositiveButton("Save", (dialog, which) -> {
                     String normalized = normalizeUrl(input.getText().toString());

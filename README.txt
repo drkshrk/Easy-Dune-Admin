@@ -277,7 +277,7 @@ Mobile / PWA:
 Android PWA install:
 
 1. Connect the phone to the same LAN or VPN as the Easy Dune Admin server.
-2. Open Chrome on Android and browse to http://SERVER-IP:8088.
+2. Open Chrome on Android and browse to http://SERVER-IP:8089.
 3. Log in once so Chrome sees the app as usable.
 4. Open Chrome's menu and choose Install app or Add to Home screen.
 5. Launch Easy Dune Admin from the new home-screen icon.
@@ -327,7 +327,7 @@ Android APK sideload:
 5. Return to the APK and continue the install.
 6. Launch Easy Dune Admin.
 7. Enter your LAN/VPN/HTTPS Easy Dune Admin URL, such as
-   http://SERVER-IP:8088 or https://eda.example.com.
+   http://SERVER-IP:8089 or https://eda.example.com.
 
 No rooted phone is required. To update an existing sideloaded install, build a
 new EDA.apk and install it over the old one.
@@ -342,7 +342,7 @@ Release packaging note:
   own discretion. Android will block the first install attempt because this APK
   is not from Google Play; allow installs from that source if you trust this
   release. The APK stores only the configured Easy Dune Admin server URL and
-  defaults to http://127.0.0.1:8088.
+  defaults to http://127.0.0.1:8089.
 
 
 Requirements
@@ -363,11 +363,11 @@ chmod +x rebuild_docker.sh docker/entrypoint.sh
 ./rebuild_docker.sh
 
 Set REDBLINK_HOST_DIR in .env to the host path where RedBlink's stack lives.
-The default web port is 8088.
+The default web port is 8089.
 
 Browse to:
 
-http://SERVER-IP:8088
+http://SERVER-IP:8089
 
 Docker is the primary supported install method as of 0.8.4-beta. Runtime
 webadmin state is stored in the named Docker volume easy-dune-admin-data, so
@@ -395,7 +395,7 @@ chmod +x start.sh restart.sh shutdown.sh
 
 Browse to:
 
-http://127.0.0.1:8088
+http://127.0.0.1:8089
 
 
 Runtime Control
