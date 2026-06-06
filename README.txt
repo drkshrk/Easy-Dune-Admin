@@ -355,8 +355,8 @@ sudo apt install -y python3 python3-pip python3-venv git curl
 Installation
 ------------
 
-git clone https://github.com/n00bgames/Easy-Dune-Admin.git
-cd Easy-Dune-Admin
+git clone https://github.com/n00bgames/Easy-Dune-Admin.git easy-dune-admin
+cd easy-dune-admin
 cp .env.docker.example .env
 nano .env
 chmod +x rebuild_docker.sh docker/entrypoint.sh

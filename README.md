@@ -349,8 +349,8 @@ curl
 ## Installation
 
 ```bash
-git clone https://github.com/n00bgames/Easy-Dune-Admin.git
-cd Easy-Dune-Admin
+git clone https://github.com/n00bgames/Easy-Dune-Admin.git easy-dune-admin
+cd easy-dune-admin
 cp .env.docker.example .env
 nano .env
 chmod +x rebuild_docker.sh docker/entrypoint.sh
@@ -380,7 +380,7 @@ Existing Docker installs upgrading from the older `8088` default can change the
 published web port in `.env` and rebuild:
 
 ```bash
-cd /path/to/Easy-Dune-Admin
+cd /path/to/easy-dune-admin
 nano .env
 ```
 
@@ -522,7 +522,7 @@ the checkout to upstream GitHub, removes untracked source/build files, preserves
 Docker-mode self-update also needs the absolute host checkout path:
 
 ```bash
-export EASY_DUNE_HOST_DIR=/path/to/Easy-Dune-Admin
+export EASY_DUNE_HOST_DIR=/path/to/easy-dune-admin
 ```
 
 Optional RedBlink installer target override:

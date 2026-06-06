@@ -48,7 +48,7 @@ Docker mode when `.env` sets:
 
 ```bash
 ENABLE_SELF_UPDATE=1
-EASY_DUNE_HOST_DIR=/absolute/path/to/Easy-Dune-Admin
+EASY_DUNE_HOST_DIR=/absolute/path/to/easy-dune-admin
 ```
 
 Docker mode starts a detached `easy-dune-admin-updater` container from
