@@ -262,6 +262,27 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("exchangeBankSolariCharacterSelect", chars);
 }
 
+async function loadCharactersForItemEditsPage() {
+    const chars = await fetchCharacters(true);
+    fillCharacterSelect("inventoryBrowserCharacterSelect", chars);
+    fillCharacterActorSelect("itemStatEditorActorId", chars);
+    resetItemEditorPickers();
+}
+
+function fillCharacterActorSelect(selectId, characters) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    select.innerHTML = `<option value="">Select a character...</option>`;
+
+    characters.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.character_actor_id || "";
+        opt.textContent = characterLabel(c, true);
+        select.appendChild(opt);
+    });
+}
+
 function fillGrantPlayerId() {
     const sel = document.getElementById("grantCharacterSelect");
     const input = document.getElementById("grantPlayerId");
@@ -712,6 +733,7 @@ async function loadInventoryBrowserItems() {
     const summary = document.getElementById("inventoryBrowserSummary");
     const tableWrap = document.getElementById("inventoryBrowserTableWrap");
     const tbody = document.getElementById("inventoryBrowserTableBody");
+    const hasItemEditor = Boolean(document.getElementById("itemStatEditorForm"));
     const actorId = actorInput ? actorInput.value.trim() : "";
     const inventoryId = inventorySelect ? inventorySelect.value.trim() : "";
     const inventoryLabel = inventorySelect && inventorySelect.selectedOptions.length
@@ -752,6 +774,9 @@ async function loadInventoryBrowserItems() {
             const durability = item.current_durability
                 ? `${item.current_durability}/${item.max_durability || item.decayed_max_durability || "?"}`
                 : "No current durability";
+            const editCell = hasItemEditor
+                ? `<td><button type="button" onclick="selectItemForStatEditor('${escapeHtml(item.item_row_id || "")}')">Load</button></td>`
+                : "";
             return `
                 <tr>
                     <td>${escapeHtml(item.position_index || "")}</td>
@@ -760,6 +785,7 @@ async function loadInventoryBrowserItems() {
                     <td>${escapeHtml(item.stack_size || "")}</td>
                     <td>${escapeHtml(item.quality_level || "")}</td>
                     <td>${escapeHtml(durability)}</td>
+                    ${editCell}
                 </tr>
             `;
         }).join("");
@@ -768,6 +794,390 @@ async function loadInventoryBrowserItems() {
     } catch (err) {
         if (summary) summary.textContent = "Item lookup failed.";
         if (tableWrap) tableWrap.style.display = "none";
+    }
+}
+
+function setItemEditorSummary(message) {
+    const summary = document.getElementById("itemStatEditorSummary");
+    if (summary) summary.textContent = message;
+}
+
+function resetItemEditorPickers(inventoryMessage = "Select a character first...", itemMessage = "Select an inventory first...") {
+    const inventorySelect = document.getElementById("itemStatEditorInventoryId");
+    const itemSelect = document.getElementById("itemStatEditorItemRowId");
+
+    if (inventorySelect) {
+        inventorySelect.innerHTML = `<option value="">${escapeHtml(inventoryMessage)}</option>`;
+    }
+
+    if (itemSelect) {
+        itemSelect.innerHTML = `<option value="">${escapeHtml(itemMessage)}</option>`;
+    }
+}
+
+function itemEditorItemLabel(item) {
+    const durability = item.current_durability
+        ? ` | Dur ${item.current_durability}/${item.max_durability || item.decayed_max_durability || "?"}`
+        : " | No durability";
+    return `Pos ${item.position_index || "?"} | Row ${item.item_row_id || ""} | ${item.template_id || "Unknown item"} | QL ${item.quality_level || "?"} | Stack ${item.stack_size || "?"}${durability}`;
+}
+
+async function loadItemEditorInventories(preselectInventoryId = "", preselectItemRowId = "") {
+    const actorSelect = document.getElementById("itemStatEditorActorId");
+    const inventorySelect = document.getElementById("itemStatEditorInventoryId");
+    const itemSelect = document.getElementById("itemStatEditorItemRowId");
+    const actorId = actorSelect ? actorSelect.value.trim() : "";
+
+    if (!inventorySelect || !actorId) {
+        resetItemEditorPickers();
+        setItemEditorSummary("Select a character before editing item stats.");
+        return;
+    }
+
+    inventorySelect.innerHTML = `<option value="">Loading inventories...</option>`;
+    if (itemSelect) itemSelect.innerHTML = `<option value="">Select an inventory first...</option>`;
+
+    try {
+        const response = await fetch(`/api/character-inventories?character_actor_id=${encodeURIComponent(actorId)}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            resetItemEditorPickers(data.error || "Inventory lookup failed.");
+            setItemEditorSummary(data.error || "Inventory lookup failed.");
+            return;
+        }
+
+        const inventories = data.inventories || [];
+        if (inventories.length === 0) {
+            resetItemEditorPickers("No inventories found.", "Select an inventory first...");
+            setItemEditorSummary("No inventories found for this character.");
+            return;
+        }
+
+        inventorySelect.innerHTML = `<option value="">Select an inventory...</option>`;
+        inventories.forEach(inv => {
+            const opt = document.createElement("option");
+            opt.value = inv.inventory_id || "";
+            opt.textContent = `${inv.inventory_label || "Inventory"} | ID ${inv.inventory_id || ""} | Items ${inv.item_count || "0"}`;
+            inventorySelect.appendChild(opt);
+        });
+
+        if (preselectInventoryId) {
+            inventorySelect.value = preselectInventoryId;
+            await loadItemEditorItems(preselectItemRowId);
+        } else {
+            setItemEditorSummary("Select an inventory, then choose an item row.");
+        }
+    } catch (err) {
+        resetItemEditorPickers("Inventory lookup failed.");
+        setItemEditorSummary("Inventory lookup failed.");
+    }
+}
+
+async function loadItemEditorItems(preselectItemRowId = "") {
+    const actorSelect = document.getElementById("itemStatEditorActorId");
+    const inventorySelect = document.getElementById("itemStatEditorInventoryId");
+    const itemSelect = document.getElementById("itemStatEditorItemRowId");
+    const actorId = actorSelect ? actorSelect.value.trim() : "";
+    const inventoryId = inventorySelect ? inventorySelect.value.trim() : "";
+
+    if (!itemSelect || !actorId || !inventoryId) {
+        if (itemSelect) itemSelect.innerHTML = `<option value="">Select an inventory first...</option>`;
+        setItemEditorSummary("Select an inventory, then choose an item row.");
+        return;
+    }
+
+    itemSelect.innerHTML = `<option value="">Loading item rows...</option>`;
+
+    try {
+        const url = `/api/character-inventory-items?character_actor_id=${encodeURIComponent(actorId)}&inventory_id=${encodeURIComponent(inventoryId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.ok) {
+            itemSelect.innerHTML = `<option value="">${escapeHtml(data.error || "Item lookup failed.")}</option>`;
+            setItemEditorSummary(data.error || "Item lookup failed.");
+            return;
+        }
+
+        const items = data.items || [];
+        if (items.length === 0) {
+            itemSelect.innerHTML = `<option value="">No items found.</option>`;
+            setItemEditorSummary("No item rows found in this inventory.");
+            return;
+        }
+
+        itemSelect.innerHTML = `<option value="">Select row / position...</option>`;
+        items.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.item_row_id || "";
+            opt.textContent = itemEditorItemLabel(item);
+            itemSelect.appendChild(opt);
+        });
+
+        if (preselectItemRowId) {
+            itemSelect.value = preselectItemRowId;
+            await loadItemStatEditorDetail();
+        } else {
+            setItemEditorSummary(`${items.length} item row(s) found. Select a row to load stats.`);
+        }
+    } catch (err) {
+        itemSelect.innerHTML = `<option value="">Item lookup failed.</option>`;
+        setItemEditorSummary("Item lookup failed.");
+    }
+}
+
+async function selectItemForStatEditor(itemRowId) {
+    const actorInput = document.getElementById("inventoryBrowserActorId");
+    const inventorySelect = document.getElementById("inventoryBrowserInventorySelect");
+    const editorActor = document.getElementById("itemStatEditorActorId");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+    const inventoryId = inventorySelect ? inventorySelect.value.trim() : "";
+
+    if (editorActor) editorActor.value = actorId;
+    await loadItemEditorInventories(inventoryId, itemRowId || "");
+}
+
+function fillItemStatEditorFields(item) {
+    const stackInput = document.getElementById("itemStatEditorStackSize");
+    const qualityInput = document.getElementById("itemStatEditorQualityLevel");
+    const currentInput = document.getElementById("itemStatEditorCurrentDurability");
+    const decayedInput = document.getElementById("itemStatEditorDecayedMaxDurability");
+    const maxInput = document.getElementById("itemStatEditorMaxDurability");
+    const statsInput = document.getElementById("itemStatEditorStatsJson");
+    const pathInput = document.getElementById("itemStatEditorJsonPath");
+    const pathValueInput = document.getElementById("itemStatEditorJsonPathValue");
+    const replaceStats = document.getElementById("itemStatEditorReplaceStatsCheck");
+    const deletePath = document.getElementById("itemStatEditorDeleteJsonPathCheck");
+
+    if (stackInput) stackInput.value = item.stack_size || "";
+    if (qualityInput) qualityInput.value = item.quality_level || "";
+    if (currentInput) currentInput.value = item.current_durability || "";
+    if (decayedInput) decayedInput.value = item.decayed_max_durability || "";
+    if (maxInput) maxInput.value = item.max_durability || "";
+    if (statsInput) statsInput.value = item.stats_pretty || JSON.stringify(item.stats || {}, null, 2);
+    if (pathInput) pathInput.value = "";
+    if (pathValueInput) pathValueInput.value = "";
+    if (replaceStats) replaceStats.checked = false;
+    if (deletePath) deletePath.checked = false;
+    window.latestItemStatEditorTemplateId = item.template_id || "";
+}
+
+async function loadItemStatEditorDetail() {
+    const actorInput = document.getElementById("itemStatEditorActorId");
+    const inventoryInput = document.getElementById("itemStatEditorInventoryId");
+    const itemInput = document.getElementById("itemStatEditorItemRowId");
+    const actorId = actorInput ? actorInput.value.trim() : "";
+    const inventoryId = inventoryInput ? inventoryInput.value.trim() : "";
+    const itemRowId = itemInput ? itemInput.value.trim() : "";
+
+    if (!actorId || !inventoryId || !itemRowId) {
+        setItemEditorSummary("Pick an item row before loading editor details.");
+        return;
+    }
+
+    setItemEditorSummary("Loading selected item stats...");
+
+    try {
+        const url =
+            `/api/character-inventory-item-detail?character_actor_id=${encodeURIComponent(actorId)}&inventory_id=${encodeURIComponent(inventoryId)}&item_row_id=${encodeURIComponent(itemRowId)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.ok) {
+            setItemEditorSummary(data.error || "Item stat lookup failed.");
+            return;
+        }
+
+        const item = data.item || {};
+        fillItemStatEditorFields(item);
+        setItemEditorSummary(
+            `Loaded row ${item.item_row_id || itemRowId} | ${item.template_id || "Unknown item"} | ` +
+            `Stack ${item.stack_size || "?"} | QL ${item.quality_level || "?"} | ` +
+            `Durability ${item.current_durability || "none"}/${item.max_durability || item.decayed_max_durability || "?"}`
+        );
+    } catch (err) {
+        setItemEditorSummary("Item stat lookup failed.");
+    }
+}
+
+function setTemplateJsonOutput(text) {
+    const output = document.getElementById("itemTemplateJsonOutput");
+    if (output) output.textContent = text || "Template row JSON will appear here.";
+}
+
+function selectedItemTemplateId() {
+    const itemSelect = document.getElementById("itemStatEditorItemRowId");
+    if (!itemSelect || !itemSelect.selectedOptions.length) {
+        return window.latestItemStatEditorTemplateId || "";
+    }
+
+    const label = itemSelect.selectedOptions[0].textContent || "";
+    const parts = label.split("|").map(part => part.trim());
+    const templatePart = parts.find(part => part && !part.startsWith("Pos ") && !part.startsWith("Row ") && !part.startsWith("QL ") && !part.startsWith("Stack ") && !part.startsWith("Dur ") && part !== "No durability");
+    return (templatePart || window.latestItemStatEditorTemplateId || "").trim();
+}
+
+function useSelectedItemTemplateForResearch() {
+    const templateId = selectedItemTemplateId();
+    const tableQuery = document.getElementById("itemTemplateTableQuery");
+    const catalogQuery = document.getElementById("localItemCatalogQuery");
+
+    if (!templateId) {
+        setTemplateJsonOutput("Load an item first, then use its template ID for research.");
+        return;
+    }
+
+    if (tableQuery) tableQuery.value = templateId;
+    if (catalogQuery) catalogQuery.value = templateId;
+    loadItemTemplateRows();
+    loadLocalItemTemplateCatalog();
+}
+
+function renderTemplateTableOptions(tables) {
+    const select = document.getElementById("itemTemplateTableSelect");
+    const populatedOnly = document.getElementById("itemTemplatePopulatedOnly");
+    if (!select) return;
+
+    const visibleTables = populatedOnly && populatedOnly.checked
+        ? tables.filter(table => Number(table.row_count || 0) > 0)
+        : tables;
+
+    select.innerHTML = `<option value="">Select a template table...</option>`;
+
+    visibleTables.forEach(table => {
+        const opt = document.createElement("option");
+        opt.value = table.table_ref || "";
+        const columns = (table.columns || []).slice(0, 8).map(col => col.name).join(", ");
+        const rowCount = table.row_count === null || table.row_count === undefined
+            ? "unknown rows"
+            : `${table.row_count} rows`;
+        opt.textContent = `${table.table_ref || ""} | ${rowCount} | ${table.column_count || "?"} cols | ${columns}`;
+        select.appendChild(opt);
+    });
+
+    const preferred = visibleTables.find(table => table.table_ref === "item.templates");
+    if (preferred && Number(preferred.row_count || 0) > 0) {
+        select.value = preferred.table_ref;
+    } else if (visibleTables.length > 0) {
+        select.value = visibleTables[0].table_ref || "";
+    }
+}
+
+async function loadItemTemplateTables() {
+    const summary = document.getElementById("itemTemplateTableSummary");
+    const results = document.getElementById("itemTemplateTableResults");
+    if (summary) summary.textContent = "Discovering runtime template tables...";
+    if (results) results.innerHTML = "";
+
+    try {
+        const response = await fetch("/api/item-template-tables");
+        const data = await response.json();
+
+        if (!data.ok) {
+            if (summary) summary.textContent = data.error || "Template table discovery failed.";
+            return;
+        }
+
+        window.latestItemTemplateTables = data.tables || [];
+        const tables = window.latestItemTemplateTables;
+        renderTemplateTableOptions(tables);
+        const populatedCount = tables.filter(table => Number(table.row_count || 0) > 0).length;
+        const visibleCount = document.getElementById("itemTemplateTableSelect")
+            ? document.getElementById("itemTemplateTableSelect").options.length - 1
+            : populatedCount;
+        if (summary) {
+            summary.textContent = `${tables.length} candidate table(s) found; ${populatedCount} populated; ${visibleCount} shown.`;
+        }
+
+        const select = document.getElementById("itemTemplateTableSelect");
+        if (select && select.value) {
+            await loadItemTemplateRows();
+        }
+    } catch (err) {
+        if (summary) summary.textContent = "Template table discovery failed.";
+    }
+}
+
+async function loadItemTemplateRows() {
+    const select = document.getElementById("itemTemplateTableSelect");
+    const queryInput = document.getElementById("itemTemplateTableQuery");
+    const summary = document.getElementById("itemTemplateTableSummary");
+    const results = document.getElementById("itemTemplateTableResults");
+    const tableRef = select ? select.value.trim() : "";
+    const query = queryInput ? queryInput.value.trim() : "";
+
+    if (!tableRef) {
+        if (summary) summary.textContent = "Select a template table first.";
+        return;
+    }
+
+    if (summary) summary.textContent = "Loading template rows...";
+    if (results) results.innerHTML = "";
+
+    try {
+        const url = `/api/item-template-table-rows?table_ref=${encodeURIComponent(tableRef)}&query=${encodeURIComponent(query)}&limit=25`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.ok) {
+            if (summary) summary.textContent = data.error || "Template row lookup failed.";
+            return;
+        }
+
+        const rows = data.rows || [];
+        if (summary) summary.textContent = `${tableRef}: ${rows.length} row(s)${query ? ` matching "${query}"` : ""}.`;
+        if (!results) return;
+
+        if (rows.length === 0) {
+            results.innerHTML = "";
+            setTemplateJsonOutput("No runtime template rows matched.");
+            return;
+        }
+
+        results.innerHTML = "";
+        rows.forEach((row, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "template-result-button";
+            button.textContent = `${index + 1}. ${row.row_label || "row"}`;
+            button.addEventListener("click", () => setTemplateJsonOutput(row.row_json_pretty || row.row_json || ""));
+            results.appendChild(button);
+        });
+
+        setTemplateJsonOutput(rows[0].row_json_pretty || rows[0].row_json || "");
+    } catch (err) {
+        if (summary) summary.textContent = "Template row lookup failed.";
+    }
+}
+
+async function loadLocalItemTemplateCatalog() {
+    const queryInput = document.getElementById("localItemCatalogQuery");
+    const summary = document.getElementById("localItemCatalogSummary");
+    const query = queryInput ? queryInput.value.trim() : "";
+
+    if (summary) summary.textContent = "Searching local item catalog...";
+
+    try {
+        const url = `/api/local-item-template-catalog?query=${encodeURIComponent(query)}&limit=25`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.ok) {
+            if (summary) summary.textContent = data.error || "Local catalog lookup failed.";
+            return;
+        }
+
+        const rows = data.rows || [];
+        if (summary) summary.textContent = `${rows.length} local catalog row(s)${query ? ` matching "${query}"` : ""}.`;
+        if (rows.length === 0) {
+            setTemplateJsonOutput("No local catalog rows matched.");
+            return;
+        }
+
+        setTemplateJsonOutput(rows.map(row => row.catalog_json_pretty || "").join("\n\n"));
+    } catch (err) {
+        if (summary) summary.textContent = "Local catalog lookup failed.";
     }
 }
 

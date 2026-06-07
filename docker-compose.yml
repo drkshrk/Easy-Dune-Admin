@@ -6,7 +6,7 @@ services:
       args:
         EDA_BUILD_REVISION: "${EDA_BUILD_REVISION:-unknown}"
         EDA_BUILD_DIRTY: "${EDA_BUILD_DIRTY:-unknown}"
-    image: easy-dune-admin:0.8.4-beta
+    image: easy-dune-admin:0.8.5-beta
     container_name: easy-dune-admin
     restart: unless-stopped
     ports:

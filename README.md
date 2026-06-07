@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.8.4--beta-blue">
+  <img src="https://img.shields.io/badge/version-0.8.5--beta-blue">
   <img src="https://img.shields.io/badge/license-GPLv3-green">
   <img src="https://img.shields.io/badge/RedBlink-v1.3.3-blue">
   <img src="https://img.shields.io/badge/status-beta-blue">
@@ -21,7 +21,7 @@
 
 ## Status
 
-Current panel version: `0.8.4-beta`
+Current panel version: `0.8.5-beta`
 
 Target RedBlink Stack: `v1.3.3`
 
@@ -371,7 +371,7 @@ Browse to:
 http://SERVER-IP:8089
 ```
 
-Docker is the primary supported install method as of `0.8.4-beta`. Runtime
+Docker is the primary supported install method as of `0.8.5-beta`. Runtime
 webadmin state is stored in the named Docker volume `easy-dune-admin-data`, so
 normal rebuilds preserve `users.db`, roles, and logs. Do not run
 `docker compose down -v` unless you intentionally want to reset the webadmin.
@@ -570,7 +570,7 @@ See `DOCKER.md` for setup notes.
 Before replacing a running copy, back it up:
 
 ```bash
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.4-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.5-beta
 ```
 
 Preserve local runtime data:
@@ -678,7 +678,7 @@ Viewer accounts are intentionally privacy-limited. They can see viewer-safe stat
 
 See `CHANGELOG.md` for full release history.
 
-Current highlight for `0.8.4-beta`: Easy Dune Admin now adds a more polished role-aware console shell, connected navigation, pull-to-refresh support, Gradle-wrapper Android builds, and stronger visual separation for routine, experimental, and dangerous tools.
+Current highlight for `0.8.5-beta`: Easy Dune Admin now adds an admin-only Item Edits workspace for inspecting existing inventory rows, editing known item columns, and applying targeted raw stats JSON path changes for deeper item-stat research.
 
 Looking ahead: faction manipulation tools are a likely future focus after faction membership and the related database state can be captured and tested safely.
 

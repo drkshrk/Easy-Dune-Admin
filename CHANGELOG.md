@@ -2,6 +2,21 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
+## 0.8.5-beta
+
+### Added
+
+- Added an admin-only `Item Edits` navigation section for inspecting existing character inventory rows outside the broader Admin Panel.
+- Added a selected item editor that loads one character-owned `dune.items` row, shows stack size, quality level, durability values, and pretty-printed raw `stats` JSON.
+- Added guarded item edit routes for stack size, quality level, known durability stat paths, full raw stats JSON replacement, and targeted raw stats JSON path set/remove operations for deeper item-stat research such as damage-code discovery.
+- Expanded the Item Edits layout with a larger raw JSON workspace plus editor-side character, inventory, and row/position dropdowns that show the selected target before submitting edits.
+- Added a read-only Template DB Inspector on Item Edits for discovering runtime template tables such as `item.templates`, searching rows as JSON, and comparing results against the bundled IceHunter / Ryan Wilson item-data catalog.
+- Improved template table discovery with row counts, populated-table sorting, and a default populated-only filter so empty candidate tables do not dominate the inspector.
+
+### Changed
+
+- Updated version strings to `0.8.5-beta`.
+
 ## 0.8.4-beta
 
 ### Changed

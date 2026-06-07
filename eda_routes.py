@@ -205,6 +205,15 @@ def admin_page():
     return render_template("admin.html")
 
 
+@app.route("/item-edits")
+def item_edits_page():
+    if not logged_in():
+        return redirect("/login")
+    if not is_admin():
+        return "Forbidden", 403
+    return render_template("item_edits.html")
+
+
 @app.route("/developer", methods=["GET", "POST"])
 def developer_page():
     if not logged_in():
@@ -432,6 +441,77 @@ def api_character_inventory_items():
         return jsonify({"ok": True, "items": items})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Inventory item lookup failed: {exc}"}), 500
+
+
+@app.route("/api/character-inventory-item-detail")
+def api_character_inventory_item_detail():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.args.get("character_actor_id", "").strip()
+    inventory_id = request.args.get("inventory_id", "").strip()
+    item_row_id = request.args.get("item_row_id", "").strip()
+    if not character_actor_id or not inventory_id or not item_row_id:
+        return jsonify({"ok": False, "error": "missing character actor ID, inventory ID, or item row ID"}), 400
+
+    try:
+        item = get_character_inventory_item_detail(character_actor_id, inventory_id, item_row_id)
+        return jsonify({"ok": True, "item": item})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Item stat lookup failed: {exc}"}), 500
+
+
+@app.route("/api/item-template-tables")
+def api_item_template_tables():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    try:
+        tables = get_item_template_tables()
+        return jsonify({"ok": True, "tables": tables})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Template table discovery failed: {exc}"}), 500
+
+
+@app.route("/api/item-template-table-rows")
+def api_item_template_table_rows():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    table_ref = request.args.get("table_ref", "").strip()
+    query = request.args.get("query", "").strip()
+    limit_value = request.args.get("limit", "25").strip()
+    if not table_ref:
+        return jsonify({"ok": False, "error": "missing template table"}), 400
+
+    try:
+        rows = get_item_template_table_rows(table_ref, query, limit_value)
+        return jsonify({"ok": True, "rows": rows})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Template row lookup failed: {exc}"}), 500
+
+
+@app.route("/api/local-item-template-catalog")
+def api_local_item_template_catalog():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    query = request.args.get("query", "").strip()
+    limit_value = request.args.get("limit", "25").strip()
+
+    try:
+        rows = search_local_item_template_catalog(query, limit_value)
+        return jsonify({"ok": True, "rows": rows})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Local catalog lookup failed: {exc}"}), 500
 
 
 @app.route("/api/online-players")
@@ -2318,6 +2398,44 @@ def api_overrepair_item():
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Single item overrepair failed: {exc}"}), 500
+
+
+@app.route("/api/item-stat-editor", methods=["POST"])
+def api_item_stat_editor():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    inventory_id = request.form.get("inventory_id", "").strip()
+    item_row_id = request.form.get("item_row_id", "").strip()
+    replace_stats = request.form.get("replace_stats", "").strip() == "1"
+
+    try:
+        sql = build_update_item_editor_sql(
+            character_actor_id,
+            inventory_id,
+            item_row_id,
+            request.form.get("stack_size", ""),
+            request.form.get("quality_level", ""),
+            request.form.get("current_durability", ""),
+            request.form.get("decayed_max_durability", ""),
+            request.form.get("max_durability", ""),
+            request.form.get("stats_json", ""),
+            replace_stats,
+            request.form.get("json_path", ""),
+            request.form.get("json_path_value", ""),
+            request.form.get("delete_json_path", "").strip() == "1",
+        )
+        output = run_psql(sql, timeout=60)
+        log_action(
+            session["user"],
+            f"edited item row {item_row_id} for actor {character_actor_id} inventory {inventory_id}",
+        )
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Item stat edit failed: {exc}"}), 500
 
 
 @app.route("/api/spawn-map", methods=["POST"])

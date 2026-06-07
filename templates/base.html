@@ -843,6 +843,9 @@ a:hover {
             {% endif %}
             {% if session.role == "operator" or session.role == "admin" %}
             <a href="/grants" title="Operator item search, grants, vehicle kits, supply packs, and inventory helper tools.">Item Grants</a>
+            {% if session.role == "admin" %}
+            <a href="/item-edits" title="Inspect and edit existing inventory item rows, stack/quality values, durability stats, and raw item JSON paths.">Item Edits</a>
+            {% endif %}
             <a href="/server" title="RedBlink server controls, map runtime tools, restarts, autoscaler, and admin helpers.">Server Management</a>
             {% endif %}
             {% if session.role == "admin" %}

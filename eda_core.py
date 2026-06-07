@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.4-beta
+Panel version: 0.8.5-beta
 RedBlink stack compatibility target: v1.3.3
 
-0.8.4-beta RedBlink v1.3.3 support:
+0.8.5-beta RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -56,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.8.4-beta"
+PANEL_VERSION = "0.8.5-beta"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -4368,6 +4368,551 @@ def get_character_inventory_items(character_actor_id, inventory_id):
         )
 
     return items
+
+
+def get_character_inventory_item_detail(character_actor_id, inventory_id, item_row_id):
+    """
+    Return one character-owned item row with its raw stats JSON.
+
+    This powers the admin item editor. The actor and inventory checks are kept
+    in the SQL so a hand-edited browser request cannot inspect another
+    character's item by row id alone.
+    """
+    actor_id = int(character_actor_id)
+    inv_id = int(inventory_id)
+    row_id = int(item_row_id)
+
+    sql = f"""
+    SELECT jsonb_build_object(
+        'item_row_id', i.id,
+        'inventory_id', i.inventory_id,
+        'template_id', COALESCE(i.template_id, ''),
+        'position_index', COALESCE(i.position_index::text, ''),
+        'stack_size', COALESCE(i.stack_size::text, ''),
+        'quality_level', COALESCE(i.quality_level::text, ''),
+        'current_durability', COALESCE(i.stats #>> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}', ''),
+        'decayed_max_durability', COALESCE(i.stats #>> '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}', ''),
+        'max_durability', COALESCE(i.stats #>> '{{FItemStackAndDurabilityStats,1,MaxDurability}}', ''),
+        'has_item_durability_stats', (i.stats #> '{{FItemStackAndDurabilityStats,1}}') IS NOT NULL,
+        'stats', COALESCE(i.stats, '{{}}'::jsonb)
+    )::text
+    FROM dune.items i
+    JOIN dune.inventories inv
+        ON inv.id = i.inventory_id
+    WHERE inv.actor_id = {actor_id}
+      AND inv.id = {inv_id}
+      AND i.id = {row_id}
+    LIMIT 1;
+    """
+
+    rows = _run_psql_tsv(sql)
+    if not rows:
+        raise ValueError("item row was not found for that character and inventory")
+
+    item = json.loads(rows[0])
+    item["stats_pretty"] = json.dumps(item.get("stats") or {}, indent=2, sort_keys=True)
+    return item
+
+
+def _safe_db_identifier(value, label):
+    """
+    Validate one PostgreSQL identifier used by read-only template inspectors.
+
+    The Item Edits template research UI accepts schema/table names discovered
+    from information_schema. Keep this strict so a hand-edited browser request
+    cannot turn an inspector into arbitrary SQL.
+    """
+    raw = (value or "").strip()
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,62}", raw):
+        raise ValueError(f"invalid {label}")
+    return raw
+
+
+def _quoted_identifier(value):
+    """Quote a validated PostgreSQL identifier."""
+    return '"' + value.replace('"', '""') + '"'
+
+
+def _split_template_table_ref(table_ref):
+    raw = (table_ref or "").strip()
+    if "." not in raw:
+        raise ValueError("select a schema-qualified template table")
+
+    schema_name, table_name = raw.split(".", 1)
+    schema_name = _safe_db_identifier(schema_name, "schema name")
+    table_name = _safe_db_identifier(table_name, "table name")
+    return schema_name, table_name
+
+
+def get_item_template_tables():
+    """
+    Discover runtime DB tables that may contain item template data.
+
+    We explicitly include the likely `item.templates` table and then broaden to
+    table/schema names containing template/item/catalog. This is read-only
+    schema discovery for the Item Edits research panel.
+    """
+    sql = """
+    SELECT jsonb_build_object(
+        'schema_name', c.table_schema,
+        'table_name', c.table_name,
+        'table_ref', c.table_schema || '.' || c.table_name,
+        'column_count', COUNT(*),
+        'columns', jsonb_agg(
+            jsonb_build_object(
+                'name', c.column_name,
+                'type', c.data_type
+            )
+            ORDER BY c.ordinal_position
+        )
+    )::text
+    FROM information_schema.columns c
+    WHERE c.table_schema NOT IN ('information_schema', 'pg_catalog')
+      AND (
+          c.table_schema || '.' || c.table_name = 'item.templates'
+          OR c.table_schema ILIKE '%item%'
+          OR c.table_name ILIKE '%template%'
+          OR c.table_name ILIKE '%catalog%'
+          OR c.table_name ILIKE '%item%'
+      )
+    GROUP BY c.table_schema, c.table_name
+    ORDER BY
+        CASE WHEN c.table_schema || '.' || c.table_name = 'item.templates' THEN 0 ELSE 1 END,
+        c.table_schema,
+        c.table_name
+    LIMIT 80;
+    """
+
+    tables = []
+    for row in _run_psql_tsv(sql, timeout=20):
+        if not row:
+            continue
+        try:
+            table = json.loads(row)
+            schema_name, table_name = _split_template_table_ref(table.get("table_ref", ""))
+            safe_table = f"{_quoted_identifier(schema_name)}.{_quoted_identifier(table_name)}"
+
+            try:
+                count_rows = _run_psql_tsv(f"SELECT COUNT(*) FROM {safe_table};", timeout=10)
+                table["row_count"] = int(count_rows[0]) if count_rows else 0
+            except Exception:
+                table["row_count"] = None
+
+            tables.append(table)
+        except json.JSONDecodeError:
+            continue
+
+    return sorted(
+        tables,
+        key=lambda table: (
+            0 if int(table.get("row_count") or 0) > 0 else 1,
+            0 if table.get("table_ref") == "item.templates" else 1,
+            table.get("table_ref", ""),
+        ),
+    )
+
+
+def get_item_template_table_rows(table_ref, query="", limit_value=25):
+    """
+    Return compact JSON rows from a discovered template table.
+
+    This intentionally searches against `to_jsonb(row)::text` because we do not
+    know which columns a given server build exposes. The result remains
+    read-only, capped, and schema/table-name validated.
+    """
+    schema_name, table_name = _split_template_table_ref(table_ref)
+    safe_limit = max(1, min(int(limit_value or 25), 50))
+    safe_table = f"{_quoted_identifier(schema_name)}.{_quoted_identifier(table_name)}"
+    raw_query = (query or "").strip()
+
+    where_sql = ""
+    if raw_query:
+        safe_query = raw_query.replace("'", "''")
+        where_sql = f"WHERE to_jsonb(t)::text ILIKE '%{safe_query}%'"
+
+    sql = f"""
+    SELECT
+        COALESCE(
+            NULLIF(to_jsonb(t)->>'template_id', ''),
+            NULLIF(to_jsonb(t)->>'id', ''),
+            NULLIF(to_jsonb(t)->>'name', ''),
+            NULLIF(to_jsonb(t)->>'display_name', ''),
+            NULLIF(to_jsonb(t)->>'class', ''),
+            'row'
+        ) AS row_label,
+        to_jsonb(t)::text AS row_json
+    FROM {safe_table} t
+    {where_sql}
+    LIMIT {safe_limit};
+    """
+
+    rows = []
+    for line in _run_psql_tsv(sql, timeout=25):
+        parts = line.split("\t", 1)
+        if len(parts) < 2:
+            continue
+        row_label, row_json = parts
+        try:
+            parsed = json.loads(row_json)
+            pretty = json.dumps(parsed, indent=2, sort_keys=True)
+        except json.JSONDecodeError:
+            pretty = row_json
+        rows.append(
+            {
+                "row_label": row_label,
+                "row_json": row_json,
+                "row_json_pretty": pretty,
+            }
+        )
+
+    return rows
+
+
+def search_local_item_template_catalog(query, limit_value=25):
+    """
+    Search the bundled IceHunter item-data catalog for comparison.
+
+    This catalog is useful for names, category, tier, rarity, durability, stack
+    size, tradeability, and icons, but it does not currently include detailed
+    weapon damage codes or per-template damage formulas.
+    """
+    raw_query = (query or "").strip().casefold()
+    safe_limit = max(1, min(int(limit_value or 25), 50))
+    root = {}
+
+    if MARKET_ITEM_DATA_FILE.exists():
+        with open(MARKET_ITEM_DATA_FILE, encoding="utf-8") as f:
+            root = json.load(f)
+
+    items = root.get("items") or {}
+    matches = []
+
+    for template_id, item in items.items():
+        haystack = " ".join(
+            [
+                template_id,
+                str(item.get("name", "")),
+                str(item.get("category", "")),
+                str(item.get("rarity", "")),
+                str(item.get("tier", "")),
+            ]
+        ).casefold()
+
+        if raw_query and raw_query not in haystack:
+            continue
+
+        payload = {"template_id": template_id, **item}
+        matches.append(
+            {
+                "template_id": template_id,
+                "name": item.get("name", ""),
+                "category": item.get("category", ""),
+                "tier": item.get("tier", ""),
+                "rarity": item.get("rarity", ""),
+                "catalog_json_pretty": json.dumps(payload, indent=2, sort_keys=True),
+            }
+        )
+
+        if len(matches) >= safe_limit:
+            break
+
+    return matches
+
+
+def _optional_int_from_form(value, field_name, minimum=None):
+    """
+    Validate an optional integer admin field and return None when blank.
+
+    Blank fields mean "leave the current database value alone"; nonblank fields
+    are parsed up front so malformed browser input never reaches SQL.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return None
+
+    parsed = int(raw)
+    if minimum is not None and parsed < minimum:
+        raise ValueError(f"{field_name} must be {minimum} or higher")
+    return parsed
+
+
+def _optional_float_from_form(value, field_name):
+    """Validate an optional numeric item-stat field."""
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    return float(raw)
+
+
+def _jsonb_literal_from_value(value):
+    """
+    Convert validated Python JSON data into a quoted PostgreSQL jsonb literal.
+
+    The browser can submit raw item stats JSON for research/admin repair work,
+    but it is parsed by Python first and re-serialized here before SQL is built.
+    """
+    normalized = json.dumps(value, separators=(",", ":"), sort_keys=True)
+    return "'" + normalized.replace("'", "''") + "'::jsonb"
+
+
+def _parse_item_stats_path(value):
+    """
+    Parse an admin-entered JSON path for dune.items.stats.
+
+    Supports either PostgreSQL-style "{Root,1,Field}" paths or easier dotted
+    paths such as "Root.1.Field". The accepted character set is intentionally
+    conservative because the path is later converted into a SQL text array.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return []
+
+    if raw.startswith("{") and raw.endswith("}"):
+        parts = [part.strip().strip('"') for part in raw[1:-1].split(",")]
+    else:
+        dotted = raw.replace("[", ".").replace("]", "")
+        parts = [part.strip() for part in dotted.split(".")]
+
+    cleaned = []
+    for part in parts:
+        if not part:
+            raise ValueError("item stats path contains an empty segment")
+        if not re.fullmatch(r"[A-Za-z0-9_:-]{1,96}", part):
+            raise ValueError("item stats path contains unsupported characters")
+        cleaned.append(part)
+
+    if len(cleaned) > 16:
+        raise ValueError("item stats path is too deep")
+    return cleaned
+
+
+def _text_array_literal(parts):
+    """Return a PostgreSQL text[] literal for a previously validated path."""
+    if not parts:
+        return "NULL::text[]"
+    quoted = ", ".join("'" + part.replace("'", "''") + "'" for part in parts)
+    return f"ARRAY[{quoted}]::text[]"
+
+
+def build_update_item_editor_sql(
+    character_actor_id,
+    inventory_id,
+    item_row_id,
+    stack_size_value="",
+    quality_level_value="",
+    current_durability_value="",
+    decayed_max_durability_value="",
+    max_durability_value="",
+    stats_json_value="",
+    replace_stats=False,
+    json_path_value="",
+    json_path_json_value="",
+    delete_json_path=False,
+):
+    """
+    Build admin-only SQL for editing one item row.
+
+    Stack size and quality level are normal dune.items columns. Durability
+    values live inside the observed item stats JSON path:
+        FItemStackAndDurabilityStats -> 1 -> CurrentDurability
+
+    Unknown/custom item stats can be edited by replacing the full JSON payload,
+    but the payload is validated and re-serialized before it is inserted into
+    the SQL statement. The UPDATE still requires the item to belong to the
+    selected character and inventory.
+    """
+    actor_id = int(character_actor_id)
+    inv_id = int(inventory_id)
+    row_id = int(item_row_id)
+
+    stack_size = _optional_int_from_form(stack_size_value, "stack size", minimum=0)
+    quality_level = _optional_int_from_form(quality_level_value, "quality level", minimum=0)
+    current_durability = _optional_float_from_form(current_durability_value, "current durability")
+    decayed_max_durability = _optional_float_from_form(decayed_max_durability_value, "decayed max durability")
+    max_durability = _optional_float_from_form(max_durability_value, "max durability")
+
+    stats_literal = "NULL::jsonb"
+    if replace_stats:
+        raw_stats = (stats_json_value or "").strip()
+        if not raw_stats:
+            raise ValueError("stats JSON is required when replacing the raw stats payload")
+        replacement_stats = json.loads(raw_stats)
+        if not isinstance(replacement_stats, dict):
+            raise ValueError("raw stats replacement must be a JSON object")
+        stats_literal = _jsonb_literal_from_value(replacement_stats)
+
+    json_path = _parse_item_stats_path(json_path_value)
+    json_path_sql = _text_array_literal(json_path)
+    json_value_literal = "NULL::jsonb"
+    if json_path and not delete_json_path:
+        raw_json_value = (json_path_json_value or "").strip()
+        if not raw_json_value:
+            raise ValueError("JSON path value is required when setting a stats path")
+        json_value_literal = _jsonb_literal_from_value(json.loads(raw_json_value))
+
+    if (
+        stack_size is None
+        and quality_level is None
+        and current_durability is None
+        and decayed_max_durability is None
+        and max_durability is None
+        and not replace_stats
+        and not json_path
+    ):
+        raise ValueError("choose at least one item field to update")
+
+    stack_sql = "NULL::integer" if stack_size is None else f"{stack_size}::integer"
+    quality_sql = "NULL::integer" if quality_level is None else f"{quality_level}::integer"
+    current_sql = "NULL::numeric" if current_durability is None else f"{current_durability}::numeric"
+    decayed_sql = "NULL::numeric" if decayed_max_durability is None else f"{decayed_max_durability}::numeric"
+    max_sql = "NULL::numeric" if max_durability is None else f"{max_durability}::numeric"
+
+    return f"""
+WITH settings AS (
+    SELECT
+        {actor_id}::bigint AS character_actor_id,
+        {inv_id}::bigint AS target_inventory_id,
+        {row_id}::bigint AS target_item_row_id,
+        {stack_sql} AS stack_size_value,
+        {quality_sql} AS quality_level_value,
+        {current_sql} AS current_durability_value,
+        {decayed_sql} AS decayed_max_durability_value,
+        {max_sql} AS max_durability_value,
+        {stats_literal} AS replacement_stats,
+        {json_path_sql} AS json_path,
+        {json_value_literal} AS json_path_value,
+        {'true' if delete_json_path else 'false'}::boolean AS delete_json_path
+),
+prepared AS (
+    SELECT
+        i.id,
+        COALESCE(s.replacement_stats, COALESCE(i.stats, '{{}}'::jsonb)) AS base_stats,
+        s.stack_size_value,
+        s.quality_level_value,
+        s.current_durability_value,
+        s.decayed_max_durability_value,
+        s.max_durability_value,
+        s.json_path,
+        s.json_path_value,
+        s.delete_json_path
+    FROM dune.items i
+    JOIN dune.inventories inv
+        ON inv.id = i.inventory_id
+    JOIN settings s
+        ON s.target_item_row_id = i.id
+    WHERE i.inventory_id = inv.id
+      AND inv.id = s.target_inventory_id
+      AND inv.actor_id = s.character_actor_id
+),
+durability_stats AS (
+    SELECT
+        p.id,
+        p.stack_size_value,
+        p.quality_level_value,
+        CASE
+            WHEN p.current_durability_value IS NULL THEN p.base_stats
+            ELSE jsonb_set(
+                p.base_stats,
+                '{{FItemStackAndDurabilityStats,1,CurrentDurability}}',
+                to_jsonb(p.current_durability_value),
+                true
+            )
+        END AS stats_after_current,
+        p.decayed_max_durability_value,
+        p.max_durability_value,
+        p.json_path,
+        p.json_path_value,
+        p.delete_json_path
+    FROM prepared p
+),
+decayed_stats AS (
+    SELECT
+        d.id,
+        d.stack_size_value,
+        d.quality_level_value,
+        CASE
+            WHEN d.decayed_max_durability_value IS NULL THEN d.stats_after_current
+            ELSE jsonb_set(
+                d.stats_after_current,
+                '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}',
+                to_jsonb(d.decayed_max_durability_value),
+                true
+            )
+        END AS stats_after_decayed,
+        d.max_durability_value,
+        d.json_path,
+        d.json_path_value,
+        d.delete_json_path
+    FROM durability_stats d
+),
+max_stats AS (
+    SELECT
+        ds.id,
+        ds.stack_size_value,
+        ds.quality_level_value,
+        CASE
+            WHEN ds.max_durability_value IS NULL THEN ds.stats_after_decayed
+            ELSE jsonb_set(
+                ds.stats_after_decayed,
+                '{{FItemStackAndDurabilityStats,1,MaxDurability}}',
+                to_jsonb(ds.max_durability_value),
+                true
+            )
+        END AS stats_after_max,
+        ds.json_path,
+        ds.json_path_value,
+        ds.delete_json_path
+    FROM decayed_stats ds
+),
+final_stats AS (
+    SELECT
+        ms.id,
+        ms.stack_size_value,
+        ms.quality_level_value,
+        CASE
+            WHEN ms.json_path IS NULL THEN ms.stats_after_max
+            WHEN ms.delete_json_path THEN ms.stats_after_max #- ms.json_path
+            ELSE jsonb_set(ms.stats_after_max, ms.json_path, ms.json_path_value, true)
+        END AS final_stats
+    FROM max_stats ms
+),
+updated_items AS (
+    UPDATE dune.items i
+    SET
+        stack_size = COALESCE(f.stack_size_value, i.stack_size),
+        quality_level = COALESCE(f.quality_level_value, i.quality_level),
+        stats = f.final_stats
+    FROM final_stats f
+    WHERE i.id = f.id
+    RETURNING
+        i.inventory_id,
+        i.id AS item_id,
+        i.template_id,
+        i.position_index,
+        i.stack_size,
+        i.quality_level,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,CurrentDurability}}'
+            AS current_durability,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,DecayedMaxDurability}}'
+            AS decayed_max_durability,
+        i.stats #> '{{FItemStackAndDurabilityStats,1,MaxDurability}}'
+            AS max_durability,
+        jsonb_pretty(i.stats) AS stats_json
+)
+SELECT
+    inventory_id,
+    item_id,
+    template_id,
+    position_index,
+    stack_size,
+    quality_level,
+    current_durability,
+    decayed_max_durability,
+    max_durability,
+    stats_json
+FROM updated_items
+ORDER BY item_id;
+"""
 
 
 def get_user_character_name(username):

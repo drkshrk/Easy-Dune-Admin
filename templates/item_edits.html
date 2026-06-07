@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block title %}Item Edits{% endblock %}
+
+{% block head_extra %}
+<style>
+.item-edits-layout {
+    display: grid;
+    grid-template-columns: minmax(430px, 0.85fr) minmax(720px, 1.35fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.item-edits-layout .box {
+    min-width: 0;
+}
+
+.item-edits-layout h3 {
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.inventory-browser-table-wrap {
+    max-height: 520px;
+    overflow: auto;
+    border: 1px solid #222;
+    background: #070707;
+    margin-top: 10px;
+}
+
+.inventory-browser-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.inventory-browser-table th,
+.inventory-browser-table td {
+    border-bottom: 1px solid #242424;
+    padding: 7px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.inventory-browser-table th {
+    color: #d8c08a;
+    background: #090909;
+    position: sticky;
+    top: 0;
+}
+
+.inventory-browser-table button {
+    min-width: 86px;
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.item-stat-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.item-stat-editor-json {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: clamp(520px, 58vh, 820px);
+    background: #050505;
+    color: #e7dcc6;
+    border: 1px solid #6a4a18;
+    padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    overflow: auto;
+    resize: vertical;
+    white-space: pre;
+    tab-size: 2;
+}
+
+.item-stat-editor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.item-stat-editor-actions button {
+    width: auto;
+    min-width: 180px;
+}
+
+.item-path-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
+    gap: 10px;
+}
+
+.template-research-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 0.8fr) minmax(620px, 1.2fr);
+    gap: 16px;
+    align-items: start;
+    margin-top: 16px;
+}
+
+.template-result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.template-result-button {
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.25;
+    padding: 8px 10px;
+}
+
+.template-json-output {
+    min-height: 420px;
+    max-height: 760px;
+    overflow: auto;
+    background: #050505;
+    color: #e7dcc6;
+    border: 1px solid #6a4a18;
+    padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre;
+}
+
+@media (max-width: 1100px) {
+    .item-edits-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .item-path-row,
+    .template-research-layout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Inventory Administration</div>
+        <h1 class="page-title">Item Edits</h1>
+        <p class="page-subtitle">Inspect existing item rows, compare raw stat JSON, and apply targeted stack, quality, durability, or JSON-path edits.</p>
+    </div>
+    <div class="page-status">
+        <span class="status-chip danger">Admin Only</span>
+        <span class="status-chip experimental">Direct DB Edits</span>
+    </div>
+</div>
+
+<div id="actionOutput" class="msg" style="display:none;"></div>
+
+<div class="item-edits-layout">
+
+<div class="box">
+<h2>Inventory Item Picker</h2>
+
+<div class="warning info">
+Pick a character, choose one discovered inventory row, then load an item into the editor. This browser is read-only until an item is selected and an edit form is submitted.
+</div>
+
+<form id="inventoryBrowserForm">
+    <label>Character</label>
+    <select id="inventoryBrowserCharacterSelect" onchange="fillInventoryBrowserCharacterFields()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <div class="field-grid">
+    <div>
+    <label>Character Actor ID</label>
+    <input type="text" id="inventoryBrowserActorId" placeholder="Example: 6" onchange="loadInventoryBrowserInventories()">
+    </div>
+
+    <div>
+    <label>Inventory</label>
+    <select id="inventoryBrowserInventorySelect" onchange="loadInventoryBrowserItems()">
+        <option value="">Select a character first...</option>
+    </select>
+    </div>
+    </div>
+</form>
+
+<div class="coord-box" id="inventoryBrowserSummary">
+    Select a character to inspect inventories.
+</div>
+
+<div class="inventory-browser-table-wrap" id="inventoryBrowserTableWrap" style="display:none;">
+    <table class="inventory-browser-table">
+        <thead>
+            <tr>
+                <th>Pos</th>
+                <th>Row ID</th>
+                <th>Template</th>
+                <th>Stack</th>
+                <th>QL</th>
+                <th>Durability</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryBrowserTableBody"></tbody>
+    </table>
+</div>
+</div>
+
+<div class="box">
+<h2>Selected Item Editor</h2>
+
+<div class="warning experimental">
+Experimental editor for <b>dune.items</b>. Use it while the character is offline. Known fields update normal item columns and observed durability stat paths. Unknown fields, including damage-code-style values, can be changed with the raw JSON path editor after the exact path is identified in the loaded stats payload.
+</div>
+
+<form id="itemStatEditorForm">
+    <div class="field-grid">
+    <div>
+    <label>Character</label>
+    <select name="character_actor_id" id="itemStatEditorActorId" onchange="loadItemEditorInventories()" required>
+        <option value="">Loading characters...</option>
+    </select>
+    </div>
+
+    <div>
+    <label>Inventory</label>
+    <select name="inventory_id" id="itemStatEditorInventoryId" onchange="loadItemEditorItems()" required>
+        <option value="">Select a character first...</option>
+    </select>
+    </div>
+
+    <div>
+    <label>Row / Position</label>
+    <select name="item_row_id" id="itemStatEditorItemRowId" onchange="loadItemStatEditorDetail()" required>
+        <option value="">Select an inventory first...</option>
+    </select>
+    </div>
+    </div>
+
+    <div class="coord-box" id="itemStatEditorSummary">
+        Select an item row, then load its current stats.
+    </div>
+
+    <h3>Known Fields</h3>
+    <div class="item-stat-editor-grid">
+    <div>
+    <label>Stack Size</label>
+    <input type="number" name="stack_size" id="itemStatEditorStackSize" min="0" placeholder="blank keeps current">
+    </div>
+
+    <div>
+    <label>Quality Level</label>
+    <input type="number" name="quality_level" id="itemStatEditorQualityLevel" min="0" placeholder="blank keeps current">
+    </div>
+
+    <div>
+    <label>Current Durability</label>
+    <input type="text" name="current_durability" id="itemStatEditorCurrentDurability" placeholder="blank keeps current">
+    </div>
+
+    <div>
+    <label>Decayed Max Durability</label>
+    <input type="text" name="decayed_max_durability" id="itemStatEditorDecayedMaxDurability" placeholder="blank keeps current">
+    </div>
+
+    <div>
+    <label>Max Durability</label>
+    <input type="text" name="max_durability" id="itemStatEditorMaxDurability" placeholder="blank keeps current">
+    </div>
+    </div>
+
+    <h3>Raw Stats JSON Path</h3>
+    <div class="warning info">
+Enter paths as <b>Root.1.Field</b> or <b>{Root,1,Field}</b>. Values must be valid JSON: numbers like <b>250</b>, strings like <b>"Damage_Explosive"</b>, booleans, arrays, or objects.
+    </div>
+
+    <div class="item-path-row">
+    <div>
+    <label>Stats JSON Path</label>
+    <input type="text" name="json_path" id="itemStatEditorJsonPath" placeholder="Example: FItemStackAndDurabilityStats.1.MaxDurability">
+    </div>
+
+    <div>
+    <label>Path Value JSON</label>
+    <input type="text" name="json_path_value" id="itemStatEditorJsonPathValue" placeholder='Example: "Damage_Explosive" or 250'>
+    </div>
+    </div>
+
+    <input type="hidden" name="delete_json_path" id="itemStatEditorDeleteJsonPath" value="0">
+    <label class="admin-inline-check">
+        <input type="checkbox" id="itemStatEditorDeleteJsonPathCheck">
+        Remove this raw JSON path instead of setting it
+    </label>
+
+    <h3>Full Raw Stats</h3>
+    <label>Raw Stats JSON</label>
+    <textarea name="stats_json" id="itemStatEditorStatsJson" class="item-stat-editor-json" spellcheck="false" placeholder="Load an item to inspect its raw stats JSON."></textarea>
+
+    <input type="hidden" name="replace_stats" id="itemStatEditorReplaceStats" value="0">
+
+    <div class="item-stat-editor-actions">
+        <button type="button" onclick="loadItemStatEditorDetail()">Load / Refresh Selected Item</button>
+        <button type="submit">Apply Item Edit</button>
+        <label class="admin-inline-check">
+            <input type="checkbox" id="itemStatEditorReplaceStatsCheck">
+            Replace full raw stats JSON
+        </label>
+    </div>
+</form>
+</div>
+
+</div>
+
+<div class="template-research-layout">
+
+<div class="box">
+<h2>Template DB Inspector</h2>
+
+<div class="warning info">
+Read-only runtime database research for template tables such as <b>item.templates</b>. Use this to find whether damage codes, weapon tuning, or other item behavior lives on templates instead of player item rows.
+</div>
+
+<button type="button" onclick="loadItemTemplateTables()">Discover Template Tables</button>
+
+<label class="admin-inline-check">
+    <input type="checkbox" id="itemTemplatePopulatedOnly" checked onchange="loadItemTemplateTables()">
+    Show populated tables only
+</label>
+
+<label>Selected Table</label>
+<select id="itemTemplateTableSelect" onchange="loadItemTemplateRows()">
+    <option value="">Discover tables first...</option>
+</select>
+
+<label>Search Table Rows</label>
+<input type="text" id="itemTemplateTableQuery" placeholder="Template ID, damage, weapon, Shotgun_Unique_Explosive_06...">
+
+<div class="item-stat-editor-actions">
+    <button type="button" onclick="loadItemTemplateRows()">Search Runtime Table</button>
+    <button type="button" onclick="useSelectedItemTemplateForResearch()">Use Selected Item Template</button>
+</div>
+
+<div class="coord-box" id="itemTemplateTableSummary">
+    Discover template tables to begin.
+</div>
+
+<div class="template-result-list" id="itemTemplateTableResults"></div>
+</div>
+
+<div class="box">
+<h2>Template Catalog Compare</h2>
+
+<div class="warning info">
+Bundled IceHunter / Ryan Wilson item-data catalog for comparison. This usually has names, category, tier, rarity, stack, durability, tradeability, and icons, but not the deeper weapon damage codes we are hunting.
+</div>
+
+<label>Search Local Catalog</label>
+<input type="text" id="localItemCatalogQuery" placeholder="Template ID or display name">
+
+<button type="button" onclick="loadLocalItemTemplateCatalog()">Search Local Catalog</button>
+
+<div class="coord-box" id="localItemCatalogSummary">
+    Search the local catalog or use the selected item template.
+</div>
+
+<pre class="template-json-output" id="itemTemplateJsonOutput">Template row JSON will appear here.</pre>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/dune-admin.js"></script>
+<script>
+loadCharactersForItemEditsPage();
+loadItemTemplateTables();
+
+const inventoryBrowserForm = document.getElementById("inventoryBrowserForm");
+if (inventoryBrowserForm) {
+    inventoryBrowserForm.addEventListener("submit", function(event) {
+        event.preventDefault();
+        loadInventoryBrowserItems();
+    });
+}
+
+const itemStatEditorForm = document.getElementById("itemStatEditorForm");
+if (itemStatEditorForm) {
+    itemStatEditorForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const replaceStats = document.getElementById("itemStatEditorReplaceStatsCheck");
+        const replaceStatsHidden = document.getElementById("itemStatEditorReplaceStats");
+        const deletePath = document.getElementById("itemStatEditorDeleteJsonPathCheck");
+        const deletePathHidden = document.getElementById("itemStatEditorDeleteJsonPath");
+
+        if (replaceStatsHidden) replaceStatsHidden.value = replaceStats && replaceStats.checked ? "1" : "0";
+        if (deletePathHidden) deletePathHidden.value = deletePath && deletePath.checked ? "1" : "0";
+
+        if (!confirm("Apply this edit to the selected item row? The character should be offline before changing item stats. Continue?")) {
+            return;
+        }
+
+        await postForm("/api/item-stat-editor", itemStatEditorForm);
+        await loadItemStatEditorDetail();
+        await loadInventoryBrowserItems();
+    });
+}
+</script>
+{% endblock %}
