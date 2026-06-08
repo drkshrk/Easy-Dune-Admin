@@ -5,7 +5,9 @@ Docker is the primary install path for Easy Dune Admin as of `0.8.5-beta`.
 ## What The Container Mounts
 
 - `/data` stores `users.db`, logs, and other local runtime state.
-- `/redblink` should be your host RedBlink stack directory.
+- The RedBlink stack should be mounted at the same absolute path inside Easy
+  Dune Admin that it uses on the Docker host, for example
+  `/home/steihl/dune-awakening-selfhost-docker`.
 - `/var/run/docker.sock` lets Easy Dune Admin and RedBlink scripts talk to the
   host Docker daemon.
 - The image installs the official static Docker CLI so `docker exec` and
@@ -17,6 +19,18 @@ Docker is the primary install path for Easy Dune Admin as of `0.8.5-beta`.
 
 The container does not bundle RedBlink. It expects the host stack to already
 exist and be mounted.
+
+Keep `DUNE_ROOT_CONTAINER` equal to `REDBLINK_HOST_DIR` in Docker mode. RedBlink
+scripts launch sibling server containers through the mounted host Docker socket,
+and Docker bind-mount source paths are interpreted by the host daemon. If Easy
+Dune Admin sees RedBlink at `/redblink` but the host does not, commands such as
+`dune restart survival` can create a Survival container that cannot find
+`/opt/dune-local/run-server.sh`.
+
+If an existing install was created with the old `/redblink` container alias,
+`docker/env.repair-redblink-path.example` is a copy-ready `.env` repair template
+for the `/home/steihl/easy-dune-admin` and
+`/home/steihl/dune-awakening-selfhost-docker` layout.
 
 ## Persistent Webadmin Data
 

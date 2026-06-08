@@ -12,6 +12,7 @@ All notable changes to Easy Dune Admin are documented here.
 - Expanded the Item Edits layout with a larger raw JSON workspace plus editor-side character, inventory, and row/position dropdowns that show the selected target before submitting edits.
 - Added a read-only Template DB Inspector on Item Edits for discovering runtime template tables such as `item.templates`, searching rows as JSON, and comparing results against the bundled IceHunter / Ryan Wilson item-data catalog.
 - Improved template table discovery with row counts, populated-table sorting, and a default populated-only filter so empty candidate tables do not dominate the inspector.
+- Corrected Docker-mode RedBlink mount guidance so `DUNE_ROOT_CONTAINER` defaults to the same absolute path as `REDBLINK_HOST_DIR`, avoiding host Docker bind-mount failures when RedBlink scripts launch sibling server containers.
 
 ### Changed
 

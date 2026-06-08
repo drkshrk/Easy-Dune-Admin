@@ -437,6 +437,12 @@ Override with:
 
 export DUNE_ROOT=/path/to/dune-awakening-selfhost-docker
 
+For Docker mode, keep DUNE_ROOT_CONTAINER equal to REDBLINK_HOST_DIR in .env.
+RedBlink restart/spawn scripts create sibling containers through the host
+Docker socket, so their bind-mount source paths must also exist on the host.
+Mounting the stack at a container-only alias such as /redblink can break
+dune restart survival because Docker looks for /redblink on the host.
+
 Login installation profile:
 
 Easy Dune Admin now has a login switch for Linux Host, RedBlink Docker

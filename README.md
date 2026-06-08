@@ -398,6 +398,12 @@ FOLLOW_LOGS=0 ./rebuild_docker.sh
 
 See `DOCKER.md` for Docker mount and production notes.
 
+For Docker mode, keep `DUNE_ROOT_CONTAINER` equal to `REDBLINK_HOST_DIR` in
+`.env`. RedBlink restart/spawn scripts create sibling containers through the
+host Docker socket, so their bind-mount source paths must also exist on the
+host. Mounting the stack at a container-only alias such as `/redblink` can break
+`dune restart survival` because Docker looks for `/redblink` on the host.
+
 Clean uninstall is documented in `DOCKER.md`. The Infrastructure page also has
 an admin-only Clean Uninstall panel that removes the Easy Dune Admin Docker
 stack and named webadmin data volume while leaving RedBlink and the host

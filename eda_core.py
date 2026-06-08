@@ -225,7 +225,7 @@ INSTALLATION_MODES = {
         "description": "Easy Dune Admin runs on the same Linux host as the RedBlink stack.",
     },
     "docker": {
-        "label": "RedBlink Docker Container",
+        "label": "RBDC",
         "description": "Easy Dune Admin runs in its own container with Docker socket and RedBlink stack mounted.",
     },
     "hyperv": {

@@ -17,8 +17,8 @@ services:
 
       # RedBlink stack mounted inside this container. Keep this aligned with
       # the volume below and with your host's actual install path.
-      DUNE_ROOT: "${DUNE_ROOT_CONTAINER:-/redblink}"
-      REDBLINK_INSTALL_DIR: "${DUNE_ROOT_CONTAINER:-/redblink}"
+      DUNE_ROOT: "${DUNE_ROOT_CONTAINER:-${REDBLINK_HOST_DIR:-/home/steam/dune-awakening-selfhost-docker}}"
+      REDBLINK_INSTALL_DIR: "${DUNE_ROOT_CONTAINER:-${REDBLINK_HOST_DIR:-/home/steam/dune-awakening-selfhost-docker}}"
 
       # Persistent Easy Dune Admin state lives outside the image. The named
       # volume below preserves users.db and logs across rebuilds.
@@ -50,7 +50,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
       # Point REDBLINK_HOST_DIR at your host RedBlink install.
-      - "${REDBLINK_HOST_DIR:-/home/steam/dune-awakening-selfhost-docker}:${DUNE_ROOT_CONTAINER:-/redblink}:rw"
+      - "${REDBLINK_HOST_DIR:-/home/steam/dune-awakening-selfhost-docker}:${DUNE_ROOT_CONTAINER:-${REDBLINK_HOST_DIR:-/home/steam/dune-awakening-selfhost-docker}}:rw"
 
       # Point EASY_DUNE_HOST_DIR at this Easy Dune Admin checkout on the host.
       # Docker-mode self-update uses this mount for read-only status display,
