@@ -1385,7 +1385,7 @@ bulkSkillModuleForm.addEventListener("submit", async function(event) {
     if (button) button.disabled = true;
 
     try {
-        const result = await postForm("/api/bulk-skill-modules", bulkSkillModuleForm);
+        const result = await postForm("/api/bulk-skill-modules", bulkSkillModuleForm, { startMessage });
         if (output && result) output.textContent = result.message || "Bulk skill-module preset completed.";
     } finally {
         if (button) button.disabled = false;
@@ -1597,6 +1597,10 @@ const marketBuybackStopForm = document.getElementById("marketBuybackStopForm");
 marketBuybackStopForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
+    if (!confirm("Stop automated market buyback sweeps? This changes the running market automation state. This may take some time. Wait for output confirmation.")) {
+        return;
+    }
+
     await postForm("/api/market-buyback-stop", marketBuybackStopForm);
     await refreshMarketBuybackStatus();
 });
@@ -1640,6 +1644,10 @@ marketReseedStartForm.addEventListener("submit", async function(event) {
 const marketReseedStopForm = document.getElementById("marketReseedStopForm");
 marketReseedStopForm.addEventListener("submit", async function(event) {
     event.preventDefault();
+
+    if (!confirm("Stop automated market reseed sweeps? This changes the running market automation state. This may take some time. Wait for output confirmation.")) {
+        return;
+    }
 
     await postForm("/api/market-reseed-stop", marketReseedStopForm);
     await refreshMarketReseedStatus();

@@ -1207,7 +1207,20 @@ def api_infra_command():
         return jsonify({"ok": False, "error": "unknown command"}), 400
 
     try:
-        output = run_infra_command(entry["cmd"], timeout=entry.get("timeout", 60))
+        if entry.get("redblink_command"):
+            if command_key == "dune_status" and current_installation_capabilities()["is_docker"]:
+                output = run_docker_host_network_redblink_command(
+                    entry["cmd"],
+                    timeout=entry.get("timeout", 60),
+                )
+            else:
+                output = run_command(entry["cmd"], timeout=entry.get("timeout", 60))
+        else:
+            output = run_infra_command(
+                entry["cmd"],
+                timeout=entry.get("timeout", 60),
+                cwd=entry.get("cwd"),
+            )
         log_action(session["user"], f"ran infra command {command_key}")
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
@@ -2586,7 +2599,13 @@ def api_battlegroup_command():
         return jsonify({"ok": False, "error": "permission denied"}), 403
 
     try:
-        output = run_command(spec["cmd"], timeout=spec["timeout"])
+        if action == "status" and current_installation_capabilities()["is_docker"]:
+            output = run_docker_host_network_redblink_command(
+                spec["cmd"],
+                timeout=spec["timeout"],
+            )
+        else:
+            output = run_command(spec["cmd"], timeout=spec["timeout"])
         log_action(session["user"], f"dune {action}")
         return jsonify({"ok": True, "output": output})
     except Exception as exc:

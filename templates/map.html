@@ -803,6 +803,8 @@ async function emergencyReturnToHaggaBasin() {
         return;
     }
 
+    showOutput(DEFAULT_ACTION_START_MESSAGE, document.getElementById("teleportForm"));
+
     const formData = new FormData();
     formData.append("fls_id", fls.value);
 

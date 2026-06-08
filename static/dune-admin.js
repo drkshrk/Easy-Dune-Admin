@@ -1,4 +1,5 @@
 let latestCharacters = [];
+const DEFAULT_ACTION_START_MESSAGE = "Action started. This may take some time. Wait for output confirmation.";
 
 function escapeHtml(value) {
     return String(value)
@@ -38,33 +39,124 @@ function showLocalOutput(form, text) {
     output.textContent = text;
 }
 
-async function postForm(endpoint, form) {
+function formFieldValue(form, name) {
+    if (!form) return "";
+    const field = form.querySelector(`[name="${name}"]`);
+    return field ? String(field.value || "").trim() : "";
+}
+
+function submitterLabel(submitter) {
+    if (!submitter) return "Action";
+    return String(submitter.textContent || submitter.value || "Action").trim() || "Action";
+}
+
+function ajaxConfirmationMessage(form, submitter) {
+    if (!form) return "";
+
+    if (form.dataset.confirm) {
+        return form.dataset.confirm;
+    }
+
+    if (submitter && submitter.dataset && submitter.dataset.confirm) {
+        return submitter.dataset.confirm;
+    }
+
+    const endpoint = form.dataset.endpoint || "";
+    const action = formFieldValue(form, "action");
+    const buttonText = submitterLabel(submitter);
+    const riskySuffix = " This may take some time. Wait for output confirmation.";
+
+    if (submitter && submitter.classList && submitter.classList.contains("danger")) {
+        return `${buttonText}?${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/restart-target" || endpoint === "/api/restart-map") {
+        return `${buttonText}? This restarts a live service and can interrupt players.${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/spawn-map") {
+        return `${buttonText}? This starts a map server/container.${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/db-command" && action === "backup") {
+        return "Create a database backup now? Server/database load may briefly increase. This may take some time. Wait for output confirmation.";
+    }
+
+    if (endpoint === "/api/maps-reconcile") {
+        return "Reconcile always-on map runtime state now? This can affect map availability. This may take some time. Wait for output confirmation.";
+    }
+
+    if (endpoint === "/api/maps-set-mode") {
+        const mapName = formFieldValue(form, "map_name") || "this map";
+        const mode = formFieldValue(form, "mode") || "selected mode";
+        return `Set ${mapName} to ${mode}? This changes map runtime behavior and may require a restart. This may take some time. Wait for output confirmation.`;
+    }
+
+    if (endpoint === "/api/autoscaler-command" && ["start", "stop", "restart"].includes(action)) {
+        return `${buttonText} the dynamic map autoscaler? This can affect dynamic map availability.${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/deepdesert-dual" && ["enable", "disable", "disable_force", "bootstrap", "repair"].includes(action)) {
+        return `${buttonText} Deep Desert dual mode? This changes gameplay routing and may require map restarts.${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/sietches-command" && ["sync", "validate"].includes(action)) {
+        return `${buttonText} Sietch configuration? This can touch generated runtime config.${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/memory-command" && ["set", "unset"].includes(action)) {
+        return `${buttonText} for the selected map? Memory changes usually require restarting the affected service.${riskySuffix}`;
+    }
+
+    if (endpoint === "/api/redblink-admin-command" && action === "refill_water") {
+        return "Refill water containers for this player? This sends a live RedBlink admin command. This may take some time. Wait for output confirmation.";
+    }
+
+    return "";
+}
+
+async function postForm(endpoint, form, options = {}) {
     const data = new FormData(form);
+    const startMessage = options.startMessage || DEFAULT_ACTION_START_MESSAGE;
 
-    const response = await fetch(endpoint, {
-        method: "POST",
-        body: data
-    });
+    showOutput(startMessage, form);
 
-    const json = await response.json();
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            body: data
+        });
 
-    if (!json.ok) {
-        const message = json.error || "Action failed.";
+        const json = await response.json();
+
+        if (!json.ok) {
+            const message = json.error || "Action failed.";
+            showOutput(message);
+            showLocalOutput(form, message);
+            return { json, message };
+        }
+
+        const message = json.output || "Action completed.";
         showOutput(message);
         showLocalOutput(form, message);
         return { json, message };
+    } catch (error) {
+        const message = `Action failed before output completed: ${error.message || error}`;
+        showOutput(message);
+        showLocalOutput(form, message);
+        return { json: { ok: false, error: message }, message };
     }
-
-    const message = json.output || "Action completed.";
-    showOutput(message);
-    showLocalOutput(form, message);
-    return { json, message };
 }
 
 function wireAjaxForms() {
     document.querySelectorAll(".ajaxForm").forEach(form => {
         form.addEventListener("submit", async function(event) {
             event.preventDefault();
+            const warning = ajaxConfirmationMessage(form, event.submitter);
+            if (warning && !confirm(warning)) {
+                showOutput("Action cancelled.", form);
+                return;
+            }
             await postForm(form.dataset.endpoint, form);
         });
     });

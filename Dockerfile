@@ -27,6 +27,8 @@ RUN apt-get update \
         bash \
         ca-certificates \
         curl \
+        iproute2 \
+        netcat-openbsd \
         procps \
         screen \
         tar \

@@ -112,6 +112,10 @@ EASY_DUNE_SOURCE_DIR = Path(
     )
 ).resolve()
 EASY_DUNE_UPDATER_IMAGE = os.environ.get("EASY_DUNE_UPDATER_IMAGE", "docker:27.5.1-cli")
+EASY_DUNE_RUNTIME_HELPER_IMAGE = os.environ.get(
+    "EASY_DUNE_RUNTIME_HELPER_IMAGE",
+    f"easy-dune-admin:{PANEL_VERSION}",
+)
 EDA_BUILD_REVISION = os.environ.get("EDA_BUILD_REVISION", "unknown").strip()
 EDA_BUILD_DIRTY = os.environ.get("EDA_BUILD_DIRTY", "unknown").strip()
 
@@ -303,7 +307,11 @@ ALLOWED_INFRA_COMMANDS = {
     },
     "dune_status": {
         "label": "Dune Status",
-        "cmd": ["bash", "-lc", f"cd {shlex.quote(str(REDBLINK_INSTALL_DIR))} && dune status || true"],
+        # Use the same mounted RedBlink script path as the rest of the panel.
+        # Calling a PATH-provided `dune` shim from Docker mode can report from
+        # the wrong checkout/root when host and container paths differ.
+        "cmd": [str(DUNE_SCRIPT), "status"],
+        "redblink_command": True,
         "timeout": 45,
     },
 }
@@ -8348,6 +8356,63 @@ def run_infra_command(cmd, timeout=60, cwd=None):
 
     return (
         "$ " + " ".join(cmd)
+        + "\n\nSTDOUT:\n" + proc.stdout
+        + "\nSTDERR:\n" + proc.stderr
+        + f"\nExit code: {proc.returncode}"
+    )
+
+
+def run_docker_host_network_redblink_command(cmd, timeout=60):
+    """
+    Run a RedBlink command from Docker mode while sharing the host network.
+
+    RedBlink's `dune status` listener checks inspect localhost ports. When Easy
+    Dune Admin runs in its own bridge-network container, localhost is the panel
+    container instead of the Docker host, so those checks falsely report
+    MISSING. A short-lived helper container on `--network host` sees the same
+    localhost namespace as a manual SSH `dune status` run on the VM.
+    """
+    mapped_cmd = [
+        "./runtime/scripts/dune" if str(part) == str(DUNE_SCRIPT) else str(part)
+        for part in cmd
+    ]
+    inner_command = f"cd {shlex.quote(str(DUNE_ROOT))} && {shlex.join(mapped_cmd)}"
+    docker_cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "host",
+        "-v",
+        "/var/run/docker.sock:/var/run/docker.sock",
+        "-v",
+        f"{str(DUNE_ROOT)}:{str(DUNE_ROOT)}:rw",
+        "-e",
+        f"DUNE_ROOT={str(DUNE_ROOT)}",
+        "-e",
+        f"REDBLINK_INSTALL_DIR={str(DUNE_ROOT)}",
+        "-w",
+        str(DUNE_ROOT),
+        "--entrypoint",
+        "bash",
+        EASY_DUNE_RUNTIME_HELPER_IMAGE,
+        "-lc",
+        inner_command,
+    ]
+
+    try:
+        proc = subprocess.run(
+            docker_cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except Exception as exc:
+        return "$ " + " ".join(docker_cmd) + f"\n\nERROR:\n{exc}"
+
+    return (
+        "$ " + " ".join(docker_cmd)
         + "\n\nSTDOUT:\n" + proc.stdout
         + "\nSTDERR:\n" + proc.stderr
         + f"\nExit code: {proc.returncode}"

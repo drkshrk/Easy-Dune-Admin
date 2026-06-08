@@ -401,7 +401,7 @@ document.querySelectorAll(".infraCommandForm").forEach(form => {
     form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        if (!confirm("Run host diagnostic command?")) return;
+        if (!confirm("Run host diagnostic command? This may take some time. Wait for output confirmation.")) return;
 
         await postForm("/api/infra-command", form);
     });
@@ -411,7 +411,7 @@ document.querySelectorAll(".installerStepForm").forEach(form => {
     form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        if (!confirm("Run installer step on the VM host?")) return;
+        if (!confirm("Run installer step on the VM host? This may take some time. Wait for output confirmation.")) return;
 
         await postForm("/api/installer-step", form);
     });
@@ -422,7 +422,7 @@ if (easyDuneSelfUpdateForm) {
     easyDuneSelfUpdateForm.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        if (!confirm("Pull latest Easy Dune Admin source, rebuild Docker, and restart the daemon? In Docker mode this starts a detached updater container. The panel may briefly disconnect.")) return;
+        if (!confirm("Pull latest Easy Dune Admin source, rebuild Docker, and restart the daemon? In Docker mode this starts a detached updater container. The panel may briefly disconnect. This may take some time. Wait for output confirmation.")) return;
 
         await postForm("/api/easy-dune-admin-update", easyDuneSelfUpdateForm);
     });
@@ -433,7 +433,7 @@ if (easyDuneCleanInstallForm) {
     easyDuneCleanInstallForm.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const typed = prompt("Clean reinstall will discard local Easy Dune Admin source changes and untracked build files, then rebuild Docker. Type CLEAN INSTALL to continue.");
+        const typed = prompt("Clean reinstall will discard local Easy Dune Admin source changes and untracked build files, then rebuild Docker. This may take some time. Wait for output confirmation. Type CLEAN INSTALL to continue.");
         if (typed !== "CLEAN INSTALL") {
             showOutput("Clean reinstall cancelled.", easyDuneCleanInstallForm);
             return;
@@ -449,7 +449,7 @@ if (easyDuneCleanUninstallForm) {
     easyDuneCleanUninstallForm.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const typed = prompt("Clean uninstall removes the Easy Dune Admin Docker stack and named webadmin data volume. RedBlink and this host checkout remain. Type UNINSTALL EDA to continue.");
+        const typed = prompt("Clean uninstall removes the Easy Dune Admin Docker stack and named webadmin data volume. RedBlink and this host checkout remain. This may take some time. Wait for output confirmation. Type UNINSTALL EDA to continue.");
         if (typed !== "UNINSTALL EDA") {
             showOutput("Clean uninstall cancelled.", easyDuneCleanUninstallForm);
             return;
@@ -519,7 +519,14 @@ function startTerminalWithCommand(command) {
 }
 
 function startTerminal(initialCommand = null) {
+    if (!termStarted && !confirm("Start the browser shell? This is a powerful admin tool. This may take some time. Wait for output confirmation.")) {
+        return;
+    }
+
     if (termStarted && terminalSocket && initialCommand) {
+        if (!confirm(`Send this command to the running browser shell?\n\n${initialCommand}`)) {
+            return;
+        }
         terminalSocket.emit("shell_input", { data: initialCommand + "\n" });
         fitTerminalSoon(100);
         return;

@@ -1,4 +1,4 @@
-const EDA_CACHE_VERSION = "easy-dune-admin-0.8.5-beta-populated-template-inspector";
+const EDA_CACHE_VERSION = "easy-dune-admin-0.8.5-beta-arrakis-background";
 
 // Cache only static app-shell assets. Authenticated pages and API responses
 // stay network-first so sensitive admin data is not intentionally stored for
@@ -11,7 +11,9 @@ const EDA_STATIC_ASSETS = [
     "/static/favicon-192.png",
     "/static/apple-touch-icon.png",
     "/static/dune-admin.js",
-    "/static/dune-admin.png"
+    "/static/dune-admin.png",
+    "/static/arrakis-login-bg.webp",
+    "/static/arrakis-login-bg.png"
 ];
 
 self.addEventListener("install", event => {

@@ -368,6 +368,9 @@ loadCharactersForGrantPage();
 const grantForm = document.getElementById("grantForm");
 grantForm.addEventListener("submit", async function(event) {
     event.preventDefault();
+    if (!confirm("Grant this item to the selected character? This sends a RedBlink item grant command. This may take some time. Wait for output confirmation.")) {
+        return;
+    }
     await postForm("/api/grant", grantForm);
 });
 
@@ -448,6 +451,9 @@ if (emptyStorageForm) {
 const scoutThopterForm = document.getElementById("scoutThopterForm");
 scoutThopterForm.addEventListener("submit", async function(event) {
     event.preventDefault();
+    if (!confirm("Grant a MK6 Scout Thopter to this selected character? This may take some time. Wait for output confirmation.")) {
+        return;
+    }
     await postForm("/api/give-scout-thopter", scoutThopterForm);
 });
 

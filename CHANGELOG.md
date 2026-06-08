@@ -13,9 +13,11 @@ All notable changes to Easy Dune Admin are documented here.
 - Added a read-only Template DB Inspector on Item Edits for discovering runtime template tables such as `item.templates`, searching rows as JSON, and comparing results against the bundled IceHunter / Ryan Wilson item-data catalog.
 - Improved template table discovery with row counts, populated-table sorting, and a default populated-only filter so empty candidate tables do not dominate the inspector.
 - Corrected Docker-mode RedBlink mount guidance so `DUNE_ROOT_CONTAINER` defaults to the same absolute path as `REDBLINK_HOST_DIR`, avoiding host Docker bind-mount failures when RedBlink scripts launch sibling server containers.
+- Added a Dune-themed Arrakis background for login and authenticated pages, with a visible thopter, an under-sand worm trail, and blurred/dimmed authenticated-page treatment behind the admin panels.
 
 ### Changed
 
+- Fixed Docker-mode Dune Status listener checks by running status through a short-lived host-network helper container with the listener-probe tools RedBlink expects, avoiding false `MISSING` reports caused by checking `localhost` from inside the Easy Dune Admin bridge-network container.
 - Updated version strings to `0.8.5-beta`.
 
 ## 0.8.4-beta

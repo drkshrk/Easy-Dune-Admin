@@ -20,8 +20,45 @@ body {
     color: #aaa;
     font-family: Arial, sans-serif;
     margin: 0;
+    min-height: 100vh;
     font-size: 20px;
     line-height: 1.35;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+        image-set(
+            url("/static/arrakis-login-bg.webp") type("image/webp"),
+            url("/static/arrakis-login-bg.png") type("image/png")
+        )
+        center / cover no-repeat;
+    transform: scale(1.01);
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 68% 24%, rgba(255, 165, 70, 0.10), transparent 28%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.82));
+    pointer-events: none;
+}
+
+body.authenticated::before {
+    filter: blur(10px) saturate(0.94) brightness(0.72);
+    transform: scale(1.06);
+}
+
+body.authenticated::after {
+    background:
+        radial-gradient(circle at 78% 12%, rgba(255, 165, 70, 0.08), transparent 24%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.70), rgba(0, 0, 0, 0.90));
 }
 
 .banner {
@@ -290,6 +327,7 @@ body {
 }
 
 .container {
+    position: relative;
     padding: 20px 24px;
 }
 
@@ -430,10 +468,12 @@ body {
 }
 
 .box, .card {
-    background: linear-gradient(180deg, #090909 0%, #050505 100%);
+    background:
+        linear-gradient(180deg, rgba(9, 9, 9, 0.92) 0%, rgba(5, 5, 5, 0.94) 100%);
     border: 1px solid #2f2a21;
     padding: 16px;
     margin-bottom: 16px;
+    backdrop-filter: blur(2px);
     box-shadow:
         0 0 18px rgba(255,140,0,0.06),
         inset 0 1px 0 rgba(255,220,140,0.04);
@@ -564,7 +604,7 @@ button.secondary:hover,
 
 .msg {
     white-space: pre-wrap;
-    background: #111;
+    background: rgba(17, 17, 17, 0.94);
     padding: 12px;
     border: 1px solid #444;
     margin-top: 12px;
@@ -708,10 +748,12 @@ a:hover {
 }
 
 .footer {
+    position: relative;
     color: #777;
     padding: 20px 24px;
     font-size: 14px;
     border-top: 1px solid #222;
+    background: rgba(0, 0, 0, 0.52);
 }
 
 .footer-badges {
@@ -818,7 +860,7 @@ a:hover {
 {% block head_extra %}{% endblock %}
 </head>
 
-<body>
+<body class="{% if session.user %}authenticated{% else %}login-page{% endif %}">
 
 <div class="pull-refresh-indicator" id="pullRefreshIndicator">Pull to refresh</div>
 
