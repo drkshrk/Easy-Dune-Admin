@@ -3,7 +3,9 @@ __pycache__/
 *.pyc
 venv/
 logs/
-data/
+data/*
+!data/
+!data/easy-dune-item-catalog.json
 users.db
 *.db
 *.sqlite
@@ -15,3 +17,7 @@ webadmin.mode
 images/*.psd
 docker-data/
 docker-preview/
+static/item-icons/*
+!static/item-icons/.gitkeep
+!static/item-icons/base-schematic.png
+!static/item-icons/base-unknown.png

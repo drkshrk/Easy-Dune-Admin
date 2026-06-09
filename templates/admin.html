@@ -143,6 +143,137 @@
     margin-top: 0;
 }
 
+.admin-care-package-card {
+    grid-column: 1 / -1;
+    border: 1px solid #222;
+    padding: 10px;
+    background: #060606;
+}
+
+.care-package-layout {
+    display: grid;
+    grid-template-columns: minmax(420px, 1.25fr) minmax(320px, 0.75fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.grant-catalog-controls {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.35fr) minmax(260px, 0.65fr);
+    gap: 12px;
+}
+
+.grant-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    max-height: 560px;
+    overflow: auto;
+    border: 1px solid #252018;
+    background: rgba(5, 5, 5, 0.72);
+    padding: 10px;
+}
+
+.grant-catalog-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-height: 86px;
+    margin: 0;
+    padding: 10px;
+    text-align: left;
+    border-color: #3a2a12;
+    background: rgba(10, 10, 10, 0.88);
+}
+
+.grant-catalog-card.selected {
+    border-color: #d4a94d;
+    box-shadow: 0 0 14px rgba(212,169,77,0.30);
+}
+
+.grant-catalog-icon {
+    width: 66px;
+    height: 66px;
+    border: 1px solid #3a2a12;
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 35% 28%, rgba(212,169,77,0.20), transparent 34%),
+        linear-gradient(145deg, #15110d, #050505);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d8c08a;
+    font-size: 12px;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.grant-catalog-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.grant-catalog-missing-icon {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at 50% 35%, rgba(212,169,77,0.18), transparent 34%),
+        linear-gradient(145deg, #0f0d0a, #030303);
+    color: #d8c08a;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.grant-catalog-name {
+    color: #e8d7b0;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.grant-catalog-meta {
+    color: #9f8f75;
+    font-size: 13px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.care-package-queue {
+    max-height: 360px;
+    overflow: auto;
+    border: 1px solid #252018;
+    background: rgba(5, 5, 5, 0.72);
+    padding: 8px;
+}
+
+.care-package-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 70px 42px;
+    gap: 8px;
+    align-items: center;
+    border-bottom: 1px solid #20170c;
+    padding: 8px 0;
+}
+
+.care-package-row:last-child {
+    border-bottom: 0;
+}
+
+.care-package-remove {
+    width: 42px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
+}
+
 .admin-tool-grid .warning,
 .admin-tool-grid .coord-box {
     max-width: 100%;
@@ -203,6 +334,11 @@
     }
 
     .vehicle-workbench {
+        grid-template-columns: 1fr;
+    }
+
+    .care-package-layout,
+    .grant-catalog-controls {
         grid-template-columns: 1fr;
     }
 }
@@ -553,6 +689,75 @@ Lasgun kit and Solaris grants use RedBlink's normal item grant command. Confirme
 </div>
 
 <div class="admin-tool-grid">
+
+<div class="admin-care-package-card">
+<h3>Visual Care Package Builder</h3>
+
+<div class="warning experimental">
+Admin-only grant workflow inspired by RedBlink's care-package and visual item-picker concepts, independently implemented in Easy Dune Admin with our own routes and UI. It uses the bundled Easy Dune Admin item catalog, derived from IceHunter / Ryan Wilson's MIT-licensed item data, for display names, categories, tier, rarity, stack caps, and local icon paths. Grants still run through RedBlink's normal <b>dune admin grant-item-id</b> command, with optional character XP in the same submission.
+</div>
+
+<form id="carePackageGrantForm">
+    <input type="hidden" name="player_id" id="carePackagePlayerId">
+    <input type="hidden" name="character_actor_id" id="carePackageActorId">
+    <input type="hidden" name="package_json" id="carePackageJson">
+
+    <div class="care-package-layout">
+        <div>
+            <label>Character</label>
+            <select id="carePackageCharacterSelect" onchange="fillCarePackageTargetIds()">
+                <option value="">Loading characters...</option>
+            </select>
+
+            <div class="grant-catalog-controls">
+                <div>
+                    <label>Category</label>
+                    <select id="grantCatalogCategory">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Filter Loaded Item Catalog</label>
+                    <input type="text" id="grantCatalogFilter" placeholder="lasgun, stillsuit, spice, thopter...">
+                </div>
+            </div>
+
+            <div class="grant-catalog-grid" id="grantCatalogGrid">
+                Loading item catalog...
+            </div>
+        </div>
+
+        <div>
+            <div class="coord-box" id="grantCatalogSelected">
+                Select an item from the catalog.
+            </div>
+
+            <div class="field-grid">
+                <div>
+                    <label>Quantity</label>
+                    <input type="number" id="carePackageQuantity" min="1" step="1" value="1">
+                </div>
+                <div>
+                    <label>Durability / Quality</label>
+                    <input type="text" id="carePackageDurability" value="1.0">
+                </div>
+            </div>
+
+            <button type="button" id="carePackageAddItemButton" onclick="addSelectedCarePackageItem()" disabled>Add Item</button>
+
+            <label>Optional Character XP</label>
+            <input type="number" name="xp_amount" id="carePackageXpAmount" min="0" step="1" value="0">
+
+            <h3>Care Package Queue</h3>
+            <div class="care-package-queue" id="carePackageQueue">
+                No items queued.
+            </div>
+
+            <button class="danger" type="submit">Grant Care Package</button>
+        </div>
+    </div>
+</form>
+</div>
 
 <form id="lasgunBundleForm">
     <label>Character</label>
@@ -1165,6 +1370,22 @@ loadMarketExchanges();
 loadMarketPresetPreview();
 refreshMarketBuybackStatus();
 refreshMarketReseedStatus();
+loadGrantCatalog();
+renderCarePackageQueue();
+
+const grantCatalogCategory = document.getElementById("grantCatalogCategory");
+if (grantCatalogCategory) {
+    grantCatalogCategory.addEventListener("change", loadGrantCatalog);
+}
+
+const grantCatalogFilter = document.getElementById("grantCatalogFilter");
+if (grantCatalogFilter) {
+    let grantCatalogFilterTimer = null;
+    grantCatalogFilter.addEventListener("input", function() {
+        window.clearTimeout(grantCatalogFilterTimer);
+        grantCatalogFilterTimer = window.setTimeout(loadGrantCatalog, 220);
+    });
+}
 
 const overrepairForm = document.getElementById("overrepairForm");
 overrepairForm.addEventListener("submit", async function(event) {
@@ -1194,6 +1415,33 @@ const inventoryBrowserForm = document.getElementById("inventoryBrowserForm");
 inventoryBrowserForm.addEventListener("submit", function(event) {
     event.preventDefault();
     loadInventoryBrowserItems();
+});
+
+const carePackageGrantForm = document.getElementById("carePackageGrantForm");
+carePackageGrantForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    fillCarePackageTargetIds();
+    renderCarePackageQueue();
+
+    const playerId = document.getElementById("carePackagePlayerId").value || "";
+    const xpInput = document.getElementById("carePackageXpAmount");
+    const xpAmount = xpInput ? Number(xpInput.value || 0) : 0;
+    if (!playerId) {
+        showOutput("Select a character before granting a care package.", carePackageGrantForm);
+        return;
+    }
+    if (carePackageRows.length === 0 && xpAmount <= 0) {
+        showOutput("Add at least one item or XP amount before granting a care package.", carePackageGrantForm);
+        return;
+    }
+
+    if (!confirm(`Grant admin care package to this character? Items: ${carePackageRows.length}. XP: ${xpAmount || 0}. This may run multiple RedBlink commands. This may take some time. Wait for output confirmation.`)) {
+        return;
+    }
+
+    await postForm("/api/grant-care-package", carePackageGrantForm, {
+        startMessage: `Starting care package grant. Items: ${carePackageRows.length}. XP: ${xpAmount || 0}. This may take some time. Wait for output confirmation.`
+    });
 });
 
 const lasgunBundleForm = document.getElementById("lasgunBundleForm");

@@ -70,6 +70,22 @@ def logout():
     return redirect("/login")
 
 
+@app.route("/item-icons/<path:filename>")
+def item_icon(filename):
+    if not logged_in():
+        return redirect("/login")
+
+    safe_filename = Path(filename).name
+    if safe_filename != filename:
+        return ("not found", 404)
+
+    icon_file = local_item_icon_file(safe_filename)
+    if not icon_file:
+        return ("not found", 404)
+
+    return send_from_directory(icon_file.parent, icon_file.name)
+
+
 @app.route("/api/session-installation-mode", methods=["POST"])
 def api_session_installation_mode():
     if not logged_in():
@@ -626,6 +642,69 @@ def api_item_search():
 
     query = request.args.get("q", "").strip()
     return jsonify({"ok": True, "items": search_items(query)})
+
+
+@app.route("/api/grant-catalog")
+def api_grant_catalog():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    query = request.args.get("q", "").strip()
+    category = request.args.get("category", "").strip()
+    limit_value = request.args.get("limit", "160").strip()
+    return jsonify({"ok": True, **grant_item_catalog(query, category, limit_value)})
+
+
+@app.route("/api/item-catalog-entry")
+def api_item_catalog_entry():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    template_id = request.args.get("template_id", "").strip()
+    return jsonify({"ok": True, **get_eda_item_catalog_entry(template_id)})
+
+
+@app.route("/api/item-catalog-entry", methods=["POST"])
+def api_save_item_catalog_entry():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    try:
+        result = upsert_eda_item_catalog_entry(request.form)
+        log_action(
+            session["user"],
+            f"updated item catalog entry {result['item'].get('template_id', '')}",
+        )
+        return jsonify(
+            {
+                "ok": True,
+                "output": (
+                    "Item catalog entry saved.\n"
+                    f"Template: {result['item'].get('template_id', '')}\n"
+                    f"Catalog: {result['catalog_path']}"
+                ),
+                **result,
+            }
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Catalog save failed: {exc}"}), 400
+
+
+@app.route("/api/item-icon-pack-report")
+def api_item_icon_pack_report():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    query = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "missing").strip()
+    limit_value = request.args.get("limit", "250").strip()
+    return jsonify({"ok": True, **item_icon_pack_report(query, status_filter, limit_value)})
 
 
 @app.route("/api/map-markers")
@@ -1373,6 +1452,77 @@ def api_grant():
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Grant failed: {exc}"}), 500
+
+
+@app.route("/api/grant-care-package", methods=["POST"])
+def api_grant_care_package():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "admin required"}), 403
+
+    player_id = request.form.get("player_id", "").strip()
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+    xp_amount = request.form.get("xp_amount", "").strip()
+    package_json = request.form.get("package_json", "[]").strip()
+
+    if not player_id:
+        return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+
+    try:
+        items = json.loads(package_json or "[]")
+    except json.JSONDecodeError:
+        return jsonify({"ok": False, "error": "care package JSON was invalid"}), 400
+
+    if not isinstance(items, list):
+        return jsonify({"ok": False, "error": "care package must be a list"}), 400
+
+    if len(items) > 80:
+        return jsonify({"ok": False, "error": "care package item limit is 80 rows"}), 400
+
+    xp_requested = bool(xp_amount and xp_amount != "0")
+    if xp_requested and not character_actor_id:
+        return jsonify({"ok": False, "error": "character actor id is required for XP grants"}), 400
+
+    outputs = []
+    granted_count = 0
+
+    try:
+        for row in items:
+            if not isinstance(row, dict):
+                continue
+
+            item_id = str(row.get("item_id", "")).strip()
+            quantity = str(row.get("quantity", "1")).strip() or "1"
+            durability = str(row.get("durability", "1.0")).strip() or "1.0"
+
+            if not item_id:
+                continue
+            try:
+                quantity_int = int(quantity)
+            except ValueError as exc:
+                raise ValueError(f"quantity for {item_id} must be a whole number") from exc
+            if quantity_int < 1 or quantity_int > 1000000:
+                raise ValueError(f"quantity for {item_id} must be between 1 and 1000000")
+
+            outputs.append(grant_item(player_id, item_id, quantity_int, durability))
+            granted_count += 1
+
+        if granted_count == 0 and not xp_requested:
+            return jsonify({"ok": False, "error": "add at least one item or XP amount"}), 400
+
+        if xp_requested:
+            sql = build_give_character_xp_sql(character_actor_id, xp_amount)
+            outputs.append("CHARACTER XP OUTPUT:\n" + run_psql(sql, timeout=60))
+
+        log_action(
+            session["user"],
+            f"grant care package to {player_id}: {granted_count} item rows"
+            + (f" plus {xp_amount} XP" if xp_requested else ""),
+        )
+        return jsonify({"ok": True, "output": "\n\n---\n\n".join(outputs)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Care package grant failed: {exc}"}), 500
 
 
 @app.route("/api/grant-lasgun-augment-bundle", methods=["POST"])

@@ -7,7 +7,7 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.8.5-beta
+Panel version: 0.8.6-beta
 Target RedBlink Stack: v1.3.3
 License: GPLv3
 Platform: Linux
@@ -369,7 +369,7 @@ Browse to:
 
 http://SERVER-IP:8089
 
-Docker is the primary supported install method as of 0.8.5-beta. Runtime
+Docker is the primary supported install method as of 0.8.6-beta. Runtime
 webadmin state is stored in the named Docker volume easy-dune-admin-data, so
 normal rebuilds preserve users.db, roles, and logs. Do not run
 docker compose down -v unless you intentionally want to reset the webadmin.
@@ -533,6 +533,21 @@ Runtime assets live in ./static:
 The map image files are required for the live map pages to render
 properly.
 
+Optional item icons are local-only. Easy Dune Admin ships catalog icon path
+metadata, but does not redistribute Dune: Awakening icon image assets. For a
+private install, place personally supplied icon files in static/item-icons in
+the mounted Easy Dune Admin checkout, /data/item-icons for Docker-persistent
+storage, or set EDA_ITEM_ICON_DIR to another local folder. Matching catalog
+filenames are served to the item picker automatically, and the actual image
+files are ignored from Git and Docker release builds. Developer Tools includes
+an Item Icon Pack
+Utility that lists present and missing local icon filenames and provides a
+copyable filename manifest.
+
+Easy Dune Admin includes an original base-schematic.png fallback for schematic
+or blueprint entries that do not have an exact local icon match, plus an
+original base-unknown.png question-mark fallback for other unmatched entries.
+
 
 GitHub / README Images
 ----------------------
@@ -585,7 +600,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.5-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.6-beta
 
 Preserve local runtime data:
 
@@ -634,10 +649,9 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.8.5-beta: Easy Dune Admin now adds an admin-only Item
-Edits workspace for inspecting existing inventory rows, editing known item
-columns, and applying targeted raw stats JSON path changes for deeper item-stat
-research.
+Current highlight for 0.8.6-beta: Easy Dune Admin now adds an admin-only Item
+Edits workspace, visual item catalog selection, local icon-pack support, and
+catalog editing tools for deeper item-stat and grant workflow research.
 
 Looking ahead: faction manipulation tools are a likely future focus after
 faction membership and the related database state can be captured and tested
@@ -651,11 +665,13 @@ Credits
   dune-awakening-selfhost-docker stack this panel targets:
   https://github.com/Red-Blink/dune-awakening-selfhost-docker
   This project is being developed with RedBlink's permission; Easy Dune Admin
-  remains an independent project and credits RedBlink's stack, scripts, and
-  command workflows where used.
+  remains an independent project and credits RedBlink's stack, scripts, command
+  workflows, and the visual item-picker/care-package workflow concepts that
+  inspired Easy Dune Admin's independent picker implementation.
 - Funcom
 - IceHunter / Ryan Wilson's MIT-licensed dune-admin project for market
-  tooling research, category mapping, bundled market item data, progression
+  tooling research, category mapping, the Easy Dune Admin item catalog derived
+  from bundled market item data, progression
   preset structure, specialization XP research, and character-level XP curve
   research:
   https://github.com/Icehunter/dune-admin

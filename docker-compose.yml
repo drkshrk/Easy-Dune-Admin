@@ -6,7 +6,7 @@ services:
       args:
         EDA_BUILD_REVISION: "${EDA_BUILD_REVISION:-unknown}"
         EDA_BUILD_DIRTY: "${EDA_BUILD_DIRTY:-unknown}"
-    image: easy-dune-admin:0.8.5-beta
+    image: easy-dune-admin:0.8.6-beta
     container_name: easy-dune-admin
     restart: unless-stopped
     ports:
@@ -34,7 +34,7 @@ services:
       EASY_DUNE_HOST_DIR: "${EASY_DUNE_HOST_DIR:-}"
       EASY_DUNE_SOURCE_DIR: "${EASY_DUNE_SOURCE_DIR_CONTAINER:-/host-easy-dune-admin}"
       EASY_DUNE_UPDATER_IMAGE: "${EASY_DUNE_UPDATER_IMAGE:-docker:27.5.1-cli}"
-      EASY_DUNE_RUNTIME_HELPER_IMAGE: "${EASY_DUNE_RUNTIME_HELPER_IMAGE:-easy-dune-admin:0.8.5-beta}"
+      EASY_DUNE_RUNTIME_HELPER_IMAGE: "${EASY_DUNE_RUNTIME_HELPER_IMAGE:-easy-dune-admin:0.8.6-beta}"
 
       # Optional tuning defaults exposed by the app.
       DEFAULT_WATER_REFILL_AMOUNT: "${DEFAULT_WATER_REFILL_AMOUNT:-1000000}"

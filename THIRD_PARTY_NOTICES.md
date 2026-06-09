@@ -11,6 +11,11 @@ and vehicle spawn helpers. Easy Dune Admin is an independent project developed
 with RedBlink's permission, while crediting RedBlink's stack, scripts,
 catalogs, and command workflows where used.
 
+The visual item picker and care-package style grant workflow in Easy Dune Admin
+were inspired by RedBlink's item-grant tooling concepts, then independently
+implemented here with Easy Dune Admin routes, templates, catalog handling, and
+UI code. No unreleased RedBlink panel source code is included.
+
 Copyright (c) 2026 RedBlink
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -41,8 +46,16 @@ progression/faction-component sync research, skill-module reset research,
 specialization keystone research, tutorial/codex recovery research,
 specialization XP track/cap research, character-level XP curve research, the
 admin New Player Kit starter pack recipe, and the bundled
-`data/icehunter-item-data.json` catalog are derived from or adapted from
-IceHunter / Ryan Wilson's MIT-licensed `dune-admin` project.
+`data/easy-dune-item-catalog.json` catalog are derived from or adapted from
+IceHunter / Ryan Wilson's MIT-licensed `dune-admin` project. The Easy Dune
+Admin catalog may include local corrections or added metadata while preserving
+this upstream attribution.
+
+Easy Dune Admin does not redistribute Dune: Awakening item icon image assets.
+The item catalog may store source icon path metadata, and individual server
+owners may provide local icon files under `/data/item-icons`, `static/item-icons`,
+or `EDA_ITEM_ICON_DIR` for their own private install. Those local files are
+intentionally ignored by Git and Docker release builds.
 
 Copyright (c) 2026 Ryan Wilson
 

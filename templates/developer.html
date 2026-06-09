@@ -39,6 +39,155 @@
 .developer-result-card th {
     color: #d8c08a;
 }
+
+.grant-catalog-controls {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.35fr) minmax(260px, 0.65fr);
+    gap: 12px;
+}
+
+.grant-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    max-height: 560px;
+    overflow: auto;
+    border: 1px solid #252018;
+    background: rgba(5, 5, 5, 0.72);
+    padding: 10px;
+}
+
+.grant-catalog-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-height: 86px;
+    margin: 0;
+    padding: 10px;
+    text-align: left;
+    border-color: #3a2a12;
+    background: rgba(10, 10, 10, 0.88);
+}
+
+.grant-catalog-card.selected {
+    border-color: #d4a94d;
+    box-shadow: 0 0 14px rgba(212,169,77,0.30);
+}
+
+.grant-catalog-icon {
+    width: 66px;
+    height: 66px;
+    border: 1px solid #3a2a12;
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 35% 28%, rgba(212,169,77,0.20), transparent 34%),
+        linear-gradient(145deg, #15110d, #050505);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d8c08a;
+    font-size: 12px;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.grant-catalog-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.grant-catalog-missing-icon {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at 50% 35%, rgba(212,169,77,0.18), transparent 34%),
+        linear-gradient(145deg, #0f0d0a, #030303);
+    color: #d8c08a;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.grant-catalog-name {
+    color: #e8d7b0;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.grant-catalog-meta {
+    color: #9f8f75;
+    font-size: 13px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.checkbox-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 10px 0 14px;
+}
+
+.checkbox-row label {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    margin: 0;
+}
+
+.icon-pack-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin: 10px 0 14px;
+}
+
+.icon-pack-summary .coord-box {
+    margin: 0;
+}
+
+.icon-pack-table-wrap {
+    max-height: 360px;
+    overflow: auto;
+    border: 1px solid #252018;
+    background: rgba(5, 5, 5, 0.72);
+    margin-top: 12px;
+}
+
+.icon-pack-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.icon-pack-table th,
+.icon-pack-table td {
+    border-bottom: 1px solid #20170c;
+    padding: 7px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.icon-pack-table th {
+    color: #d8c08a;
+    background: #090909;
+    position: sticky;
+    top: 0;
+}
+
+@media (max-width: 1100px) {
+    .grant-catalog-controls {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 {% endblock %}
 
@@ -81,6 +230,156 @@ Unlocked for this browser session. Many tools here are incomplete and dangerous 
 <form method="post" action="/developer/lock">
     <button class="danger" type="submit">Lock Developer Tools</button>
 </form>
+</div>
+
+<div class="box">
+<h2>Item Catalog Browser</h2>
+
+<div class="warning experimental">
+Developer-only catalog browser for selecting an item into the catalog editor below. The visual item-picker concept was inspired by observed RedBlink item-grant workflow ideas and independently implemented in Easy Dune Admin; actual care-package grants now live in the Admin Panel. Cards show initials or original fallbacks until local icon PNGs are placed under <b>static/item-icons</b>; matching catalog icon filenames will display automatically.
+</div>
+
+<div class="grant-catalog-controls">
+    <div>
+        <label>Category</label>
+        <select id="grantCatalogCategory">
+            <option value="">All Categories</option>
+        </select>
+    </div>
+    <div>
+        <label>Filter Loaded Item Catalog</label>
+        <input type="text" id="grantCatalogFilter" placeholder="lasgun, stillsuit, spice, thopter...">
+    </div>
+</div>
+
+<div class="coord-box" id="grantCatalogSelected">
+    Select an item from the catalog.
+</div>
+
+<div class="grant-catalog-grid" id="grantCatalogGrid">
+    Loading item catalog...
+</div>
+</div>
+
+<div class="box">
+<h2>Item Catalog Editor</h2>
+
+<div class="warning experimental">
+Developer-only editor for <b>data/easy-dune-item-catalog.json</b>. Select an item in the catalog browser above to load it here, or type a new template ID to add a missing entry. This edits Easy Dune Admin display/catalog metadata only; RedBlink's grant command and the game database remain the authority for whether a template can actually be granted or how the item behaves in game.
+</div>
+
+<form id="itemCatalogEditorForm">
+    <div class="field-grid">
+        <div>
+            <label>Template ID</label>
+            <input type="text" name="template_id" id="catalogEditorTemplateId" required>
+        </div>
+        <div>
+            <label>Name</label>
+            <input type="text" name="name" id="catalogEditorName">
+        </div>
+    </div>
+
+    <label>Category</label>
+    <input type="text" name="category" id="catalogEditorCategory" placeholder="items/weapons/rifles">
+
+    <div class="field-grid">
+        <div>
+            <label>Tier</label>
+            <input type="number" name="tier" id="catalogEditorTier" step="1">
+        </div>
+        <div>
+            <label>Rarity</label>
+            <input type="text" name="rarity" id="catalogEditorRarity">
+        </div>
+        <div>
+            <label>Stack Max</label>
+            <input type="number" name="stack_max" id="catalogEditorStackMax" min="1" step="1">
+        </div>
+        <div>
+            <label>Volume</label>
+            <input type="number" name="volume" id="catalogEditorVolume" step="0.01">
+        </div>
+    </div>
+
+    <div class="field-grid">
+        <div>
+            <label>Vendor Price</label>
+            <input type="number" name="vendor_price" id="catalogEditorVendorPrice" step="1">
+        </div>
+        <div>
+            <label>Max Durability</label>
+            <input type="number" name="max_durability" id="catalogEditorMaxDurability" step="0.01">
+        </div>
+        <div>
+            <label>Decayed Max Durability</label>
+            <input type="number" name="decayed_max_durability" id="catalogEditorDecayedMaxDurability" step="0.01">
+        </div>
+    </div>
+
+    <label>Icon Source Path</label>
+    <input type="text" name="icon" id="catalogEditorIcon" placeholder="GUI/Textures/Icons/.../T_UI_Icon...png">
+
+    <div class="checkbox-row">
+        <label><input type="checkbox" name="tradeable" id="catalogEditorTradeable" value="1"> Tradeable</label>
+        <label><input type="checkbox" name="is_schematic" id="catalogEditorIsSchematic" value="1"> Schematic</label>
+        <label><input type="checkbox" name="is_gradeable" id="catalogEditorIsGradeable" value="1"> Gradeable</label>
+    </div>
+
+    <button class="danger" type="submit">Save Catalog Entry</button>
+</form>
+</div>
+
+<div class="box">
+<h2>Item Icon Pack Utility</h2>
+
+<div class="warning experimental">
+Developer-only local asset helper. This does not scrape, download, or redistribute game art; it only lists icon filenames referenced by the Easy Dune Admin catalog and checks whether matching local files exist in <b>/data/item-icons</b>, <b>EDA_ITEM_ICON_DIR</b>, or <b>static/item-icons</b>.
+</div>
+
+<div class="field-grid">
+    <div>
+        <label>Status</label>
+        <select id="itemIconPackStatus">
+            <option value="missing">Missing Icons</option>
+            <option value="present">Present Icons</option>
+            <option value="all">All Referenced Icons</option>
+        </select>
+    </div>
+    <div>
+        <label>Filter Manifest</label>
+        <input type="text" id="itemIconPackFilter" placeholder="lasgun, stillsuit, T_UI_Icon...">
+    </div>
+    <div>
+        <label>Limit</label>
+        <input type="number" id="itemIconPackLimit" min="1" max="1000" step="1" value="250">
+    </div>
+</div>
+
+<button type="button" onclick="loadItemIconPackReport()">Refresh Icon Report</button>
+
+<div class="icon-pack-summary" id="itemIconPackSummary">
+    <div class="coord-box">Icon report not loaded.</div>
+</div>
+
+<label>Copyable Filename Manifest</label>
+<textarea id="itemIconPackManifest" rows="8" readonly placeholder="Missing icon filenames will appear here."></textarea>
+
+<div class="icon-pack-table-wrap">
+    <table class="icon-pack-table">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Filename</th>
+                <th>Source Path</th>
+                <th>Templates</th>
+            </tr>
+        </thead>
+        <tbody id="itemIconPackRows">
+            <tr><td colspan="4">Refresh the report to list icon filenames.</td></tr>
+        </tbody>
+    </table>
+</div>
 </div>
 
 <div class="box">
@@ -451,6 +750,73 @@ async function loadDeveloperCharacters() {
 }
 
 loadDeveloperCharacters();
+loadGrantCatalog();
+loadItemIconPackReport();
+
+const grantCatalogCategory = document.getElementById("grantCatalogCategory");
+if (grantCatalogCategory) {
+    grantCatalogCategory.addEventListener("change", loadGrantCatalog);
+}
+
+const grantCatalogFilter = document.getElementById("grantCatalogFilter");
+if (grantCatalogFilter) {
+    let grantCatalogFilterTimer = null;
+    grantCatalogFilter.addEventListener("input", function() {
+        window.clearTimeout(grantCatalogFilterTimer);
+        grantCatalogFilterTimer = window.setTimeout(loadGrantCatalog, 220);
+    });
+}
+
+const itemIconPackStatus = document.getElementById("itemIconPackStatus");
+if (itemIconPackStatus) {
+    itemIconPackStatus.addEventListener("change", loadItemIconPackReport);
+}
+
+const itemIconPackFilter = document.getElementById("itemIconPackFilter");
+if (itemIconPackFilter) {
+    let itemIconPackFilterTimer = null;
+    itemIconPackFilter.addEventListener("input", function() {
+        window.clearTimeout(itemIconPackFilterTimer);
+        itemIconPackFilterTimer = window.setTimeout(loadItemIconPackReport, 250);
+    });
+}
+
+const itemIconPackLimit = document.getElementById("itemIconPackLimit");
+if (itemIconPackLimit) {
+    itemIconPackLimit.addEventListener("change", loadItemIconPackReport);
+}
+
+const itemCatalogEditorForm = document.getElementById("itemCatalogEditorForm");
+if (itemCatalogEditorForm) {
+    const templateIdInput = document.getElementById("catalogEditorTemplateId");
+    if (templateIdInput) {
+        templateIdInput.addEventListener("change", function() {
+            loadCatalogEditorEntry(templateIdInput.value);
+        });
+    }
+
+    itemCatalogEditorForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const templateId = templateIdInput ? templateIdInput.value.trim() : "";
+        if (!templateId) {
+            showOutput("Template ID is required before saving a catalog entry.", itemCatalogEditorForm);
+            return;
+        }
+
+        if (!confirm(`Save Easy Dune Admin item catalog entry ${templateId}? This changes the project catalog JSON and may affect item picker/search display. Continue?`)) {
+            return;
+        }
+
+        const result = await postForm("/api/item-catalog-entry", itemCatalogEditorForm);
+        if (result && result.json && result.json.ok) {
+            if (grantCatalogCategory) {
+                delete grantCatalogCategory.dataset.loadedOnce;
+            }
+            await loadGrantCatalog();
+        }
+    });
+}
 
 function renderDeveloperResultSection(name, section) {
     const rows = section.rows || [];

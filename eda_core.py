@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.5-beta
+Panel version: 0.8.6-beta
 RedBlink stack compatibility target: v1.3.3
 
-0.8.5-beta RedBlink v1.3.3 support:
+0.8.6-beta RedBlink v1.3.3 support:
 - Updates RedBlink stack target to v1.3.3.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
@@ -42,7 +42,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request, session, jsonify, has_request_context
+from flask import Flask, redirect, render_template, request, session, jsonify, has_request_context, send_from_directory
 
 # Flask-SocketIO is required only for the optional full host shell.
 # The app still imports it at startup for the /infrastructure terminal page.
@@ -56,7 +56,7 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.8.5-beta"
+PANEL_VERSION = "0.8.6-beta"
 REDBLINK_STACK_VERSION = "v1.3.3"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
@@ -139,16 +139,342 @@ if DB_FILE != LEGACY_DB_FILE and LEGACY_DB_FILE.exists() and not DB_FILE.exists(
     except Exception:
         pass
 
-# IceHunter / Ryan Wilson's MIT-licensed dune-admin project includes a richer
-# exchange catalog than RedBlink's admin item list. We use this local copy for
-# market seeding because it includes tradeable flags, stack sizes, category
-# paths, rarity, tiers, and vendor prices. See README credits/third-party notes.
-MARKET_ITEM_DATA_FILE = BASE_DIR / "data" / "icehunter-item-data.json"
+# Easy Dune Admin item catalog. This began as IceHunter / Ryan Wilson's
+# MIT-licensed dune-admin item data and is kept as a project-local catalog so
+# we can correct display metadata without implying the file is an untouched
+# upstream copy. It feeds market seeding, item comparison, and the Developer
+# care-package builder; RedBlink remains the authority for live item grants.
+EDA_ITEM_CATALOG_FILE = BASE_DIR / "data" / "easy-dune-item-catalog.json"
+
+# Optional local icon pack directories. Easy Dune Admin does not redistribute
+# Dune: Awakening icon assets; server owners may provide their own local files.
+# Docker installs can use /data/item-icons for persistent private icons, or the
+# mounted host checkout's static/item-icons folder for local-only source assets.
+# Direct source installs can use static/item-icons beside the running app.
+LOCAL_ITEM_ICON_DIRS = [
+    EASY_DUNE_SOURCE_DIR / "static" / "item-icons",
+    BASE_DIR / "static" / "item-icons",
+    Path(os.environ.get("EDA_ITEM_ICON_DIR", str(APP_DATA_DIR / "item-icons"))).resolve(),
+]
+BASE_SCHEMATIC_ICON_FILENAME = "base-schematic.png"
+BASE_UNKNOWN_ICON_FILENAME = "base-unknown.png"
 
 # Market seed pricing is intentionally inflated from IceHunter's baseline so
 # Solari keeps some value on small private servers. Set to 1 to use the
 # original-style pricing scale, or tune higher/lower for your economy.
 MARKET_PRICE_MULTIPLIER = int(os.environ.get("MARKET_PRICE_MULTIPLIER", "5"))
+
+
+def eda_item_catalog_candidates():
+    """
+    Return the packaged catalog and, in Docker mode, the mounted host checkout.
+
+    Docker installs mount the Easy Dune Admin checkout at EASY_DUNE_SOURCE_DIR so
+    self-update and repair actions can operate on the real files. Prefer that
+    mounted checkout when present so catalog edits show immediately and survive
+    image rebuilds, then fall back to the packaged app copy.
+    """
+    source_mount_catalog = EASY_DUNE_SOURCE_DIR / "data" / EDA_ITEM_CATALOG_FILE.name
+    if source_mount_catalog != EDA_ITEM_CATALOG_FILE and source_mount_catalog.parent.exists():
+        return [source_mount_catalog, EDA_ITEM_CATALOG_FILE]
+    return [EDA_ITEM_CATALOG_FILE]
+
+
+def load_eda_item_catalog():
+    """
+    Load the Easy Dune Admin item catalog and report where it came from.
+
+    The catalog is intentionally JSON rather than a database table so local
+    corrections stay easy to review in git. Callers should surface catalog_error
+    instead of silently treating a missing file as "no Dune items exist".
+    """
+    last_error = ""
+    for catalog_file in eda_item_catalog_candidates():
+        if not catalog_file.exists():
+            continue
+        try:
+            with open(catalog_file, encoding="utf-8") as f:
+                root = json.load(f)
+            if not isinstance(root, dict):
+                raise ValueError("catalog root must be a JSON object")
+            root.setdefault("names", {})
+            root.setdefault("items", {})
+            return root, catalog_file, ""
+        except Exception as exc:
+            last_error = f"could not read {catalog_file}: {exc}"
+
+    return (
+        {"names": {}, "items": {}},
+        EDA_ITEM_CATALOG_FILE,
+        last_error
+        or "Easy Dune Admin item catalog was not found at "
+        + " or ".join(str(path) for path in eda_item_catalog_candidates()),
+    )
+
+
+def writable_eda_item_catalog_file():
+    """
+    Choose where catalog edits should be persisted.
+
+    In Docker mode the mounted source checkout is the useful target because
+    edits survive container replacement. In direct source mode, or if the mount
+    is unavailable, write beside the running app.
+    """
+    candidates = eda_item_catalog_candidates()
+    if len(candidates) > 1 and candidates[0].parent.exists():
+        return candidates[0]
+    return candidates[0]
+
+
+def save_eda_item_catalog(root):
+    target = writable_eda_item_catalog_file()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_name(target.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(root, f, indent=2)
+        f.write("\n")
+    tmp.replace(target)
+    return target
+
+
+def local_item_icon_file(icon_path, template_id=None):
+    """
+    Resolve a catalog icon source path to a locally supplied icon file.
+
+    The catalog stores Unreal/source-style paths. We only ever use the basename
+    and only when a matching local PNG/WebP/etc. exists in a configured icon
+    pack directory, keeping redistributed game art out of the project.
+    """
+    icon_filename = Path(str(icon_path or "")).name
+    candidate_names = []
+    if icon_filename:
+        candidate_names.append(icon_filename)
+
+    template_id = str(template_id or "").strip()
+    if template_id:
+        icon_suffix = Path(icon_filename).suffix or ".png"
+        candidate_names.append(f"{template_id}{icon_suffix}")
+        if icon_suffix.casefold() != ".png":
+            candidate_names.append(f"{template_id}.png")
+
+    if not candidate_names:
+        return None
+
+    for icon_dir in LOCAL_ITEM_ICON_DIRS:
+        for filename in dict.fromkeys(candidate_names):
+            candidate = icon_dir / filename
+            if candidate.exists() and candidate.is_file():
+                return candidate
+
+    return None
+
+
+def catalog_item_is_schematic(template_id, item):
+    if bool(item.get("is_schematic", False)):
+        return True
+
+    haystack = " ".join(
+        [
+            str(template_id or ""),
+            str(item.get("name", "") or ""),
+            str(item.get("category", "") or ""),
+        ]
+    ).casefold()
+    return "schematic" in haystack or "blueprint" in haystack
+
+
+def item_icon_pack_report(query="", status_filter="missing", limit_value=250):
+    """
+    Build a Developer-only report for optional, local item icon packs.
+
+    The report never downloads or bundles third-party/game images. It only uses
+    catalog metadata to tell a server owner which local filenames would light up
+    the visual item picker when placed in /data/item-icons, EDA_ITEM_ICON_DIR, or
+    static/item-icons.
+    """
+    raw_query = (query or "").strip().casefold()
+    status_filter = (status_filter or "missing").strip().casefold()
+    if status_filter not in {"missing", "present", "all"}:
+        status_filter = "missing"
+    try:
+        safe_limit = max(1, min(int(limit_value or 250), 1000))
+    except ValueError:
+        safe_limit = 250
+
+    root, source_path, catalog_error = load_eda_item_catalog()
+    icon_rows = {}
+
+    for template_id, item in (root.get("items") or {}).items():
+        icon_path = str(item.get("icon", "") or "").strip()
+        icon_filename = Path(icon_path).name
+        if not icon_filename:
+            continue
+
+        row = icon_rows.setdefault(
+            icon_filename,
+            {
+                "filename": icon_filename,
+                "source_paths": set(),
+                "templates": [],
+                "names": [],
+            },
+        )
+        row["source_paths"].add(icon_path)
+        row["templates"].append(template_id)
+        name = str(item.get("name", "") or "").strip()
+        if name:
+            row["names"].append(name)
+
+    rows = []
+    present_count = 0
+    missing_count = 0
+
+    for filename, row in sorted(icon_rows.items(), key=lambda pair: pair[0].casefold()):
+        icon_file = None
+        for template_id in sorted(set(row["templates"])):
+            icon_file = local_item_icon_file(filename, template_id)
+            if icon_file:
+                break
+        present = bool(icon_file)
+        if present:
+            present_count += 1
+        else:
+            missing_count += 1
+
+        source_paths = sorted(row["source_paths"])
+        templates = sorted(set(row["templates"]))
+        names = sorted(set(row["names"]))
+        haystack = " ".join([filename, *source_paths, *templates, *names]).casefold()
+
+        if raw_query and raw_query not in haystack:
+            continue
+        if status_filter == "missing" and present:
+            continue
+        if status_filter == "present" and not present:
+            continue
+
+        rows.append(
+            {
+                "filename": filename,
+                "present": present,
+                "local_path": str(icon_file) if icon_file else "",
+                "source_path": source_paths[0] if source_paths else "",
+                "source_paths": source_paths,
+                "template_count": len(templates),
+                "templates": templates[:12],
+                "sample_names": names[:8],
+            }
+        )
+
+        if len(rows) >= safe_limit:
+            break
+
+    manifest = "\n".join(row["filename"] for row in rows)
+
+    return {
+        "catalog_error": catalog_error,
+        "catalog_source": str(source_path),
+        "icon_dirs": [str(path) for path in LOCAL_ITEM_ICON_DIRS],
+        "items": rows,
+        "manifest": manifest,
+        "missing_count": missing_count,
+        "present_count": present_count,
+        "returned_count": len(rows),
+        "total_icon_filenames": len(icon_rows),
+    }
+
+
+def catalog_bool(value):
+    return str(value or "").strip().casefold() in {"1", "true", "yes", "on"}
+
+
+def catalog_int(value, field_name):
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return int(text)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a whole number") from exc
+
+
+def catalog_float(value, field_name):
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a number") from exc
+
+
+def get_eda_item_catalog_entry(template_id):
+    template_id = str(template_id or "").strip()
+    root, source_path, catalog_error = load_eda_item_catalog()
+    item = dict((root.get("items") or {}).get(template_id) or {})
+    if template_id and not item and template_id in (root.get("names") or {}):
+        item["name"] = root["names"][template_id]
+    return {
+        "catalog_error": catalog_error,
+        "catalog_source": str(source_path),
+        "item": {"template_id": template_id, **item} if template_id else {},
+    }
+
+
+def upsert_eda_item_catalog_entry(payload):
+    template_id = str(payload.get("template_id", "") or "").strip()
+    if not template_id:
+        raise ValueError("template id is required")
+    if any(ch.isspace() for ch in template_id):
+        raise ValueError("template id cannot contain whitespace")
+
+    root, _, catalog_error = load_eda_item_catalog()
+    if catalog_error and not root.get("items"):
+        raise ValueError(catalog_error)
+
+    names = root.setdefault("names", {})
+    items = root.setdefault("items", {})
+    item = dict(items.get(template_id) or {})
+
+    text_fields = ["name", "category", "rarity", "icon"]
+    for field in text_fields:
+        value = str(payload.get(field, "") or "").strip()
+        if value:
+            item[field] = value
+        else:
+            item.pop(field, None)
+
+    for field in ["tier", "stack_max", "vendor_price"]:
+        value = catalog_int(payload.get(field), field)
+        if value is None:
+            item.pop(field, None)
+        else:
+            item[field] = value
+
+    for field in ["volume", "max_durability", "decayed_max_durability"]:
+        value = catalog_float(payload.get(field), field)
+        if value is None:
+            item.pop(field, None)
+        else:
+            item[field] = value
+
+    for field in ["tradeable", "is_schematic", "is_gradeable"]:
+        item[field] = catalog_bool(payload.get(field))
+
+    if not item.get("name"):
+        item["name"] = template_id
+    if not item.get("category"):
+        item["category"] = "uncategorized"
+
+    names[template_id] = item["name"]
+    items[template_id] = item
+    saved_path = save_eda_item_catalog(root)
+
+    return {
+        "catalog_path": str(saved_path),
+        "item": {"template_id": template_id, **item},
+        "total_catalog_items": len(items),
+    }
 
 # Optional explicit Dune Exchange id for market seeding. Leave blank to use the
 # game's Global exchange function. If seeded rows succeed but do not appear in
@@ -3386,7 +3712,7 @@ def get_market_exchanges():
 def build_market_seed_plan(price_multiplier=None):
     multiplier = market_price_multiplier_from_value(price_multiplier)
     return market_seed.build_seed_plan(
-        MARKET_ITEM_DATA_FILE,
+        EDA_ITEM_CATALOG_FILE,
         multiplier,
         MARKET_EQUIPPABLE_LISTINGS,
         MARKET_SCHEMATIC_LISTINGS,
@@ -3410,7 +3736,7 @@ def seed_market_preset(clear_existing=True, price_multiplier=None, exchange_id=N
     exchange_id_override = market_exchange_id_from_value(exchange_id)
     plan = build_market_seed_plan(multiplier)
     if not plan:
-        raise ValueError(f"market item data not found or empty: {MARKET_ITEM_DATA_FILE}")
+        raise ValueError(f"market item data not found or empty: {EDA_ITEM_CATALOG_FILE}")
     sql = market_seed.build_seed_sql(
         plan,
         MARKET_BOT_CLASS,
@@ -3427,7 +3753,7 @@ def buy_player_market_listings(price_multiplier=None, threshold_percent=None, ma
     buy_limit = market_buy_max_from_value(max_buys)
     plan = build_market_seed_plan(multiplier)
     if not plan:
-        raise ValueError(f"market item data not found or empty: {MARKET_ITEM_DATA_FILE}")
+        raise ValueError(f"market item data not found or empty: {EDA_ITEM_CATALOG_FILE}")
     sql = market_seed.build_buy_player_listings_sql(
         plan,
         MARKET_BOT_CLASS,
@@ -4578,7 +4904,7 @@ def get_item_template_table_rows(table_ref, query="", limit_value=25):
 
 def search_local_item_template_catalog(query, limit_value=25):
     """
-    Search the bundled IceHunter item-data catalog for comparison.
+    Search the bundled Easy Dune Admin item catalog for comparison.
 
     This catalog is useful for names, category, tier, rarity, durability, stack
     size, tradeability, and icons, but it does not currently include detailed
@@ -4586,11 +4912,7 @@ def search_local_item_template_catalog(query, limit_value=25):
     """
     raw_query = (query or "").strip().casefold()
     safe_limit = max(1, min(int(limit_value or 25), 50))
-    root = {}
-
-    if MARKET_ITEM_DATA_FILE.exists():
-        with open(MARKET_ITEM_DATA_FILE, encoding="utf-8") as f:
-            root = json.load(f)
+    root, _, _ = load_eda_item_catalog()
 
     items = root.get("items") or {}
     matches = []
@@ -4625,6 +4947,99 @@ def search_local_item_template_catalog(query, limit_value=25):
             break
 
     return matches
+
+
+def grant_item_catalog(query="", category="", limit_value=160):
+    """
+    Build a browser-friendly grant catalog from Easy Dune Admin item data.
+
+    RedBlink's runtime admin item list remains the authority for actually
+    granting items. The bundled catalog is derived from IceHunter / Ryan
+    Wilson's MIT-licensed data, then corrected locally as needed. It gives this
+    panel names, categories, stack caps, rarity, tier, and source icon paths so
+    admins can build care-package style grants without memorizing template IDs.
+    """
+    raw_query = (query or "").strip().casefold()
+    raw_category = (category or "").strip()
+    try:
+        safe_limit = max(1, min(int(limit_value or 160), 400))
+    except ValueError:
+        safe_limit = 160
+    root, _, catalog_error = load_eda_item_catalog()
+
+    items = root.get("items") or {}
+    categories = {}
+    matches = []
+
+    for template_id, item in items.items():
+        item_category = str(item.get("category", "") or "uncategorized")
+        categories[item_category] = categories.get(item_category, 0) + 1
+
+        if raw_category and item_category != raw_category:
+            continue
+
+        haystack = " ".join(
+            [
+                template_id,
+                str(item.get("name", "")),
+                item_category,
+                str(item.get("rarity", "")),
+                str(item.get("tier", "")),
+            ]
+        ).casefold()
+
+        if raw_query and raw_query not in haystack:
+            continue
+
+        icon_path = str(item.get("icon", "") or "")
+        icon_filename = Path(icon_path).name if icon_path else ""
+        icon_url = ""
+        icon_file = local_item_icon_file(icon_path, template_id)
+        if not icon_file and catalog_item_is_schematic(template_id, item):
+            icon_file = local_item_icon_file(BASE_SCHEMATIC_ICON_FILENAME)
+        if not icon_file:
+            icon_file = local_item_icon_file(BASE_UNKNOWN_ICON_FILENAME)
+        if icon_file:
+            icon_url = f"/item-icons/{icon_file.name}?v={int(icon_file.stat().st_mtime)}"
+
+        matches.append(
+            {
+                "template_id": template_id,
+                "name": item.get("name", "") or template_id,
+                "category": item_category,
+                "tier": item.get("tier", ""),
+                "rarity": item.get("rarity", ""),
+                "stack_max": item.get("stack_max", ""),
+                "volume": item.get("volume", ""),
+                "vendor_price": item.get("vendor_price", ""),
+                "max_durability": item.get("max_durability", ""),
+                "decayed_max_durability": item.get("decayed_max_durability", ""),
+                "tradeable": bool(item.get("tradeable", False)),
+                "is_schematic": catalog_item_is_schematic(template_id, item),
+                "is_gradeable": bool(item.get("is_gradeable", False)),
+                "icon": icon_path,
+                "icon_url": icon_url,
+            }
+        )
+
+        if len(matches) >= safe_limit:
+            break
+
+    category_rows = [
+        {
+            "category": name,
+            "label": name.replace("items/", "").replace("/", " / "),
+            "count": count,
+        }
+        for name, count in sorted(categories.items(), key=lambda row: row[0].casefold())
+    ]
+
+    return {
+        "categories": category_rows,
+        "catalog_error": catalog_error,
+        "items": matches,
+        "total_catalog_items": len(items),
+    }
 
 
 def _optional_int_from_form(value, field_name, minimum=None):

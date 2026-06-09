@@ -1,4 +1,4 @@
-const EDA_CACHE_VERSION = "easy-dune-admin-0.8.5-beta-arrakis-background";
+const EDA_CACHE_VERSION = "easy-dune-admin-0.8.6-beta-admin-care-package";
 
 // Cache only static app-shell assets. Authenticated pages and API responses
 // stay network-first so sensitive admin data is not intentionally stored for

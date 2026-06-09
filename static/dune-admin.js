@@ -1,5 +1,8 @@
 let latestCharacters = [];
 const DEFAULT_ACTION_START_MESSAGE = "Action started. This may take some time. Wait for output confirmation.";
+let grantCatalogItems = [];
+let grantCatalogSelectedItem = null;
+let carePackageRows = [];
 
 function escapeHtml(value) {
     return String(value)
@@ -352,6 +355,7 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("solariCharacterSelect", chars);
     fillCharacterSelect("solariBankCharacterSelect", chars);
     fillCharacterSelect("exchangeBankSolariCharacterSelect", chars);
+    fillCharacterSelect("carePackageCharacterSelect", chars);
 }
 
 async function loadCharactersForItemEditsPage() {
@@ -380,6 +384,16 @@ function fillGrantPlayerId() {
     const input = document.getElementById("grantPlayerId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.fls_id || "";
+}
+
+function fillCarePackageTargetIds() {
+    const sel = document.getElementById("carePackageCharacterSelect");
+    const playerInput = document.getElementById("carePackagePlayerId");
+    const actorInput = document.getElementById("carePackageActorId");
+    const c = latestCharacters[Number(sel.value)];
+
+    if (playerInput) playerInput.value = c ? (c.fls_id || "") : "";
+    if (actorInput) actorInput.value = c ? (c.character_actor_id || "") : "";
 }
 
 function fillScoutPlayerId() {
@@ -1726,6 +1740,332 @@ function selectItem(itemId) {
         selected.textContent = `Selected Item: ${itemId}`;
         selected.style.display = "block";
     }
+}
+
+function grantCatalogInitials(item) {
+    const name = item.name || item.template_id || "?";
+    return name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0].toUpperCase())
+        .join("") || "?";
+}
+
+function grantCatalogCardHtml(item) {
+    const isSelected = grantCatalogSelectedItem && grantCatalogSelectedItem.template_id === item.template_id;
+    const sourceIcon = item.icon ? `Source icon: ${item.icon}` : "No source icon path in catalog.";
+    const icon = item.icon_url
+        ? `<img src="${escapeHtml(item.icon_url)}" alt="">`
+        : `<span class="grant-catalog-missing-icon" title="${escapeHtml(sourceIcon)} Local PNG not installed under static/item-icons.">${escapeHtml(grantCatalogInitials(item))}</span>`;
+    const tier = item.tier ? `T${item.tier}` : "Tier ?";
+    const rarity = item.rarity || "Unknown rarity";
+    const stack = item.stack_max ? `Stack ${item.stack_max}` : "Stack ?";
+
+    return `
+        <button type="button" class="grant-catalog-card${isSelected ? " selected" : ""}" data-template-id="${escapeHtml(item.template_id)}">
+            <span class="grant-catalog-icon">${icon}</span>
+            <span>
+                <span class="grant-catalog-name">${escapeHtml(item.name || item.template_id)}</span>
+                <span class="grant-catalog-meta">${escapeHtml(item.template_id)}</span>
+                <span class="grant-catalog-meta">${escapeHtml([tier, rarity, stack].join(" | "))}</span>
+                <span class="grant-catalog-meta">${escapeHtml((item.category || "").replace("items/", "").replaceAll("/", " / "))}</span>
+            </span>
+        </button>
+    `;
+}
+
+function renderGrantCatalogItems() {
+    const grid = document.getElementById("grantCatalogGrid");
+    if (!grid) return;
+
+    if (grantCatalogItems.length === 0) {
+        grid.textContent = "No catalog items matched.";
+        return;
+    }
+
+    grid.innerHTML = grantCatalogItems.map(grantCatalogCardHtml).join("");
+    grid.querySelectorAll(".grant-catalog-card").forEach(card => {
+        card.addEventListener("click", function() {
+            selectGrantCatalogItem(card.dataset.templateId || "");
+        });
+    });
+}
+
+function renderGrantCatalogCategories(categories, totalCatalogItems) {
+    const select = document.getElementById("grantCatalogCategory");
+    if (!select) return;
+
+    const current = select.value || "";
+    select.innerHTML = `<option value="">All Categories (${Number(totalCatalogItems || 0).toLocaleString()})</option>`;
+    (categories || []).forEach(row => {
+        const opt = document.createElement("option");
+        opt.value = row.category || "";
+        opt.textContent = `${row.label || row.category || "Uncategorized"} (${row.count || 0})`;
+        select.appendChild(opt);
+    });
+    select.value = current;
+}
+
+function selectGrantCatalogItem(templateId) {
+    grantCatalogSelectedItem = grantCatalogItems.find(item => item.template_id === templateId) || null;
+
+    const panel = document.getElementById("grantCatalogSelected");
+    const addButton = document.getElementById("carePackageAddItemButton");
+    const quantity = document.getElementById("carePackageQuantity");
+    const grantItemInput = document.getElementById("grantItemId");
+    const grantQuantityInput = document.getElementById("grantQuantity");
+
+    if (!grantCatalogSelectedItem) {
+        if (panel) panel.textContent = "Select an item from the catalog.";
+        if (addButton) addButton.disabled = true;
+        return;
+    }
+
+    if (quantity && Number(grantCatalogSelectedItem.stack_max || 0) > 1) {
+        quantity.value = Math.min(Number(grantCatalogSelectedItem.stack_max || 1), Number(quantity.value || 1) || 1);
+    }
+
+    if (grantItemInput) {
+        grantItemInput.value = grantCatalogSelectedItem.template_id || "";
+    }
+    if (grantQuantityInput && Number(grantCatalogSelectedItem.stack_max || 0) > 1) {
+        grantQuantityInput.value = Math.min(Number(grantCatalogSelectedItem.stack_max || 1), Number(grantQuantityInput.value || 1) || 1);
+    }
+
+    if (panel) {
+        const item = grantCatalogSelectedItem;
+        panel.innerHTML = `
+            <b>${escapeHtml(item.name || item.template_id)}</b><br>
+            Template: ${escapeHtml(item.template_id)}<br>
+            ${escapeHtml([item.tier ? `Tier ${item.tier}` : "", item.rarity || "", item.tradeable ? "Tradeable" : "Not tradeable"].filter(Boolean).join(" | "))}<br>
+            ${escapeHtml(item.category || "")}
+        `;
+    }
+    if (addButton) addButton.disabled = false;
+    fillItemCatalogEditor(grantCatalogSelectedItem);
+    selectItem(grantCatalogSelectedItem.template_id || "");
+    renderGrantCatalogItems();
+}
+
+function catalogEditorSetValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) field.value = value ?? "";
+}
+
+function catalogEditorSetChecked(id, value) {
+    const field = document.getElementById(id);
+    if (field) field.checked = Boolean(value);
+}
+
+function fillItemCatalogEditor(item) {
+    const form = document.getElementById("itemCatalogEditorForm");
+    if (!form || !item) return;
+
+    catalogEditorSetValue("catalogEditorTemplateId", item.template_id || "");
+    catalogEditorSetValue("catalogEditorName", item.name || "");
+    catalogEditorSetValue("catalogEditorCategory", item.category || "");
+    catalogEditorSetValue("catalogEditorTier", item.tier ?? "");
+    catalogEditorSetValue("catalogEditorRarity", item.rarity || "");
+    catalogEditorSetValue("catalogEditorStackMax", item.stack_max ?? "");
+    catalogEditorSetValue("catalogEditorVolume", item.volume ?? "");
+    catalogEditorSetValue("catalogEditorVendorPrice", item.vendor_price ?? "");
+    catalogEditorSetValue("catalogEditorMaxDurability", item.max_durability ?? "");
+    catalogEditorSetValue("catalogEditorDecayedMaxDurability", item.decayed_max_durability ?? "");
+    catalogEditorSetValue("catalogEditorIcon", item.icon || "");
+    catalogEditorSetChecked("catalogEditorTradeable", item.tradeable);
+    catalogEditorSetChecked("catalogEditorIsSchematic", item.is_schematic);
+    catalogEditorSetChecked("catalogEditorIsGradeable", item.is_gradeable);
+}
+
+async function loadCatalogEditorEntry(templateId) {
+    const form = document.getElementById("itemCatalogEditorForm");
+    const id = String(templateId || "").trim();
+    if (!form || !id) return;
+
+    showOutput("Loading catalog entry...", form);
+    try {
+        const response = await fetch(`/api/item-catalog-entry?template_id=${encodeURIComponent(id)}`);
+        const data = await response.json();
+        if (!data.ok) {
+            showOutput(data.error || "Catalog entry lookup failed.", form);
+            return;
+        }
+        fillItemCatalogEditor(data.item || { template_id: id });
+        if (data.catalog_error) {
+            showOutput(data.catalog_error, form);
+        }
+    } catch (error) {
+        showOutput("Catalog entry lookup failed.", form);
+    }
+}
+
+function renderItemIconPackReport(data) {
+    const summary = document.getElementById("itemIconPackSummary");
+    const manifest = document.getElementById("itemIconPackManifest");
+    const rows = document.getElementById("itemIconPackRows");
+    if (!summary || !manifest || !rows) return;
+
+    const iconDirs = (data.icon_dirs || []).map(path => `<div>${escapeHtml(path)}</div>`).join("");
+    summary.innerHTML = `
+        <div class="coord-box"><b>Total filenames</b><br>${Number(data.total_icon_filenames || 0).toLocaleString()}</div>
+        <div class="coord-box"><b>Present</b><br>${Number(data.present_count || 0).toLocaleString()}</div>
+        <div class="coord-box"><b>Missing</b><br>${Number(data.missing_count || 0).toLocaleString()}</div>
+        <div class="coord-box"><b>Search paths</b><br>${iconDirs || "No icon paths configured."}</div>
+    `;
+
+    manifest.value = data.manifest || "";
+
+    const items = data.items || [];
+    if (items.length === 0) {
+        rows.innerHTML = `<tr><td colspan="4">No icon filenames matched this report.</td></tr>`;
+        return;
+    }
+
+    rows.innerHTML = items.map(item => {
+        const status = item.present ? "Present" : "Missing";
+        const templates = (item.templates || []).join(", ");
+        const names = (item.sample_names || []).join(", ");
+        const templateCell = [templates, names ? `Names: ${names}` : ""].filter(Boolean).join("<br>");
+        return `
+            <tr>
+                <td>${escapeHtml(status)}</td>
+                <td><code>${escapeHtml(item.filename || "")}</code></td>
+                <td>${escapeHtml(item.source_path || "")}</td>
+                <td>${templateCell}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+async function loadItemIconPackReport() {
+    const summary = document.getElementById("itemIconPackSummary");
+    const rows = document.getElementById("itemIconPackRows");
+    const status = document.getElementById("itemIconPackStatus");
+    const filter = document.getElementById("itemIconPackFilter");
+    const limit = document.getElementById("itemIconPackLimit");
+    if (!summary || !rows || !status || !filter || !limit) return;
+
+    summary.innerHTML = `<div class="coord-box">Loading icon report...</div>`;
+    rows.innerHTML = `<tr><td colspan="4">Loading icon report...</td></tr>`;
+
+    try {
+        const params = new URLSearchParams();
+        params.set("status", status.value || "missing");
+        params.set("q", filter.value || "");
+        params.set("limit", limit.value || "250");
+
+        const response = await fetch(`/api/item-icon-pack-report?${params.toString()}`);
+        const data = await response.json();
+        if (!data.ok) {
+            summary.innerHTML = `<div class="warning danger">${escapeHtml(data.error || "Icon report failed.")}</div>`;
+            rows.innerHTML = `<tr><td colspan="4">Icon report failed.</td></tr>`;
+            return;
+        }
+
+        renderItemIconPackReport(data);
+    } catch (error) {
+        summary.innerHTML = `<div class="warning danger">Icon report failed.</div>`;
+        rows.innerHTML = `<tr><td colspan="4">Icon report failed.</td></tr>`;
+    }
+}
+
+async function loadGrantCatalog() {
+    const grid = document.getElementById("grantCatalogGrid");
+    const category = document.getElementById("grantCatalogCategory");
+    const filter = document.getElementById("grantCatalogFilter");
+    if (!grid || !category || !filter) return;
+
+    grid.textContent = "Loading item catalog...";
+
+    try {
+        const params = new URLSearchParams();
+        if (category.value) params.set("category", category.value);
+        if (filter.value) params.set("q", filter.value);
+        params.set("limit", "220");
+
+        const response = await fetch(`/api/grant-catalog?${params.toString()}`);
+        const data = await response.json();
+
+        if (!data.ok) {
+            grid.textContent = data.error || "Unable to load grant catalog.";
+            return;
+        }
+
+        if (data.catalog_error && Number(data.total_catalog_items || 0) === 0) {
+            grid.textContent = data.catalog_error;
+            renderGrantCatalogCategories([], 0);
+            return;
+        }
+
+        grantCatalogItems = data.items || [];
+        if (grantCatalogSelectedItem && !grantCatalogItems.some(item => item.template_id === grantCatalogSelectedItem.template_id)) {
+            grantCatalogSelectedItem = null;
+            selectGrantCatalogItem("");
+        }
+        if (!category.dataset.loadedOnce) {
+            renderGrantCatalogCategories(data.categories || [], data.total_catalog_items || 0);
+            category.dataset.loadedOnce = "1";
+        }
+        renderGrantCatalogItems();
+    } catch (error) {
+        grid.textContent = "Unable to load grant catalog.";
+    }
+}
+
+function addSelectedCarePackageItem() {
+    if (!grantCatalogSelectedItem) return;
+
+    const quantity = document.getElementById("carePackageQuantity");
+    const durability = document.getElementById("carePackageDurability");
+    const amount = Math.max(1, Number(quantity ? quantity.value : 1) || 1);
+
+    carePackageRows.push({
+        item_id: grantCatalogSelectedItem.template_id,
+        name: grantCatalogSelectedItem.name || grantCatalogSelectedItem.template_id,
+        quantity: amount,
+        durability: durability ? (durability.value || "1.0") : "1.0",
+        category: grantCatalogSelectedItem.category || "",
+        rarity: grantCatalogSelectedItem.rarity || "",
+        tier: grantCatalogSelectedItem.tier || ""
+    });
+
+    renderCarePackageQueue();
+}
+
+function removeCarePackageItem(index) {
+    carePackageRows.splice(index, 1);
+    renderCarePackageQueue();
+}
+
+function renderCarePackageQueue() {
+    const panel = document.getElementById("carePackageQueue");
+    const hidden = document.getElementById("carePackageJson");
+    if (!panel) return;
+
+    if (hidden) {
+        hidden.value = JSON.stringify(carePackageRows.map(row => ({
+            item_id: row.item_id,
+            quantity: row.quantity,
+            durability: row.durability
+        })));
+    }
+
+    if (carePackageRows.length === 0) {
+        panel.textContent = "No items queued.";
+        return;
+    }
+
+    panel.innerHTML = carePackageRows.map((row, index) => `
+        <div class="care-package-row">
+            <div>
+                <b>${escapeHtml(row.name)}</b><br>
+                <span class="grant-catalog-meta">${escapeHtml(row.item_id)} | x${escapeHtml(row.quantity)} | ${escapeHtml(row.durability)}</span>
+            </div>
+            <span class="status-chip">${escapeHtml(row.tier ? `T${row.tier}` : row.rarity || "Item")}</span>
+            <button type="button" class="care-package-remove danger" onclick="removeCarePackageItem(${index})" title="Remove item">&times;</button>
+        </div>
+    `).join("");
 }
 
 

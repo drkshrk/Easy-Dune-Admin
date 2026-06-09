@@ -27,12 +27,18 @@ Easy-Dune-Admin-*-source.zip
 Easy-Dune-Admin-*-source.tar.gz
 archive-write-test.tmp
 *.csv
-data/
+data/*
+!data/
+!data/easy-dune-item-catalog.json
 reference_*/
 _license_review_*/
 dune-awakening-selfhost-docker-*/
 DuneQueries/
 docker-preview/
+static/item-icons/*
+!static/item-icons/.gitkeep
+!static/item-icons/base-schematic.png
+!static/item-icons/base-unknown.png
 
 # Android local build output.
 android-app/.gradle/

@@ -39,6 +39,102 @@
     padding: 10px;
     margin: 10px 0 14px;
 }
+
+.grant-catalog-controls {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.35fr) minmax(260px, 0.65fr);
+    gap: 12px;
+}
+
+.grant-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    max-height: 560px;
+    overflow: auto;
+    border: 1px solid #252018;
+    background: rgba(5, 5, 5, 0.72);
+    padding: 10px;
+}
+
+.grant-catalog-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-height: 86px;
+    margin: 0;
+    padding: 10px;
+    text-align: left;
+    border-color: #3a2a12;
+    background: rgba(10, 10, 10, 0.88);
+}
+
+.grant-catalog-card.selected {
+    border-color: #d4a94d;
+    box-shadow: 0 0 14px rgba(212,169,77,0.30);
+}
+
+.grant-catalog-icon {
+    width: 66px;
+    height: 66px;
+    border: 1px solid #3a2a12;
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 35% 28%, rgba(212,169,77,0.20), transparent 34%),
+        linear-gradient(145deg, #15110d, #050505);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d8c08a;
+    font-size: 12px;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.grant-catalog-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.grant-catalog-missing-icon {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at 50% 35%, rgba(212,169,77,0.18), transparent 34%),
+        linear-gradient(145deg, #0f0d0a, #030303);
+    color: #d8c08a;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.grant-catalog-name {
+    color: #e8d7b0;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.grant-catalog-meta {
+    color: #9f8f75;
+    font-size: 13px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+    .grant-catalog-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
 </style>
 {% endblock %}
 
@@ -73,7 +169,7 @@
     <input type="text" name="item_id" id="grantItemId" required>
 
     <label>Quantity</label>
-    <input type="number" name="quantity" value="1" min="1" required>
+    <input type="number" name="quantity" id="grantQuantity" value="1" min="1" required>
 
     <label>Durability</label>
     <input type="text" name="durability" value="1.0" required>
@@ -85,7 +181,36 @@
 </div>
 
 <div class="box">
-<h2>AJAX Item Search</h2>
+<h2>Visual Item Selector</h2>
+
+<div class="warning info">
+Visual item picker concept inspired by RedBlink's item-grant workflow and independently implemented in Easy Dune Admin. Uses the Easy Dune Admin item catalog for names, categories, local icons, and stack hints. Selecting a card fills the Grant Item form; the actual grant still runs through RedBlink's normal item grant command.
+</div>
+
+<div class="grant-catalog-controls">
+    <div>
+        <label>Category</label>
+        <select id="grantCatalogCategory">
+            <option value="">All Categories</option>
+        </select>
+    </div>
+    <div>
+        <label>Filter Loaded Item Catalog</label>
+        <input type="text" id="grantCatalogFilter" placeholder="lasgun, stillsuit, spice, thopter...">
+    </div>
+</div>
+
+<div class="coord-box" id="grantCatalogSelected">
+    Select an item from the catalog.
+</div>
+
+<div class="grant-catalog-grid" id="grantCatalogGrid">
+    Loading item catalog...
+</div>
+</div>
+
+<div class="box">
+<h2>Legacy AJAX Item Search</h2>
 
 <form id="itemSearchForm">
     <input type="text" id="itemSearchQuery" placeholder="lasgun, spice, ornithopter...">
@@ -364,6 +489,21 @@ Requirements:<br>
 <script src="/static/dune-admin.js"></script>
 <script>
 loadCharactersForGrantPage();
+loadGrantCatalog();
+
+const grantCatalogCategory = document.getElementById("grantCatalogCategory");
+if (grantCatalogCategory) {
+    grantCatalogCategory.addEventListener("change", loadGrantCatalog);
+}
+
+const grantCatalogFilter = document.getElementById("grantCatalogFilter");
+if (grantCatalogFilter) {
+    let grantCatalogFilterTimer = null;
+    grantCatalogFilter.addEventListener("input", function() {
+        window.clearTimeout(grantCatalogFilterTimer);
+        grantCatalogFilterTimer = window.setTimeout(loadGrantCatalog, 220);
+    });
+}
 
 const grantForm = document.getElementById("grantForm");
 grantForm.addEventListener("submit", async function(event) {

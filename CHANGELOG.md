@@ -2,7 +2,7 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
-## 0.8.5-beta
+## 0.8.6-beta
 
 ### Added
 
@@ -10,15 +10,24 @@ All notable changes to Easy Dune Admin are documented here.
 - Added a selected item editor that loads one character-owned `dune.items` row, shows stack size, quality level, durability values, and pretty-printed raw `stats` JSON.
 - Added guarded item edit routes for stack size, quality level, known durability stat paths, full raw stats JSON replacement, and targeted raw stats JSON path set/remove operations for deeper item-stat research such as damage-code discovery.
 - Expanded the Item Edits layout with a larger raw JSON workspace plus editor-side character, inventory, and row/position dropdowns that show the selected target before submitting edits.
-- Added a read-only Template DB Inspector on Item Edits for discovering runtime template tables such as `item.templates`, searching rows as JSON, and comparing results against the bundled IceHunter / Ryan Wilson item-data catalog.
+- Added a read-only Template DB Inspector on Item Edits for discovering runtime template tables such as `item.templates`, searching rows as JSON, and comparing results against the bundled Easy Dune Admin item catalog derived from IceHunter / Ryan Wilson's MIT data.
 - Improved template table discovery with row counts, populated-table sorting, and a default populated-only filter so empty candidate tables do not dominate the inspector.
 - Corrected Docker-mode RedBlink mount guidance so `DUNE_ROOT_CONTAINER` defaults to the same absolute path as `REDBLINK_HOST_DIR`, avoiding host Docker bind-mount failures when RedBlink scripts launch sibling server containers.
 - Added a Dune-themed Arrakis background for login and authenticated pages, with a visible thopter, an under-sand worm trail, and blurred/dimmed authenticated-page treatment behind the admin panels.
+- Added an admin-only visual care-package builder, inspired by RedBlink's care-package workflow concept and independently implemented in Easy Dune Admin, using the bundled Easy Dune Admin item catalog derived from IceHunter / Ryan Wilson's MIT data for category/item cards while still granting through RedBlink commands, with optional XP in the same submission.
+- Included the bundled Easy Dune Admin item catalog in Docker builds so the Developer catalog browser and Admin care-package picker work in Docker mode instead of returning an empty catalog.
+- Added a Developer-only item catalog editor for creating missing catalog entries and correcting display metadata such as category, name, tier, rarity, stack size, durability, and icon source path.
+- Added local-only item icon pack support through `/data/item-icons` or `static/item-icons`, with the actual icon assets ignored from Git and Docker builds so Easy Dune Admin does not redistribute Dune: Awakening game art.
+- Added a Developer-only Item Icon Pack Utility that reports present/missing local icon filenames, local search paths, source catalog paths, related templates, and a copyable missing-icon manifest.
+- Added the same RedBlink-inspired visual item catalog picker to Item Grants so operators can select local-icon item cards directly into the normal RedBlink grant form.
+- Added an original `base-schematic.png` fallback icon for schematic/blueprint catalog entries that do not have an exact local icon match.
+- Added an original `base-unknown.png` question-mark fallback icon for all remaining catalog entries without an exact local icon match.
 
 ### Changed
 
+- Moved the visual care-package grant workflow into the Admin Panel while leaving the catalog editor and icon-pack utilities gated behind Developer Tools.
 - Fixed Docker-mode Dune Status listener checks by running status through a short-lived host-network helper container with the listener-probe tools RedBlink expects, avoiding false `MISSING` reports caused by checking `localhost` from inside the Easy Dune Admin bridge-network container.
-- Updated version strings to `0.8.5-beta`.
+- Updated version strings to `0.8.6-beta`.
 
 ## 0.8.4-beta
 
