@@ -64,6 +64,7 @@ DEPTH3_PARENT_CODES = {
 WEAPON_REMAP = {"shortblades": (1, 0), "longblades": (1, 1)}
 NON_SEEDED_CATEGORY_PREFIXES = (
     "templates/",
+    "patents/progression",
     "schematics/progression",
     "schematics/variants",
     "misc/licenses",

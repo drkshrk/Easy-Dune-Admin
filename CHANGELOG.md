@@ -29,9 +29,15 @@ All notable changes to Easy Dune Admin are documented here.
 - Moved the visual care-package grant workflow into the Admin Panel while leaving the catalog editor and icon-pack utilities gated behind Developer Tools.
 - Expanded market seeding coverage so every tradeable non-emote item in the Easy Dune Admin catalog is represented in the exchange seed plan, including consumables, cartography tools, utility tools, fuel, and other resource-like edge entries.
 - Expanded the visual grant/catalog picker to include names-only template IDs from the Easy Dune Admin catalog, raising the picker-visible catalog from 1,658 full metadata rows to 3,552 named template IDs.
-- Changed the Developer item catalog editor category field into a dropdown and added explicit category buckets for templates, schematics, progression schematics, variant schematics, and miscellaneous licenses.
+- Changed the Developer item catalog editor category field into a dropdown and added explicit category buckets for templates, schematics, progression patents, variant schematics, and miscellaneous licenses.
 - Moved existing schematic catalog rows into mirrored `schematics/*` categories and taught the market seeder to translate those schematic categories back to the original exchange category masks.
 - Promoted names-only schematic template IDs into editable non-tradeable catalog rows with inferred `schematics/*` categories, including battlerifle, vehicle, armor, utility, augment, progression, and variant buckets for easier manual cleanup.
+- Added load-time catalog normalization so Docker installs with an older host-mounted item catalog still show schematic rows in the new `schematics/*` buckets instead of empty category shells.
+- Marked item-side garment, weapon, and utility catalog rows as tradeable so the market seeder can include those families when their categories resolve to exchange masks.
+- Marked schematic armor, weapon, utility, and vehicle rows plus item-side vehicle rows as tradeable, keeping patents, variants, templates, licenses, and augment categories opt-in.
+- Moved consumable schematic rows out of the variant bucket into `schematics/consumables` and marked consumable item/schematic categories tradeable for market seeding.
+- Preserved host file ownership when Docker-mode catalog edits save `data/easy-dune-item-catalog.json`, plus documented the `chown` repair for catalogs saved by older root-owned containers.
+- Reduced authenticated navbar button width by tightening horizontal padding, with an additional compact rule for lower-resolution layouts.
 - Fixed Docker-mode Dune Status listener checks by running status through a short-lived host-network helper container with the listener-probe tools RedBlink expects, avoiding false `MISSING` reports caused by checking `localhost` from inside the Easy Dune Admin bridge-network container.
 - Updated version strings to `0.8.6-beta`.
 

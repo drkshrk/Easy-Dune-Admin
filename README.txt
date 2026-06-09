@@ -518,6 +518,13 @@ not removed. Avoid:
 
 unless you intentionally want to reset the webadmin database.
 
+Docker-mode catalog edits try to preserve host ownership for
+data/easy-dune-item-catalog.json. If an older container saved the catalog as
+root and your normal VM user cannot overwrite it, repair from the Docker host:
+
+  sudo chown "$USER:$USER" /path/to/easy-dune-admin/data
+  sudo chown "$USER:$USER" /path/to/easy-dune-admin/data/easy-dune-item-catalog.json
+
 See DOCKER.md for setup notes.
 
 

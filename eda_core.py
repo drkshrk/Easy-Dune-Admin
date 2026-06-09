@@ -168,7 +168,7 @@ EDA_EXTRA_ITEM_CATEGORIES = [
     "schematics/weapons",
     "schematics/vehicles",
     "schematics/consumables",
-    "schematics/progression",
+    "patents/progression",
     "schematics/variants",
     "schematics/armor/lightarmor",
     "schematics/armor/heavyarmor",
@@ -232,6 +232,112 @@ def eda_item_catalog_candidates():
     return [EDA_ITEM_CATALOG_FILE]
 
 
+def catalog_item_is_schematic_row(template_id, item):
+    """
+    Identify schematic catalog rows from either explicit metadata or template text.
+
+    Older local catalogs did not always carry is_schematic, so load-time
+    category repair checks the template id and display name too.
+    """
+    haystack = f"{template_id} {item.get('name', '')}".casefold()
+    return bool(item.get("is_schematic")) or "schematic" in haystack
+
+
+def normalize_eda_item_catalog(root):
+    """
+    Repair older local catalog categories before the UI builds picker counts.
+
+    Docker installs may keep a host-mounted catalog across image rebuilds. This
+    keeps old schematic rows from appearing in item/template categories after a
+    newer Easy Dune Admin build has introduced mirrored schematics/* buckets.
+    """
+    items = root.setdefault("items", {})
+    names = root.setdefault("names", {})
+
+    for template_id, item in list(items.items()):
+        if not isinstance(item, dict):
+            continue
+
+        category = str(item.get("category", "") or "")
+        if category == "schematics/progression":
+            item["category"] = "patents/progression"
+            category = item["category"]
+        if category == "schematics/weapons":
+            haystack = f"{template_id} {item.get('name', '')}".casefold()
+            if "scattergun" in haystack:
+                item["category"] = "schematics/weapons/shotgun"
+            elif "lmg" in haystack:
+                item["category"] = "schematics/weapons/heavyrifle"
+            continue
+
+        if not catalog_item_is_schematic_row(template_id, item):
+            continue
+
+        if category.startswith("items/garment/"):
+            item["category"] = "schematics/armor/" + category.removeprefix("items/garment/")
+            item["is_schematic"] = True
+        elif category.startswith("items/weapons/"):
+            item["category"] = "schematics/weapons/" + category.removeprefix("items/weapons/")
+            item["is_schematic"] = True
+        elif category.startswith("items/vehicles/"):
+            item["category"] = "schematics/vehicles/" + category.removeprefix("items/vehicles/")
+            item["is_schematic"] = True
+        elif category.startswith("items/augment/"):
+            item["category"] = "schematics/augments/" + category.removeprefix("items/augment/")
+            item["is_schematic"] = True
+        elif category.startswith("items/utility/consumables/"):
+            item["category"] = "schematics/consumables"
+            item["is_schematic"] = True
+        elif category.startswith("items/utility/"):
+            item["category"] = "schematics/utility/" + category.removeprefix("items/utility/")
+            item["is_schematic"] = True
+
+    for template_id, display_name in list(names.items()):
+        if template_id in items:
+            continue
+        haystack = f"{template_id} {display_name}".casefold()
+        if "schematic" not in haystack:
+            continue
+
+        category = "schematics/variants"
+        if "manual of the friendly desert" in haystack or "craftedmap" in haystack or "crafted map" in haystack:
+            category = "patents/progression"
+        elif "scattergun" in haystack:
+            category = "schematics/weapons/shotgun"
+        elif "lmg" in haystack:
+            category = "schematics/weapons/heavyrifle"
+        elif "battlerifle" in haystack or "battle rifle" in haystack or "karpov" in haystack:
+            category = "schematics/weapons/battlerifle"
+        elif "pistol" in haystack:
+            category = "schematics/weapons/pistol"
+        elif "smg" in haystack:
+            category = "schematics/weapons/smg"
+        elif "shotgun" in haystack:
+            category = "schematics/weapons/shotgun"
+        elif "rifle" in haystack:
+            category = "schematics/weapons/heavyrifle"
+        elif "stillsuit" in haystack:
+            category = "schematics/armor/stillsuits"
+        elif "armor" in haystack or "armour" in haystack:
+            category = "schematics/armor/lightarmor"
+        elif "ornithopter" in haystack:
+            category = "schematics/vehicles/lightornithopter"
+        elif "sandbike" in haystack:
+            category = "schematics/vehicles/sandbike"
+        elif "buggy" in haystack:
+            category = "schematics/vehicles/buggy"
+
+        items[template_id] = {
+            "name": display_name or template_id,
+            "stack_max": 1,
+            "category": category,
+            "tradeable": False,
+            "is_schematic": True,
+        }
+
+    return root
+
+
 def load_eda_item_catalog():
     """
     Load the Easy Dune Admin item catalog and report where it came from.
@@ -251,6 +357,7 @@ def load_eda_item_catalog():
                 raise ValueError("catalog root must be a JSON object")
             root.setdefault("names", {})
             root.setdefault("items", {})
+            normalize_eda_item_catalog(root)
             return root, catalog_file, ""
         except Exception as exc:
             last_error = f"could not read {catalog_file}: {exc}"
@@ -281,12 +388,62 @@ def writable_eda_item_catalog_file():
 def save_eda_item_catalog(root):
     target = writable_eda_item_catalog_file()
     target.parent.mkdir(parents=True, exist_ok=True)
+    owner_ids = catalog_save_owner_ids(target)
     tmp = target.with_name(target.name + ".tmp")
     with open(tmp, "w", encoding="utf-8", newline="\n") as f:
         json.dump(root, f, indent=2)
         f.write("\n")
     tmp.replace(target)
+    restore_catalog_file_owner(target, owner_ids)
     return target
+
+
+def catalog_save_owner_ids(target):
+    """
+    Choose the host owner that should keep owning the editable catalog file.
+
+    Docker-mode catalog edits write through a bind mount into the host checkout.
+    If the container is running as root, replacing the JSON file can otherwise
+    leave it root-owned on the VM and block normal SFTP/scp edits. Prefer the
+    parent data directory when the existing file is root-owned but the checkout
+    directory is not; this repairs already-wedged catalogs on the next save.
+    """
+    try:
+        parent_stat = target.parent.stat()
+        parent_owner = (parent_stat.st_uid, parent_stat.st_gid)
+    except OSError:
+        parent_owner = None
+
+    try:
+        target_stat = target.stat()
+        target_owner = (target_stat.st_uid, target_stat.st_gid)
+    except OSError:
+        target_owner = None
+
+    if (
+        target_owner
+        and parent_owner
+        and target_owner[0] == 0
+        and parent_owner[0] not in (0, target_owner[0])
+    ):
+        return parent_owner
+    return target_owner or parent_owner
+
+
+def restore_catalog_file_owner(target, owner_ids):
+    """
+    Best-effort ownership repair for Docker/Linux bind mounts.
+
+    os.chown is unavailable on some platforms and may fail for non-root direct
+    installs; either case is safe to ignore because the file content is already
+    saved and local non-Docker installs normally preserve user ownership.
+    """
+    if not owner_ids or not hasattr(os, "chown"):
+        return
+    try:
+        os.chown(target, owner_ids[0], owner_ids[1])
+    except (AttributeError, OSError, PermissionError):
+        return
 
 
 def local_item_icon_file(icon_path, template_id=None):

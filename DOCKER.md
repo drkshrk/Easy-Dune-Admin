@@ -42,6 +42,17 @@ Do not run `docker compose down -v` unless you want to delete that named volume
 and reset the webadmin setup. Plain `docker compose down` leaves the volume
 intact.
 
+Docker-mode catalog edits write through the mounted Easy Dune Admin checkout.
+Current builds try to keep `data/easy-dune-item-catalog.json` owned by the same
+Linux user that owns the checkout's `data` directory. If an older build saved
+the catalog as `root` and SFTP/scp can no longer overwrite it, repair ownership
+from the Docker host:
+
+```bash
+sudo chown "$USER:$USER" /path/to/easy-dune-admin/data
+sudo chown "$USER:$USER" /path/to/easy-dune-admin/data/easy-dune-item-catalog.json
+```
+
 ## Quick Start
 
 ```bash
