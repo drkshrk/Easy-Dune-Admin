@@ -147,7 +147,7 @@ Some screenshots are captured at reduced browser zoom levels to show more of the
 ### Market Tools
 
 - Admin-only preset market seeding
-- Seeds NPC exchange listings for equippable items, schematics, and resources
+- Seeds NPC exchange listings for every tradeable non-emote item in the Easy Dune Admin catalog, including equippables, schematics, resources, consumables, ammunition, utility items, and cartography tools
 - Adds manual NPC stock for RocketAmmo, InfantryRocketAmmo, Napalm, Healkit Mk6, Iodine Pill, Sapho Juice, Melange Spiced Wine, Personal Light, and Blank Sinkchart
 - Uses a `Revy`-style bot owner and `is_npc_order = TRUE`
 - Seed Exchange selector is populated from observed database exchange IDs and supports servers whose visible player market is not the DB `Global` exchange id
@@ -621,9 +621,10 @@ files are ignored from Git and Docker release builds. Developer Tools includes a
 Utility that lists present and missing local icon filenames and provides a
 copyable filename manifest.
 
-Easy Dune Admin includes an original `base-schematic.png` fallback for schematic
-or blueprint entries that do not have an exact local icon match, plus an
-original `base-unknown.png` question-mark fallback for other unmatched entries.
+Easy Dune Admin includes original `base-schematic.png` and `base-augment.png`
+fallbacks for schematic/blueprint and augment entries that do not have an exact
+local icon match, plus an original `base-unknown.png` question-mark fallback
+for other unmatched entries.
 
 GitHub README screenshots live in `images/`:
 

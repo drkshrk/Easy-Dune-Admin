@@ -21,11 +21,13 @@ All notable changes to Easy Dune Admin are documented here.
 - Added a Developer-only Item Icon Pack Utility that reports present/missing local icon filenames, local search paths, source catalog paths, related templates, and a copyable missing-icon manifest.
 - Added the same RedBlink-inspired visual item catalog picker to Item Grants so operators can select local-icon item cards directly into the normal RedBlink grant form.
 - Added an original `base-schematic.png` fallback icon for schematic/blueprint catalog entries that do not have an exact local icon match.
+- Added an original `base-augment.png` fallback icon for augment catalog entries that do not have an exact local icon match.
 - Added an original `base-unknown.png` question-mark fallback icon for all remaining catalog entries without an exact local icon match.
 
 ### Changed
 
 - Moved the visual care-package grant workflow into the Admin Panel while leaving the catalog editor and icon-pack utilities gated behind Developer Tools.
+- Expanded market seeding coverage so every tradeable non-emote item in the Easy Dune Admin catalog is represented in the exchange seed plan, including consumables, cartography tools, utility tools, fuel, and other resource-like edge entries.
 - Fixed Docker-mode Dune Status listener checks by running status through a short-lived host-network helper container with the listener-probe tools RedBlink expects, avoiding false `MISSING` reports caused by checking `localhost` from inside the Easy Dune Admin bridge-network container.
 - Updated version strings to `0.8.6-beta`.
 

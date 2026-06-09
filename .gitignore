@@ -38,6 +38,7 @@ docker-preview/
 static/item-icons/*
 !static/item-icons/.gitkeep
 !static/item-icons/base-schematic.png
+!static/item-icons/base-augment.png
 !static/item-icons/base-unknown.png
 
 # Android local build output.

@@ -326,11 +326,36 @@ def preset_kind(item):
     stack_max = int(item.get("stack_max") or 1)
     if item.get("is_schematic"):
         return "schematic"
-    if stack_max > 1 and category.startswith("items/misc/"):
+    if category.startswith("items/misc/"):
         return "resource"
+    if category.startswith("items/weapons/ammunition"):
+        return "ammunition"
+    if category.startswith("items/utility/consumables/"):
+        return "consumable"
+    if category.startswith("items/utility/cartographytools"):
+        return "cartography"
+    if category.startswith("items/utility/"):
+        return "utility"
     if stack_max <= 1 and category.startswith(("items/garment/", "items/weapons/", "items/vehicles/", "items/utility/", "items/augment/")):
         return "equippable"
     return ""
+
+
+def stack_size_for_kind(item, kind, resource_stack_size):
+    stack_max = max(1, int(item.get("stack_max") or 1))
+    if kind == "resource":
+        return min(int(resource_stack_size), stack_max)
+    if kind in {"ammunition", "consumable", "cartography", "utility"} and stack_max > 1:
+        return stack_max
+    return 1
+
+
+def listing_count_for_kind(kind, equippable_listings, schematic_listings):
+    if kind == "schematic":
+        return schematic_listings
+    if kind == "equippable":
+        return equippable_listings
+    return 1
 
 
 def matches_special_name(item, template_id, special_name_terms):
@@ -365,16 +390,11 @@ def build_seed_plan(
             mask, depth, ok = unique_schematic_mask(category)
             if not ok:
                 mask, depth = category_mask(category, index)
-            listings = schematic_listings
-            stack_size = 1
-        elif kind == "resource":
-            mask, depth = category_mask(category, index)
-            listings = 1
-            stack_size = resource_stack_size
         else:
             mask, depth = category_mask(category, index)
-            listings = equippable_listings
-            stack_size = 1
+
+        listings = listing_count_for_kind(kind, equippable_listings, schematic_listings)
+        stack_size = stack_size_for_kind(item, kind, resource_stack_size)
 
         special_boost = kind != "resource" and matches_special_name(item, template_id, special_name_terms)
         if special_boost:

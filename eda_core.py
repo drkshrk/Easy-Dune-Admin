@@ -143,7 +143,7 @@ if DB_FILE != LEGACY_DB_FILE and LEGACY_DB_FILE.exists() and not DB_FILE.exists(
 # MIT-licensed dune-admin item data and is kept as a project-local catalog so
 # we can correct display metadata without implying the file is an untouched
 # upstream copy. It feeds market seeding, item comparison, and the Developer
-# care-package builder; RedBlink remains the authority for live item grants.
+# catalog browser; RedBlink remains the authority for live item grants.
 EDA_ITEM_CATALOG_FILE = BASE_DIR / "data" / "easy-dune-item-catalog.json"
 
 # Optional local icon pack directories. Easy Dune Admin does not redistribute
@@ -157,6 +157,7 @@ LOCAL_ITEM_ICON_DIRS = [
     Path(os.environ.get("EDA_ITEM_ICON_DIR", str(APP_DATA_DIR / "item-icons"))).resolve(),
 ]
 BASE_SCHEMATIC_ICON_FILENAME = "base-schematic.png"
+BASE_AUGMENT_ICON_FILENAME = "base-augment.png"
 BASE_UNKNOWN_ICON_FILENAME = "base-unknown.png"
 
 # Market seed pricing is intentionally inflated from IceHunter's baseline so
@@ -281,6 +282,22 @@ def catalog_item_is_schematic(template_id, item):
         ]
     ).casefold()
     return "schematic" in haystack or "blueprint" in haystack
+
+
+def catalog_item_is_augment(template_id, item):
+    category = str(item.get("category", "") or "").casefold()
+    if category.startswith("items/augment/") or category == "items/augment":
+        return True
+
+    haystack = " ".join(
+        [
+            str(template_id or ""),
+            str(item.get("name", "") or ""),
+            category,
+            str(item.get("icon", "") or ""),
+        ]
+    ).casefold()
+    return "augment" in haystack
 
 
 def item_icon_pack_report(query="", status_filter="missing", limit_value=250):
@@ -3711,8 +3728,9 @@ def get_market_exchanges():
 
 def build_market_seed_plan(price_multiplier=None):
     multiplier = market_price_multiplier_from_value(price_multiplier)
+    _, catalog_path, _ = load_eda_item_catalog()
     return market_seed.build_seed_plan(
-        EDA_ITEM_CATALOG_FILE,
+        catalog_path,
         multiplier,
         MARKET_EQUIPPABLE_LISTINGS,
         MARKET_SCHEMATIC_LISTINGS,
@@ -4995,6 +5013,8 @@ def grant_item_catalog(query="", category="", limit_value=160):
         icon_filename = Path(icon_path).name if icon_path else ""
         icon_url = ""
         icon_file = local_item_icon_file(icon_path, template_id)
+        if not icon_file and catalog_item_is_augment(template_id, item):
+            icon_file = local_item_icon_file(BASE_AUGMENT_ICON_FILENAME)
         if not icon_file and catalog_item_is_schematic(template_id, item):
             icon_file = local_item_icon_file(BASE_SCHEMATIC_ICON_FILENAME)
         if not icon_file:
@@ -5015,6 +5035,7 @@ def grant_item_catalog(query="", category="", limit_value=160):
                 "max_durability": item.get("max_durability", ""),
                 "decayed_max_durability": item.get("decayed_max_durability", ""),
                 "tradeable": bool(item.get("tradeable", False)),
+                "is_augment": catalog_item_is_augment(template_id, item),
                 "is_schematic": catalog_item_is_schematic(template_id, item),
                 "is_gradeable": bool(item.get("is_gradeable", False)),
                 "icon": icon_path,
