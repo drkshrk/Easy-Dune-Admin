@@ -1,4 +1,4 @@
-const EDA_CACHE_VERSION = "easy-dune-admin-0.8.6-beta-admin-care-package";
+const EDA_CACHE_VERSION = "easy-dune-admin-0.8.6-beta-schematic-extra-categories";
 
 // Cache only static app-shell assets. Authenticated pages and API responses
 // stay network-first so sensitive admin data is not intentionally stored for

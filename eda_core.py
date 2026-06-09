@@ -159,6 +159,57 @@ LOCAL_ITEM_ICON_DIRS = [
 BASE_SCHEMATIC_ICON_FILENAME = "base-schematic.png"
 BASE_AUGMENT_ICON_FILENAME = "base-augment.png"
 BASE_UNKNOWN_ICON_FILENAME = "base-unknown.png"
+EDA_EXTRA_ITEM_CATEGORIES = [
+    "templates/armor",
+    "templates/weapons",
+    "templates/vehicles",
+    "templates/consumables",
+    "schematics/armor",
+    "schematics/weapons",
+    "schematics/vehicles",
+    "schematics/consumables",
+    "schematics/progression",
+    "schematics/variants",
+    "schematics/armor/lightarmor",
+    "schematics/armor/heavyarmor",
+    "schematics/armor/stillsuits",
+    "schematics/armor/utilitywearables",
+    "schematics/armor/socialwearables",
+    "schematics/weapons/pistol",
+    "schematics/weapons/heavypistol",
+    "schematics/weapons/heavyrifle",
+    "schematics/weapons/smg",
+    "schematics/weapons/spitdart",
+    "schematics/weapons/shotgun",
+    "schematics/weapons/battlerifle",
+    "schematics/weapons/heavyshotgun",
+    "schematics/weapons/missilelauncher",
+    "schematics/weapons/flamethrower",
+    "schematics/weapons/fireballer",
+    "schematics/weapons/lasgun",
+    "schematics/weapons/shortblades",
+    "schematics/weapons/longblades",
+    "schematics/vehicles/sandbike",
+    "schematics/vehicles/buggy",
+    "schematics/vehicles/lightornithopter",
+    "schematics/vehicles/mediumornithopter",
+    "schematics/vehicles/transportornithopter",
+    "schematics/vehicles/sandcrawler",
+    "schematics/augments/armor",
+    "schematics/augments/melee",
+    "schematics/augments/misc",
+    "schematics/augments/ranged",
+    "schematics/utility/cartographytools",
+    "schematics/utility/deployables",
+    "schematics/utility/gatheringtools/compactor",
+    "schematics/utility/gatheringtools/cutteray",
+    "schematics/utility/hydrationtools/bloodtools",
+    "schematics/utility/hydrationtools/watertools",
+    "schematics/utility/utilitytools/powerpack",
+    "schematics/utility/utilitytools/shield",
+    "schematics/utility/utilitytools/suspensor",
+    "misc/licenses",
+]
 
 # Market seed pricing is intentionally inflated from IceHunter's baseline so
 # Solari keeps some value on small private servers. Set to 1 to use the
@@ -4980,18 +5031,29 @@ def grant_item_catalog(query="", category="", limit_value=160):
     raw_query = (query or "").strip().casefold()
     raw_category = (category or "").strip()
     try:
-        safe_limit = max(1, min(int(limit_value or 160), 400))
+        safe_limit = max(1, min(int(limit_value or 160), 5000))
     except ValueError:
         safe_limit = 160
     root, _, catalog_error = load_eda_item_catalog()
 
     items = root.get("items") or {}
+    names = root.get("names") or {}
+    all_template_ids = sorted(set(items.keys()) | set(names.keys()), key=str.casefold)
     categories = {}
+    for template_id in all_template_ids:
+        item = items.get(template_id) or {}
+        item_category = str(item.get("category", "") or "names-only")
+        categories[item_category] = categories.get(item_category, 0) + 1
+
+    for category_name in EDA_EXTRA_ITEM_CATEGORIES:
+        categories.setdefault(category_name, 0)
+
     matches = []
 
-    for template_id, item in items.items():
-        item_category = str(item.get("category", "") or "uncategorized")
-        categories[item_category] = categories.get(item_category, 0) + 1
+    for template_id in all_template_ids:
+        item = items.get(template_id) or {}
+        name = item.get("name", "") or names.get(template_id, "") or template_id
+        item_category = str(item.get("category", "") or "names-only")
 
         if raw_category and item_category != raw_category:
             continue
@@ -4999,7 +5061,7 @@ def grant_item_catalog(query="", category="", limit_value=160):
         haystack = " ".join(
             [
                 template_id,
-                str(item.get("name", "")),
+                str(name),
                 item_category,
                 str(item.get("rarity", "")),
                 str(item.get("tier", "")),
@@ -5025,7 +5087,7 @@ def grant_item_catalog(query="", category="", limit_value=160):
         matches.append(
             {
                 "template_id": template_id,
-                "name": item.get("name", "") or template_id,
+                "name": name,
                 "category": item_category,
                 "tier": item.get("tier", ""),
                 "rarity": item.get("rarity", ""),
@@ -5034,7 +5096,8 @@ def grant_item_catalog(query="", category="", limit_value=160):
                 "vendor_price": item.get("vendor_price", ""),
                 "max_durability": item.get("max_durability", ""),
                 "decayed_max_durability": item.get("decayed_max_durability", ""),
-                "tradeable": bool(item.get("tradeable", False)),
+                "tradeable": bool(item.get("tradeable", False)) if item else "",
+                "metadata_only": not bool(item),
                 "is_augment": catalog_item_is_augment(template_id, item),
                 "is_schematic": catalog_item_is_schematic(template_id, item),
                 "is_gradeable": bool(item.get("is_gradeable", False)),
@@ -5047,19 +5110,19 @@ def grant_item_catalog(query="", category="", limit_value=160):
             break
 
     category_rows = [
-        {
-            "category": name,
-            "label": name.replace("items/", "").replace("/", " / "),
-            "count": count,
-        }
-        for name, count in sorted(categories.items(), key=lambda row: row[0].casefold())
+            {
+                "category": name,
+                "label": "names-only / uncategorized" if name == "names-only" else name.replace("items/", "").replace("/", " / "),
+                "count": count,
+            }
+            for name, count in sorted(categories.items(), key=lambda row: row[0].casefold())
     ]
 
     return {
         "categories": category_rows,
         "catalog_error": catalog_error,
         "items": matches,
-        "total_catalog_items": len(items),
+        "total_catalog_items": len(all_template_ids),
     }
 
 

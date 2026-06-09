@@ -62,6 +62,12 @@ DEPTH3_PARENT_CODES = {
 }
 
 WEAPON_REMAP = {"shortblades": (1, 0), "longblades": (1, 1)}
+NON_SEEDED_CATEGORY_PREFIXES = (
+    "templates/",
+    "schematics/progression",
+    "schematics/variants",
+    "misc/licenses",
+)
 
 UNIQUE_SCHEMATIC_DEPTH2 = {"garment": 5, "weapons": 3, "vehicles": 6, "utility": 7, "augment": 4}
 UNIQUE_SCHEMATIC_DEPTH3 = {
@@ -229,7 +235,7 @@ def category_price_multiplier(
     raw_resource_multiplier=1.0,
     raw_resource_overrides=None,
 ):
-    category = item.get("category") or ""
+    category = exchange_category_for_seed(item.get("category") or "")
     if category == "items/misc/rawresources":
         overrides = raw_resource_overrides or {}
         return float(overrides.get(template_id, raw_resource_multiplier))
@@ -266,7 +272,7 @@ def list_price(
 def segment_index(items):
     index = {1: [], 2: [], 3: []}
     for item in items.values():
-        parts = (item.get("category") or "").split("/")
+        parts = exchange_category_for_seed(item.get("category") or "").split("/")
         for depth in range(1, min(len(parts), 4)):
             if parts[depth] not in index[depth]:
                 index[depth].append(parts[depth])
@@ -275,7 +281,40 @@ def segment_index(items):
     return index
 
 
+def exchange_category_for_seed(category):
+    category = str(category or "").strip()
+    if category == "schematics/consumables":
+        return "items/utility/consumables/utility"
+    if category == "schematics/armor":
+        return "items/garment"
+    if category == "schematics/weapons":
+        return "items/weapons"
+    if category == "schematics/vehicles":
+        return "items/vehicles"
+    if category == "schematics/augments":
+        return "items/augment"
+    if category == "schematics/utility":
+        return "items/utility"
+    if category.startswith("schematics/armor/"):
+        return "items/garment/" + category.removeprefix("schematics/armor/")
+    if category.startswith("schematics/weapons/"):
+        return "items/weapons/" + category.removeprefix("schematics/weapons/")
+    if category.startswith("schematics/vehicles/"):
+        return "items/vehicles/" + category.removeprefix("schematics/vehicles/")
+    if category.startswith("schematics/augments/"):
+        return "items/augment/" + category.removeprefix("schematics/augments/")
+    if category.startswith("schematics/utility/"):
+        return "items/utility/" + category.removeprefix("schematics/utility/")
+    return category
+
+
+def category_is_seedable(category):
+    category = str(category or "").strip()
+    return not any(category.startswith(prefix) for prefix in NON_SEEDED_CATEGORY_PREFIXES)
+
+
 def unique_schematic_mask(category):
+    category = exchange_category_for_seed(category)
     parts = (category or "").split("/")
     if len(parts) < 3 or parts[0] != "items":
         return 0, 0, False
@@ -290,6 +329,7 @@ def unique_schematic_mask(category):
 
 
 def category_mask(category, index):
+    category = exchange_category_for_seed(category)
     parts = (category or "").split("/")[:4]
     if not parts or not parts[0]:
         return 0, 0
@@ -316,13 +356,14 @@ def tradeable(item):
     return not (
         item.get("tradeable") is False
         or not category
+        or not category_is_seedable(category)
         or category.startswith("items/customization/")
         or category.startswith("items/construction/")
     )
 
 
 def preset_kind(item):
-    category = item.get("category") or ""
+    category = exchange_category_for_seed(item.get("category") or "")
     stack_max = int(item.get("stack_max") or 1)
     if item.get("is_schematic"):
         return "schematic"

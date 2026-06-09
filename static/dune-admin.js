@@ -1794,6 +1794,7 @@ function renderGrantCatalogItems() {
 
 function renderGrantCatalogCategories(categories, totalCatalogItems) {
     const select = document.getElementById("grantCatalogCategory");
+    renderCatalogEditorCategories(categories || []);
     if (!select) return;
 
     const current = select.value || "";
@@ -1804,6 +1805,40 @@ function renderGrantCatalogCategories(categories, totalCatalogItems) {
         opt.textContent = `${row.label || row.category || "Uncategorized"} (${row.count || 0})`;
         select.appendChild(opt);
     });
+    select.value = current;
+}
+
+function categoryLabel(category) {
+    return String(category || "Uncategorized").replace("items/", "").replaceAll("/", " / ");
+}
+
+function renderCatalogEditorCategories(categories) {
+    const select = document.getElementById("catalogEditorCategory");
+    if (!select) return;
+
+    const current = select.value || "";
+    const rows = Array.isArray(categories) ? categories : [];
+    const seen = new Set();
+    select.innerHTML = `<option value="">Select a category...</option>`;
+
+    rows.forEach(row => {
+        const value = row.category || "";
+        if (!value || seen.has(value)) return;
+        seen.add(value);
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = row.count || row.count === 0
+            ? `${row.label || categoryLabel(value)} (${row.count})`
+            : `${row.label || categoryLabel(value)}`;
+        select.appendChild(opt);
+    });
+
+    if (current && !seen.has(current)) {
+        const opt = document.createElement("option");
+        opt.value = current;
+        opt.textContent = `${categoryLabel(current)} (current custom)`;
+        select.appendChild(opt);
+    }
     select.value = current;
 }
 
@@ -1835,10 +1870,15 @@ function selectGrantCatalogItem(templateId) {
 
     if (panel) {
         const item = grantCatalogSelectedItem;
+        const statusParts = [
+            item.tier ? `Tier ${item.tier}` : "",
+            item.rarity || "",
+            item.metadata_only ? "Name-only catalog entry" : (item.tradeable ? "Tradeable" : "Not tradeable")
+        ].filter(Boolean);
         panel.innerHTML = `
             <b>${escapeHtml(item.name || item.template_id)}</b><br>
             Template: ${escapeHtml(item.template_id)}<br>
-            ${escapeHtml([item.tier ? `Tier ${item.tier}` : "", item.rarity || "", item.tradeable ? "Tradeable" : "Not tradeable"].filter(Boolean).join(" | "))}<br>
+            ${escapeHtml(statusParts.join(" | "))}<br>
             ${escapeHtml(item.category || "")}
         `;
     }
@@ -1891,6 +1931,7 @@ async function loadCatalogEditorEntry(templateId) {
             showOutput(data.error || "Catalog entry lookup failed.", form);
             return;
         }
+        await reloadGrantCatalogCategories();
         fillItemCatalogEditor(data.item || { template_id: id });
         if (data.catalog_error) {
             showOutput(data.catalog_error, form);
@@ -1982,7 +2023,7 @@ async function loadGrantCatalog() {
         const params = new URLSearchParams();
         if (category.value) params.set("category", category.value);
         if (filter.value) params.set("q", filter.value);
-        params.set("limit", "220");
+        params.set("limit", "5000");
 
         const response = await fetch(`/api/grant-catalog?${params.toString()}`);
         const data = await response.json();
@@ -2011,6 +2052,14 @@ async function loadGrantCatalog() {
     } catch (error) {
         grid.textContent = "Unable to load grant catalog.";
     }
+}
+
+async function reloadGrantCatalogCategories() {
+    const category = document.getElementById("grantCatalogCategory");
+    if (category) {
+        delete category.dataset.loadedOnce;
+    }
+    await loadGrantCatalog();
 }
 
 function addSelectedCarePackageItem() {

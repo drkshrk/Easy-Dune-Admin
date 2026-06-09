@@ -281,7 +281,9 @@ Developer-only editor for <b>data/easy-dune-item-catalog.json</b>. Select an ite
     </div>
 
     <label>Category</label>
-    <input type="text" name="category" id="catalogEditorCategory" placeholder="items/weapons/rifles">
+    <select name="category" id="catalogEditorCategory">
+        <option value="">Select a category...</option>
+    </select>
 
     <div class="field-grid">
         <div>
@@ -810,10 +812,7 @@ if (itemCatalogEditorForm) {
 
         const result = await postForm("/api/item-catalog-entry", itemCatalogEditorForm);
         if (result && result.json && result.json.ok) {
-            if (grantCatalogCategory) {
-                delete grantCatalogCategory.dataset.loadedOnce;
-            }
-            await loadGrantCatalog();
+            await reloadGrantCatalogCategories();
         }
     });
 }
