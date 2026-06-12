@@ -136,10 +136,11 @@ Item Grants:
   skill-module helper
 - Item grants target the selected player/account inventory path and do not use
   map partition IDs
-- WIP/unconfirmed Developer-only specialization tools for Combat, Crafting,
-  Gathering, Exploration, and Sabotage tracks. These now target character
-  pawn actor IDs, can add XP to one track, grant missing all-track rows at 0
-  XP for testing, or max all tracks plus discovered keystones.
+- WIP/live-broken Developer-only specialization tools for Combat, Crafting,
+  Gathering, Exploration, and Sabotage tracks. The current writer still
+  targets the character pawn actor ID, but live testing shows XP/max may not
+  be landing where the game reads it; use Inspect Specialization State to
+  compare pawn/controller rows before relying on these tools.
 - Developer-only specialization reset for one track or all tracks plus keystones
 - WIP/experimental Developer-only Class Progression preset dropdown for
   observed trainer/class unlock tag bundles. Currently appears nonfunctional

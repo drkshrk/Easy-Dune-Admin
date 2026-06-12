@@ -328,6 +328,7 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("overrepairItemCharacterSelect", chars);
     fillCharacterSelect("inventoryBrowserCharacterSelect", chars);
     fillCharacterSelect("lasgunCharacterSelect", chars);
+    fillCharacterSelect("augmentGrantCharacterSelect", chars);
     fillCharacterSelect("newPlayerKitCharacterSelect", chars);
     fillCharacterSelect("redblinkWaterCharacterSelect", chars);
     fillCharacterSelect("hydrationWaterPackCharacterSelect", chars);
@@ -341,14 +342,8 @@ async function loadCharactersForAdminPage() {
     fillCharacterSelect("characterLevelCharacterSelect", chars);
     fillCharacterSelect("skillPointsCharacterSelect", chars);
     fillCharacterSelect("redblinkSkillPointsCharacterSelect", chars);
-    fillCharacterSelect("xpCharacterSelect", chars);
     fillCharacterSelect("bulkSkillModuleCharacterSelect", chars);
     fillCharacterSelect("factionProgressionCharacterSelect", chars);
-    fillCharacterSelect("specializationGrantAllCharacterSelect", chars);
-    fillCharacterSelect("specializationMaxCharacterSelect", chars);
-    fillCharacterSelect("specializationResetCharacterSelect", chars);
-    fillCharacterSelect("classProgressionCharacterSelect", chars);
-    fillCharacterSelect("progressionCharacterSelect", chars);
     fillCharacterSelect("banLookupCharacterSelect", chars);
     fillCharacterSelect("flagCheaterCharacterSelect", chars);
     fillCharacterSelect("unflagCheaterCharacterSelect", chars);
@@ -1067,6 +1062,8 @@ function fillItemStatEditorFields(item) {
     if (replaceStats) replaceStats.checked = false;
     if (deletePath) deletePath.checked = false;
     window.latestItemStatEditorTemplateId = item.template_id || "";
+    window.latestItemStatEditorItem = item;
+    loadAugmentStatRollsFromRawStats();
 }
 
 async function loadItemStatEditorDetail() {
@@ -1104,6 +1101,292 @@ async function loadItemStatEditorDetail() {
         );
     } catch (err) {
         setItemEditorSummary("Item stat lookup failed.");
+    }
+}
+
+function currentItemStatEditorStatsObject() {
+    const statsInput = document.getElementById("itemStatEditorStatsJson");
+    if (statsInput && statsInput.value.trim()) {
+        try {
+            return JSON.parse(statsInput.value);
+        } catch (err) {
+            return null;
+        }
+    }
+
+    const item = window.latestItemStatEditorItem || null;
+    return item && item.stats ? item.stats : null;
+}
+
+function firstAugmentStatObject(stats) {
+    const values = stats && Array.isArray(stats.FAugmentItemStats) ? stats.FAugmentItemStats : [];
+    return values.find(value => value && typeof value === "object" && !Array.isArray(value)) || null;
+}
+
+function setAugmentStatRollSummary(text) {
+    const summary = document.getElementById("augmentStatRollSummary");
+    if (summary) summary.textContent = text;
+}
+
+function loadAugmentStatRollsFromRawStats() {
+    const rollInputs = [
+        document.getElementById("augmentStatRoll0"),
+        document.getElementById("augmentStatRoll1"),
+        document.getElementById("augmentStatRoll2"),
+    ];
+
+    if (rollInputs.every(input => !input)) return;
+
+    const stats = currentItemStatEditorStatsObject();
+    if (!stats) {
+        rollInputs.forEach(input => {
+            if (input) input.value = "";
+        });
+        setAugmentStatRollSummary("Raw stats JSON is empty or invalid. Load an augment row first.");
+        return;
+    }
+
+    const augmentStats = firstAugmentStatObject(stats);
+    const rolls = augmentStats && Array.isArray(augmentStats.StatRolls) ? augmentStats.StatRolls : [];
+    rollInputs.forEach((input, index) => {
+        if (!input) return;
+        const value = rolls[index];
+        input.value = typeof value === "number" ? String(value) : "";
+    });
+
+    if (!augmentStats) {
+        setAugmentStatRollSummary("No FAugmentItemStats object was found on this item.");
+        return;
+    }
+
+    const hash = Object.prototype.hasOwnProperty.call(augmentStats, "AugmentItemHash")
+        ? augmentStats.AugmentItemHash
+        : "not present";
+    setAugmentStatRollSummary(
+        `Loaded FAugmentItemStats.1.StatRolls [${rolls.map(value => String(value)).join(", ")}]. ` +
+        `Observed AugmentItemHash: ${hash}.`
+    );
+}
+
+function prepareAugmentStatRollsPathEdit() {
+    const values = [0, 1, 2].map(index => {
+        const input = document.getElementById(`augmentStatRoll${index}`);
+        return input ? input.value.trim() : "";
+    });
+
+    if (values.some(value => value === "" || Number.isNaN(Number(value)))) {
+        setAugmentStatRollSummary("Enter three numeric StatRolls values before preparing the path edit.");
+        return;
+    }
+
+    const rolls = values.map(value => Number(value));
+    const pathInput = document.getElementById("itemStatEditorJsonPath");
+    const valueInput = document.getElementById("itemStatEditorJsonPathValue");
+    const deletePath = document.getElementById("itemStatEditorDeleteJsonPathCheck");
+    const replaceStats = document.getElementById("itemStatEditorReplaceStatsCheck");
+
+    if (pathInput) pathInput.value = "FAugmentItemStats.1.StatRolls";
+    if (valueInput) valueInput.value = JSON.stringify(rolls);
+    if (deletePath) deletePath.checked = false;
+    if (replaceStats) replaceStats.checked = false;
+
+    setAugmentStatRollSummary(
+        `Prepared StatRolls path edit with [${rolls.join(", ")}]. Review the JSON path/value, then Apply Item Edit.`
+    );
+}
+
+function augmentDiffSummaryForItem(item) {
+    if (!item) return "No item loaded.";
+    return `Row ${item.item_row_id || "?"} | ${item.template_id || "Unknown item"} | QL ${item.quality_level || "?"} | Stack ${item.stack_size || "?"}`;
+}
+
+function captureAugmentDiffSnapshot(slot) {
+    const item = window.latestItemStatEditorItem || null;
+    const target = document.getElementById(slot === "after" ? "augmentDiffAfterJson" : "augmentDiffBeforeJson");
+    const summary = document.getElementById(slot === "after" ? "augmentDiffAfterSummary" : "augmentDiffBeforeSummary");
+    const statsInput = document.getElementById("itemStatEditorStatsJson");
+
+    if (!target) return;
+
+    if (item && item.stats) {
+        target.value = JSON.stringify(item.stats, null, 2);
+        if (summary) summary.textContent = augmentDiffSummaryForItem(item);
+        return;
+    }
+
+    if (statsInput && statsInput.value.trim()) {
+        target.value = statsInput.value;
+        if (summary) summary.textContent = "Captured current raw stats editor text.";
+        return;
+    }
+
+    if (summary) summary.textContent = "Load an item before capturing this snapshot.";
+}
+
+function clearAugmentDiffWorkbench() {
+    const before = document.getElementById("augmentDiffBeforeJson");
+    const after = document.getElementById("augmentDiffAfterJson");
+    const beforeSummary = document.getElementById("augmentDiffBeforeSummary");
+    const afterSummary = document.getElementById("augmentDiffAfterSummary");
+    const summary = document.getElementById("augmentDiffSummary");
+    const results = document.getElementById("augmentDiffResults");
+
+    if (before) before.value = "";
+    if (after) after.value = "";
+    if (beforeSummary) beforeSummary.textContent = "No before snapshot captured.";
+    if (afterSummary) afterSummary.textContent = "No after snapshot captured.";
+    if (summary) summary.textContent = "Capture before and after snapshots to compare augment-driven stat changes.";
+    if (results) {
+        results.innerHTML = "";
+        results.style.display = "none";
+    }
+}
+
+function augmentDiffPathLabel(parts) {
+    return parts.map(part => String(part)).join(".");
+}
+
+function augmentDiffValueForDisplay(value) {
+    if (value === undefined) return "(missing)";
+    return JSON.stringify(value, null, 2);
+}
+
+function augmentDiffValuesEqual(left, right) {
+    return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function collectAugmentDiffs(beforeValue, afterValue, pathParts = [], diffs = []) {
+    if (augmentDiffValuesEqual(beforeValue, afterValue)) {
+        return diffs;
+    }
+
+    const beforeIsObject = beforeValue && typeof beforeValue === "object";
+    const afterIsObject = afterValue && typeof afterValue === "object";
+
+    if (beforeIsObject && afterIsObject && Array.isArray(beforeValue) === Array.isArray(afterValue)) {
+        const keys = new Set();
+        Object.keys(beforeValue).forEach(key => keys.add(key));
+        Object.keys(afterValue).forEach(key => keys.add(key));
+        Array.from(keys)
+            .sort((left, right) => {
+                const leftNum = Number(left);
+                const rightNum = Number(right);
+                if (Number.isInteger(leftNum) && Number.isInteger(rightNum)) return leftNum - rightNum;
+                return String(left).localeCompare(String(right));
+            })
+            .forEach(key => {
+                collectAugmentDiffs(beforeValue[key], afterValue[key], pathParts.concat([key]), diffs);
+            });
+        return diffs;
+    }
+
+    diffs.push({
+        path: augmentDiffPathLabel(pathParts),
+        before: beforeValue,
+        after: afterValue,
+    });
+    return diffs;
+}
+
+function applyAugmentDiffPath(path, value, removePath = false) {
+    const pathInput = document.getElementById("itemStatEditorJsonPath");
+    const valueInput = document.getElementById("itemStatEditorJsonPathValue");
+    const deletePath = document.getElementById("itemStatEditorDeleteJsonPathCheck");
+    const replaceStats = document.getElementById("itemStatEditorReplaceStatsCheck");
+
+    if (pathInput) pathInput.value = path || "";
+    if (valueInput) valueInput.value = removePath ? "" : augmentDiffValueForDisplay(value);
+    if (deletePath) deletePath.checked = Boolean(removePath);
+    if (replaceStats) replaceStats.checked = false;
+
+    const summary = document.getElementById("augmentDiffSummary");
+    if (summary) {
+        summary.textContent = removePath
+            ? `Prepared path removal for ${path}. Review, then apply with the Selected Item Editor.`
+            : `Prepared path update for ${path}. Review, then apply with the Selected Item Editor.`;
+    }
+}
+
+function renderAugmentDiffResults(diffs) {
+    const results = document.getElementById("augmentDiffResults");
+    const summary = document.getElementById("augmentDiffSummary");
+    if (!results) return;
+
+    if (!diffs.length) {
+        results.innerHTML = "";
+        results.style.display = "none";
+        if (summary) summary.textContent = "No raw stats JSON differences found.";
+        return;
+    }
+
+    results.innerHTML = "";
+    diffs.forEach(diff => {
+        const row = document.createElement("div");
+        row.className = "augment-diff-row";
+
+        const path = document.createElement("div");
+        path.className = "augment-diff-path";
+        path.textContent = diff.path || "(root)";
+
+        const value = document.createElement("div");
+        value.className = "augment-diff-value";
+        value.textContent =
+            `Before:\n${augmentDiffValueForDisplay(diff.before)}\n\nAfter:\n${augmentDiffValueForDisplay(diff.after)}`;
+
+        const actions = document.createElement("div");
+        actions.className = "augment-diff-actions";
+
+        const useAfter = document.createElement("button");
+        useAfter.type = "button";
+        useAfter.textContent = "Use After";
+        useAfter.addEventListener("click", () => applyAugmentDiffPath(diff.path, diff.after, false));
+        actions.appendChild(useAfter);
+
+        const useBefore = document.createElement("button");
+        useBefore.type = "button";
+        useBefore.textContent = "Use Before";
+        useBefore.addEventListener("click", () => applyAugmentDiffPath(diff.path, diff.before, false));
+        actions.appendChild(useBefore);
+
+        if (diff.after === undefined || diff.before === undefined) {
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.textContent = "Remove";
+            remove.addEventListener("click", () => applyAugmentDiffPath(diff.path, "", true));
+            actions.appendChild(remove);
+        }
+
+        row.appendChild(path);
+        row.appendChild(value);
+        row.appendChild(actions);
+        results.appendChild(row);
+    });
+
+    results.style.display = "block";
+    if (summary) {
+        summary.textContent = `${diffs.length} changed raw stats path${diffs.length === 1 ? "" : "s"} found. Use After copies an augmented value into the raw JSON path editor.`;
+    }
+}
+
+function compareAugmentDiffSnapshots() {
+    const beforeInput = document.getElementById("augmentDiffBeforeJson");
+    const afterInput = document.getElementById("augmentDiffAfterJson");
+    const summary = document.getElementById("augmentDiffSummary");
+    const beforeText = beforeInput ? beforeInput.value.trim() : "";
+    const afterText = afterInput ? afterInput.value.trim() : "";
+
+    if (!beforeText || !afterText) {
+        if (summary) summary.textContent = "Both before and after stats JSON snapshots are required.";
+        return;
+    }
+
+    try {
+        const beforeJson = JSON.parse(beforeText);
+        const afterJson = JSON.parse(afterText);
+        const diffs = collectAugmentDiffs(beforeJson, afterJson);
+        renderAugmentDiffResults(diffs);
+    } catch (err) {
+        if (summary) summary.textContent = `Snapshot JSON parse failed: ${err.message || err}`;
     }
 }
 
@@ -1486,11 +1769,25 @@ function fillSpecializationGrantAllActorId() {
     if (input && c) input.value = c.character_actor_id || "";
 }
 
+function fillSpecializationInspectActorId() {
+    const sel = document.getElementById("specializationInspectCharacterSelect");
+    const input = document.getElementById("specializationInspectActorId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.character_actor_id || "";
+}
+
 function fillSpecializationResetActorId() {
     const sel = document.getElementById("specializationResetCharacterSelect");
     const input = document.getElementById("specializationResetActorId");
     const c = latestCharacters[Number(sel.value)];
     if (input && c) input.value = c.character_actor_id || "";
+}
+
+function fillAugmentGrantPlayerId() {
+    const sel = document.getElementById("augmentGrantCharacterSelect");
+    const input = document.getElementById("augmentGrantPlayerId");
+    const c = latestCharacters[Number(sel.value)];
+    if (input && c) input.value = c.fls_id || "";
 }
 
 function fillClassProgressionActorId() {
@@ -2181,6 +2478,10 @@ async function loadMarketExchanges() {
             return;
         }
 
+        const preferredExchange = exchanges.find(exchange => !exchange.is_global)
+            || exchanges.find(exchange => configuredDefault && String(exchange.exchange_id || "") === configuredDefault)
+            || exchanges[0];
+
         exchanges.forEach(exchange => {
             const opt = document.createElement("option");
             opt.value = exchange.exchange_id || "";
@@ -2190,7 +2491,7 @@ async function loadMarketExchanges() {
                 + ` | orders ${exchange.order_count || 0}`
                 + ` | player ${exchange.player_order_count || 0}`
                 + ` | NPC ${exchange.npc_order_count || 0}`;
-            if (configuredDefault && String(exchange.exchange_id || "") === configuredDefault) {
+            if (preferredExchange && String(exchange.exchange_id || "") === String(preferredExchange.exchange_id || "")) {
                 opt.selected = true;
             }
             select.appendChild(opt);

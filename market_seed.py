@@ -19,10 +19,10 @@ KNOWN_CODES = {
         "socialwearables": 4, "pistol": 2, "heavypistol": 3, "heavyrifle": 4,
         "smg": 5, "spitdart": 6, "shotgun": 7, "battlerifle": 8,
         "heavyshotgun": 9, "missilelauncher": 10, "flamethrower": 11,
-        "fireballer": 12, "lasgun": 13, "ammunition": 14, "sandbike": 0,
+        "fireballer": 12, "lasgun": 13, "ammunition": 2, "sandbike": 0,
         "buggy": 1, "lightornithopter": 2, "mediumornithopter": 3,
         "transportornithopter": 4, "sandcrawler": 5, "buildingtools": 0,
-        "hydrationtools": 2, "gatheringtools": 3, "cartographytools": 4,
+        "deployables": 1, "hydrationtools": 2, "gatheringtools": 3, "cartographytools": 4,
         "utilitytools": 5, "consumables": 6, "armor": 0, "melee": 1,
         "ranged": 2, "fuel": 0, "refinedresources": 1, "components": 2,
         "rawresources": 3,
@@ -59,9 +59,31 @@ DEPTH3_PARENT_CODES = {
     ("utilitytools", "shields"): 3, ("utilitytools", "solido"): 4,
     ("consumables", "medical"): 0, ("consumables", "food"): 1,
     ("consumables", "drink"): 2,
+    ("ammunition", "heavydarts"): 0, ("ammunition", "incendiarygel"): 1,
+    ("ammunition", "lightdarts"): 2, ("ammunition", "missile"): 3,
+    ("ammunition", "rocket"): 4, ("ammunition", "weldingwire"): 5,
 }
 
-WEAPON_REMAP = {"shortblades": (1, 0), "longblades": (1, 1)}
+# The exchange weapon browser has a branch level before the weapon subtype.
+# Blades live under the melee branch, while guns/projectors live under ranged;
+# seeding a subtype directly at depth 2 can make items visible only under a
+# leaf bucket and leave the parent ranged view empty.
+WEAPON_REMAP = {
+    "shortblades": (0, 0),
+    "longblades": (0, 1),
+    "pistol": (1, 2),
+    "heavypistol": (1, 3),
+    "heavyrifle": (1, 4),
+    "smg": (1, 5),
+    "spitdart": (1, 6),
+    "shotgun": (1, 7),
+    "battlerifle": (1, 8),
+    "heavyshotgun": (1, 9),
+    "missilelauncher": (1, 10),
+    "flamethrower": (1, 11),
+    "fireballer": (1, 12),
+    "lasgun": (1, 13),
+}
 NON_SEEDED_CATEGORY_PREFIXES = (
     "templates/",
     "patents/progression",
@@ -92,7 +114,7 @@ MANUAL_SEED_ITEMS = [
         "template_id": "RocketAmmo",
         "display_name": "Rocket",
         "kind": "ammunition",
-        "category": "items/weapons/ammunition",
+        "category": "items/weapons/ammunition/rocket",
         "listing_count": 10,
         "stack_size": 250,
         "unit_price": 100,
@@ -101,7 +123,7 @@ MANUAL_SEED_ITEMS = [
         "template_id": "InfantryRocketAmmo",
         "display_name": "Missile",
         "kind": "ammunition",
-        "category": "items/weapons/ammunition",
+        "category": "items/weapons/ammunition/missile",
         "listing_count": 10,
         "stack_size": 250,
         "unit_price": 150,
@@ -110,7 +132,7 @@ MANUAL_SEED_ITEMS = [
         "template_id": "Napalm",
         "display_name": "Incendiary Gel",
         "kind": "ammunition",
-        "category": "items/weapons/ammunition",
+        "category": "items/weapons/ammunition/incendiarygel",
         "listing_count": 10,
         "stack_size": 250,
         "unit_price": 125,
@@ -168,6 +190,24 @@ MANUAL_SEED_ITEMS = [
         "listing_count": 15,
         "stack_size": 20,
         "unit_price": 1100,
+    },
+    {
+        "template_id": "Stilltent",
+        "display_name": "Stilltent",
+        "kind": "utility",
+        "category": "items/utility/deployables",
+        "listing_count": 20,
+        "stack_size": 1,
+        "unit_price": 2500,
+    },
+    {
+        "template_id": "Stilltent_Unique_01",
+        "display_name": "Double-sealed Stilltent",
+        "kind": "utility",
+        "category": "items/utility/deployables",
+        "listing_count": 20,
+        "stack_size": 1,
+        "unit_price": 25000,
     },
 ]
 
@@ -236,7 +276,10 @@ def category_price_multiplier(
     raw_resource_multiplier=1.0,
     raw_resource_overrides=None,
 ):
-    category = exchange_category_for_seed(item.get("category") or "")
+    source_category = str(item.get("category") or "").strip()
+    if item.get("is_schematic") and source_category.startswith("schematics/augments/"):
+        return 6.0
+    category = exchange_category_for_seed(source_category)
     if category == "items/misc/rawresources":
         overrides = raw_resource_overrides or {}
         return float(overrides.get(template_id, raw_resource_multiplier))
@@ -400,6 +443,30 @@ def listing_count_for_kind(kind, equippable_listings, schematic_listings):
     return 1
 
 
+def listing_count_for_item(template_id, item, kind, equippable_listings, schematic_listings):
+    if template_id == "Thumper":
+        return 20
+    return listing_count_for_kind(kind, equippable_listings, schematic_listings)
+
+
+def category_masks_for_seed(category, index, kind):
+    """
+    Return every exchange category mask needed for one seed entry.
+
+    Most entries need one mask. Ammunition is the observed exception: the game
+    browser exposes ammo as a direct weapon branch with leaf buckets underneath,
+    and parent browse views only show rows seeded at that exact parent depth.
+    """
+    mask, depth = category_mask(category, index)
+    masks = [(mask, depth)]
+    if kind == "ammunition":
+        parent_mask = (KNOWN_CODES[1]["weapons"] << 24) | (KNOWN_CODES[2]["ammunition"] << 16)
+        parent = (parent_mask, 2)
+        if parent not in masks:
+            masks.append(parent)
+    return masks
+
+
 def matches_special_name(item, template_id, special_name_terms):
     haystack = f"{template_id} {item.get('name') or ''}".casefold()
     return any(term and term in haystack for term in special_name_terms or [])
@@ -432,59 +499,62 @@ def build_seed_plan(
             mask, depth, ok = unique_schematic_mask(category)
             if not ok:
                 mask, depth = category_mask(category, index)
+            seed_masks = [(mask, depth)]
         else:
-            mask, depth = category_mask(category, index)
+            seed_masks = category_masks_for_seed(category, index, kind)
 
-        listings = listing_count_for_kind(kind, equippable_listings, schematic_listings)
+        listings = listing_count_for_item(template_id, item, kind, equippable_listings, schematic_listings)
         stack_size = stack_size_for_kind(item, kind, resource_stack_size)
 
         special_boost = kind != "resource" and matches_special_name(item, template_id, special_name_terms)
         if special_boost:
             listings = max(int(listings), int(special_name_listings))
 
-        for _ in range(max(1, int(listings))):
-            plan.append({
-                "template_id": template_id,
-                "display_name": item.get("name") or template_id,
-                "kind": kind,
-                "special_boost": special_boost,
-                "stack_size": int(stack_size),
-                "price": list_price(
-                    item,
-                    template_id,
-                    price_multiplier,
-                    refined_resource_multiplier,
-                    raw_resource_multiplier,
-                    raw_resource_overrides,
-                ),
-                "category_mask": int(mask),
-                "category_depth": int(depth),
-                "quality_level": int(item.get("min_quality_level") or 0),
-            })
+        for mask, depth in seed_masks:
+            for _ in range(max(1, int(listings))):
+                plan.append({
+                    "template_id": template_id,
+                    "display_name": item.get("name") or template_id,
+                    "kind": kind,
+                    "special_boost": special_boost,
+                    "stack_size": int(stack_size),
+                    "price": list_price(
+                        item,
+                        template_id,
+                        price_multiplier,
+                        refined_resource_multiplier,
+                        raw_resource_multiplier,
+                        raw_resource_overrides,
+                    ),
+                    "category_mask": int(mask),
+                    "category_depth": int(depth),
+                    "quality_level": int(item.get("min_quality_level") or 0),
+                })
 
     for manual_item in MANUAL_SEED_ITEMS:
         template_id = manual_item["template_id"]
         category = manual_item["category"]
         catalog_item = items.get(template_id) or {}
-        mask, depth = category_mask(category, index)
-        display_name = manual_item.get("display_name") or catalog_item.get("name") or template_id
         kind = manual_item.get("kind") or "manual"
+        seed_masks = category_masks_for_seed(category, index, kind)
+        display_name = manual_item.get("display_name") or catalog_item.get("name") or template_id
         special_boost = False
         unit_price = int(manual_item["unit_price"])
         price = max(1, unit_price * int(price_multiplier))
 
-        for _ in range(max(1, int(manual_item["listing_count"]))):
-            plan.append({
-                "template_id": template_id,
-                "display_name": display_name,
-                "kind": kind,
-                "special_boost": special_boost,
-                "stack_size": int(manual_item["stack_size"]),
-                "price": price,
-                "category_mask": int(mask),
-                "category_depth": int(depth),
-                "quality_level": int(catalog_item.get("min_quality_level") or 0),
-            })
+        for mask, depth in seed_masks:
+            for _ in range(max(1, int(manual_item["listing_count"]))):
+                plan.append({
+                    "template_id": template_id,
+                    "display_name": display_name,
+                    "kind": kind,
+                    "special_boost": special_boost,
+                    "stack_size": int(manual_item["stack_size"]),
+                    "price": price,
+                    "category_mask": int(mask),
+                    "category_depth": int(depth),
+                    "quality_level": int(catalog_item.get("min_quality_level") or 0),
+                })
     plan.sort(key=lambda row: (row["kind"], row["display_name"].casefold(), row["template_id"]))
     return plan
 

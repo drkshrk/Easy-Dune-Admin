@@ -1127,6 +1127,22 @@ def api_market_clear_npc():
         return jsonify({"ok": False, "error": f"Market NPC clear failed: {exc}"}), 500
 
 
+@app.route("/api/market-drop-unsafe-npc", methods=["POST"])
+def api_market_drop_unsafe_npc():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    try:
+        output = drop_unsafe_market_npc_listings()
+        log_action(session["user"], "dropped unsafe NPC market listings")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Unsafe market cleanup failed: {exc}"}), 500
+
+
 @app.route("/api/market-buy-player-listings", methods=["POST"])
 def api_market_buy_player_listings():
     if not logged_in():
@@ -1547,6 +1563,33 @@ def api_grant_lasgun_augment_bundle():
         return jsonify({"ok": False, "error": f"Lasgun bundle grant failed: {exc}"}), 500
 
 
+@app.route("/api/grant-augment-item", methods=["POST"])
+def api_grant_augment_item():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    player_id = request.form.get("player_id", "").strip()
+    item_id = request.form.get("item_id", "").strip()
+    quantity = request.form.get("quantity", "1").strip() or "1"
+    if not player_id:
+        return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+    if not item_id:
+        return jsonify({"ok": False, "error": "missing augment item/template id"}), 400
+
+    try:
+        quantity_int = int(quantity)
+        if quantity_int <= 0:
+            raise ValueError("quantity must be greater than zero")
+
+        output = grant_item(player_id, item_id, quantity_int, "1.0")
+        log_action(session["user"], f"grant augment item {item_id} x{quantity_int} to {player_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Augment grant failed: {exc}"}), 500
+
+
 @app.route("/api/grant-new-player-kit", methods=["POST"])
 def api_grant_new_player_kit():
     if not logged_in():
@@ -1920,6 +1963,24 @@ def api_max_specialization():
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Specialization max failed: {exc}"}), 500
+
+
+@app.route("/api/inspect-specialization-state", methods=["POST"])
+def api_inspect_specialization_state():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not has_developer_access():
+        return jsonify({"ok": False, "error": "developer key required"}), 403
+
+    character_actor_id = request.form.get("character_actor_id", "").strip()
+
+    try:
+        sql = build_inspect_specialization_state_sql(character_actor_id)
+        output = run_psql(sql, timeout=60)
+        log_action(session["user"], f"inspect specialization state for actor/controller {character_actor_id}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Specialization inspection failed: {exc}"}), 500
 
 
 @app.route("/api/grant-all-specialization-tracks", methods=["POST"])

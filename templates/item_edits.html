@@ -90,10 +90,90 @@
     min-width: 180px;
 }
 
+.augment-diff-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+    gap: 12px;
+}
+
+.augment-diff-snapshot {
+    min-height: 260px;
+    max-height: 460px;
+    resize: vertical;
+}
+
+.augment-diff-results {
+    max-height: 520px;
+    overflow: auto;
+    border: 1px solid #6a4a18;
+    background: #050505;
+}
+
+.augment-diff-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 1.1fr) minmax(160px, auto);
+    gap: 8px;
+    padding: 9px 10px;
+    border-bottom: 1px solid #262016;
+    align-items: start;
+}
+
+.augment-diff-row:last-child {
+    border-bottom: 0;
+}
+
+.augment-diff-path {
+    color: #d8c08a;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.augment-diff-value {
+    color: #e7dcc6;
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.augment-diff-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.augment-diff-actions button {
+    min-width: 0;
+    padding: 5px 7px;
+    font-size: 11px;
+}
+
 .item-path-row {
     display: grid;
     grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
     gap: 10px;
+}
+
+.augment-roll-panel {
+    border: 1px solid #6a4a18;
+    background: rgba(8, 8, 8, 0.78);
+    padding: 12px;
+    margin: 14px 0;
+}
+
+.augment-roll-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.augment-roll-meta {
+    color: #b7a98d;
+    font-size: 13px;
+    margin-top: 8px;
+    overflow-wrap: anywhere;
 }
 
 .template-research-layout {
@@ -138,8 +218,18 @@
     }
 
     .item-path-row,
+    .augment-roll-grid,
+    .augment-diff-grid,
     .template-research-layout {
         grid-template-columns: 1fr;
+    }
+
+    .augment-diff-row {
+        grid-template-columns: 1fr;
+    }
+
+    .augment-diff-actions {
+        justify-content: flex-start;
     }
 }
 </style>
@@ -275,6 +365,39 @@ Experimental editor for <b>dune.items</b>. Use it while the character is offline
     </div>
     </div>
 
+    <h3>Augment StatRolls Research</h3>
+    <div class="augment-roll-panel">
+        <div class="warning info">
+Observed augment roll path: <b>FAugmentItemStats.1.StatRolls</b>. Changing these values may not alter the tooltip unless the game also accepts the matching augment identity/hash state. Loaded rows may show an observed <b>AugmentItemHash</b> after the server normalizes the item.
+        </div>
+
+        <div class="augment-roll-grid">
+        <div>
+        <label>StatRolls[0]</label>
+        <input type="number" id="augmentStatRoll0" step="0.000001" placeholder="0.0">
+        </div>
+
+        <div>
+        <label>StatRolls[1]</label>
+        <input type="number" id="augmentStatRoll1" step="0.000001" placeholder="0.0">
+        </div>
+
+        <div>
+        <label>StatRolls[2]</label>
+        <input type="number" id="augmentStatRoll2" step="0.000001" placeholder="0.134935">
+        </div>
+        </div>
+
+        <div class="augment-roll-meta" id="augmentStatRollSummary">
+            Load an augment row to inspect StatRolls.
+        </div>
+
+        <div class="item-stat-editor-actions">
+            <button type="button" onclick="loadAugmentStatRollsFromRawStats()">Reload StatRolls From Raw JSON</button>
+            <button type="button" onclick="prepareAugmentStatRollsPathEdit()">Prepare StatRolls Path Edit</button>
+        </div>
+    </div>
+
     <h3>Raw Stats JSON Path</h3>
     <div class="warning info">
 Enter paths as <b>Root.1.Field</b> or <b>{Root,1,Field}</b>. Values must be valid JSON: numbers like <b>250</b>, strings like <b>"Damage_Explosive"</b>, booleans, arrays, or objects.
@@ -315,6 +438,41 @@ Enter paths as <b>Root.1.Field</b> or <b>{Root,1,Field}</b>. Values must be vali
 </form>
 </div>
 
+</div>
+
+<div class="box">
+<h2>Augment Diff Workbench</h2>
+
+<div class="warning experimental">
+Research-first augment editor. Load an unmodified item as the before snapshot, augment or otherwise change the item in-game, then load the changed row as the after snapshot. The diff below identifies raw stats JSON paths that can be copied into the existing path editor once verified.
+</div>
+
+<div class="item-stat-editor-actions">
+    <button type="button" onclick="captureAugmentDiffSnapshot('before')">Use Selected Item as Before</button>
+    <button type="button" onclick="captureAugmentDiffSnapshot('after')">Use Selected Item as After</button>
+    <button type="button" onclick="compareAugmentDiffSnapshots()">Compare Snapshots</button>
+    <button type="button" onclick="clearAugmentDiffWorkbench()">Clear Workbench</button>
+</div>
+
+<div class="augment-diff-grid">
+    <div>
+    <label>Before Stats JSON</label>
+    <textarea id="augmentDiffBeforeJson" class="item-stat-editor-json augment-diff-snapshot" spellcheck="false" placeholder="Capture or paste the unaugmented item stats JSON."></textarea>
+    <div class="coord-box" id="augmentDiffBeforeSummary">No before snapshot captured.</div>
+    </div>
+
+    <div>
+    <label>After Stats JSON</label>
+    <textarea id="augmentDiffAfterJson" class="item-stat-editor-json augment-diff-snapshot" spellcheck="false" placeholder="Capture or paste the augmented item stats JSON."></textarea>
+    <div class="coord-box" id="augmentDiffAfterSummary">No after snapshot captured.</div>
+    </div>
+</div>
+
+<div class="coord-box" id="augmentDiffSummary">
+    Capture before and after snapshots to compare augment-driven stat changes.
+</div>
+
+<div class="augment-diff-results" id="augmentDiffResults" style="display:none;"></div>
 </div>
 
 <div class="template-research-layout">

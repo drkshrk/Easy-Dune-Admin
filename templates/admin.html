@@ -599,6 +599,10 @@ Automated buyback and reseed sweeps run once immediately when started, then use 
         <button type="submit">Clear NPC Market Listings</button>
     </form>
 
+    <form id="marketDropUnsafeNpcForm">
+        <button class="danger" type="submit">Drop Unsafe NPC Listings</button>
+    </form>
+
     <form id="marketBuyPlayerListingsForm">
         <input type="hidden" name="price_multiplier" id="marketBuyPriceMultiplier" value="{{ market_price_multiplier }}">
         <input type="hidden" name="threshold_percent" id="marketBuyThresholdHidden" value="{{ market_buy_threshold_percent }}">
@@ -773,6 +777,28 @@ Admin-only grant workflow inspired by RedBlink's care-package and visual item-pi
     </div>
 
     <button type="submit">Grant Lightning Gun Kit</button>
+</form>
+
+<form id="augmentGrantForm">
+    <label>Character</label>
+    <select id="augmentGrantCharacterSelect" onchange="fillAugmentGrantPlayerId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Player / FLS ID</label>
+    <input type="text" name="player_id" id="augmentGrantPlayerId" required>
+
+    <label>Augment Item / Schematic Template ID</label>
+    <input type="text" name="item_id" id="augmentGrantItemId" placeholder="Example: T6_Augment_Damage2" required>
+
+    <label>Quantity</label>
+    <input type="number" name="quantity" id="augmentGrantQuantity" min="1" step="1" value="1" required>
+
+    <div class="coord-box">
+        Grants any augment item or augment schematic by template ID through RedBlink's normal item grant command. Apply the augment in game, then use Item Edits to compare the before/after item stats.
+    </div>
+
+    <button type="submit">Grant Augment Item</button>
 </form>
 
 <form id="newPlayerKitForm">
@@ -1448,11 +1474,28 @@ const lasgunBundleForm = document.getElementById("lasgunBundleForm");
 lasgunBundleForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    if (!confirm("Grant the Experimental Lightning Gun and three augments to this character using the item grant command?")) {
+    if (!confirm("Grant the Experimental Lightning Gun and three augments to this character using the item grant command? This may take some time. Wait for output confirmation.")) {
         return;
     }
 
-    await postForm("/api/grant-lasgun-augment-bundle", lasgunBundleForm);
+    await postForm("/api/grant-lasgun-augment-bundle", lasgunBundleForm, {
+        startMessage: "Starting lightning gun kit grant through RedBlink. This may take some time. Wait for output confirmation."
+    });
+});
+
+const augmentGrantForm = document.getElementById("augmentGrantForm");
+augmentGrantForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const itemId = document.getElementById("augmentGrantItemId").value || "selected augment";
+    const quantity = document.getElementById("augmentGrantQuantity").value || "1";
+    if (!confirm(`Grant ${quantity}x ${itemId} through RedBlink's item grant command? This may take some time. Wait for output confirmation.`)) {
+        return;
+    }
+
+    await postForm("/api/grant-augment-item", augmentGrantForm, {
+        startMessage: `Starting augment grant for ${quantity}x ${itemId}. This may take some time. Wait for output confirmation.`
+    });
 });
 
 const newPlayerKitForm = document.getElementById("newPlayerKitForm");
@@ -1771,6 +1814,18 @@ marketClearNpcForm.addEventListener("submit", async function(event) {
     }
 
     await postForm("/api/market-clear-npc", marketClearNpcForm);
+    await loadMarketPresetPreview();
+});
+
+const marketDropUnsafeNpcForm = document.getElementById("marketDropUnsafeNpcForm");
+marketDropUnsafeNpcForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!confirm("Drop NPC exchange listings for catalog-marked unsafe templates? This removes known crash-risk NPC listings and their backing item rows. Player listings are not removed. This may take some time. Wait for output confirmation.")) {
+        return;
+    }
+
+    await postForm("/api/market-drop-unsafe-npc", marketDropUnsafeNpcForm);
     await loadMarketPresetPreview();
 });
 

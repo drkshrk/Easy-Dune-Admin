@@ -16521,7 +16521,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16572,7 +16572,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16611,7 +16611,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16623,7 +16623,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16635,7 +16635,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16647,7 +16647,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16881,7 +16881,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/longblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -16982,7 +16982,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/shortblades",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17049,7 +17049,7 @@
       "volume": 2.0,
       "vendor_price": 1,
       "category": "items/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17061,7 +17061,7 @@
       "volume": 2.0,
       "vendor_price": 1,
       "category": "items/weapons/spitdart",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17073,7 +17073,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17085,7 +17085,7 @@
       "volume": 1.0,
       "vendor_price": 1,
       "category": "items/weapons/heavypistol",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17097,7 +17097,7 @@
       "volume": 2.0,
       "vendor_price": 1,
       "category": "items/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17109,7 +17109,7 @@
       "volume": 5.0,
       "vendor_price": 1,
       "category": "items/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17121,7 +17121,7 @@
       "volume": 2.0,
       "vendor_price": 1,
       "category": "items/weapons/heavyshotgun",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17133,7 +17133,7 @@
       "volume": 2.0,
       "vendor_price": 1,
       "category": "items/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "max_durability": 100.0,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
@@ -17740,7 +17740,7 @@
       "volume": 0,
       "vendor_price": 1,
       "category": "items/weapons/longblades",
-      "tradeable": true,
+      "tradeable": false,
       "decayed_max_durability": 100.0,
       "is_gradeable": false,
       "icon": "GUI/Textures/Icons/Gameplay/Contracts/T_UI_IconContractWrappedPackage_D.png"
@@ -25590,42 +25590,42 @@
       "name": "Iodine Pill",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_AtreArmorHeavyGlovesSchematic": {
       "name": "Atreides Heavy Gloves",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_AtreArmorHeavyHeadSchematic": {
       "name": "Atreides Heavy Helmet",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_AtreArmorHeavyLBootsSchematic": {
       "name": "Atreides Heavy Boots",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_AtreArmorHeavyLegsSchematic": {
       "name": "Atreides Heavy Pants",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_AtreArmorHeavyTorsoSchematic": {
       "name": "Atreides Heavy Chestpiece",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_AtreidesScanner_Schematic": {
@@ -25639,7 +25639,7 @@
       "name": "Fuel Mk2",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_Bloodsack_2_Schematic": {
@@ -25681,7 +25681,7 @@
       "name": "Assault Ornithopter Rocket Launcher Mk5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_ChoamCut1Schematic": {
@@ -25695,28 +25695,28 @@
       "name": "Maula Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_ChoamMaulaPistolUniqueSchematic": {
       "name": "Unique Maula Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_ChoamSda5_Schematic": {
       "name": "XX_Aluminium Maula Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_ChoamSda6_Schematic": {
       "name": "XX_Duraluminum Maula Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "ChoamStaticCompactorSchematic": {
@@ -25729,14 +25729,14 @@
     "D_CHOAMSword_1_Schematic": {
       "name": "XX_Aluminum Sword",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_CHOAMSword_2_Schematic": {
       "name": "XX_Duraluminum Sword",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -25785,14 +25785,14 @@
     "D_DirkSchematic": {
       "name": "Dirk",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_DUPLICATE_DirkSchematic": {
       "name": "XX_DirkSchematic",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -25821,28 +25821,28 @@
       "name": "Karpov-38 MK l  Battle Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_HarkAr4_Schematic": {
       "name": "Karpov-38 MK ll Battle Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_HarkAr5_Schematic": {
       "name": "Karpov-38 MK lll Battle Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_HarkAr6_Schematic": {
       "name": "XX_Duraluminum Battle Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_HarkonnenHeavy_Schematic": {
@@ -25863,21 +25863,21 @@
       "name": "XX_HealhpackChanneled2Schematic",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_HealthPack_Channeled_3_Schematic": {
       "name": "XX_HealhpackChanneled3Schematic",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "HealthPackSchematic": {
       "name": "Healkit",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_HeavyAmmoSchematic": {
@@ -25897,21 +25897,21 @@
     "D_Kindjal_3_Schematic": {
       "name": "XX_Duraluminum Kindjal",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_KindjalSchematic": {
       "name": "Atreides Kindjal",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_DUPLICATE_KindjalSchematic": {
       "name": "XX_KindjalSchematic",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -25989,28 +25989,28 @@
       "name": "Incendiary Gel",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterEngine_Schematic": {
       "name": "Ornithopter Engine",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterInventoryModule_Schematic": {
       "name": "Ornithopter Storage Unit",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterTransportSetSchematic": {
       "name": "Carrier Ornithopter ",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_RadiationSuitSchematic": {
@@ -26059,14 +26059,14 @@
       "name": "Sandbike Passenger Seat",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SandbikeEngine_Schematic": {
       "name": "Sandbike Engine",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SandcrawlerEngine_Schematic": {
@@ -26093,7 +26093,7 @@
     "D_ScrapMetalKnifeSchematic": {
       "name": "Scrap Metal Knife",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -26115,28 +26115,28 @@
       "name": "Dune Buggy Cockpit",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SmugglerBuggyInventory_Schematic": {
       "name": "Dune Buggy Storage",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SmugglerBuggyPSU_Schematic": {
       "name": "Dune Buggy PSU",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SmugglerBuggyTreads_Schematic": {
       "name": "XX_NOTUESD_Dune Buggy Treads",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SmugglerPathfinder_Schematic": {
@@ -26150,7 +26150,7 @@
       "name": "Longdart Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_SmugglerScout_Schematic": {
@@ -26170,7 +26170,7 @@
     "StilltentSchematic": {
       "name": "Stilltent",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
@@ -26185,14 +26185,14 @@
       "name": "Spiced Drink",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T1_Consumables_SpiceLow_Schematic": {
       "name": "Spiced Food",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T1_HarkonnenHandScanner_Schematic": {
@@ -26205,7 +26205,7 @@
     "D_T1_MeleeKindjal0_Schematic": {
       "name": "Atreides Kindjal Mark I",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -26269,7 +26269,7 @@
       "name": "AtreidesDeserter",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Armor_SmugglerRenegade_Schematic": {
@@ -26283,27 +26283,27 @@
       "name": "Arrakeen Stillsuit 02",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Consumables_Literjon_Schematic": {
       "name": "Literjon",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_MeleeWeapon_ChoamSword_Schematic": {
       "name": "CHOAMSword",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_T2_MeleeWeapon_ShortSword_Schematic": {
       "name": "Atreides Short Sword",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -26346,14 +26346,14 @@
       "name": "Shotgun1",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_RangedWeapon_SMG_Schematic": {
       "name": "Savoy & Mirt M11 Disruptor",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_SocialClothing_WindsackCommoner_Schematic": {
@@ -26374,56 +26374,56 @@
       "name": "Sandbike Body ",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Vehicle(Ground)_SandBikeChassis_Schematic": {
       "name": "Sandbike Chassis",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Vehicle(Ground)_SandBikeInventoryModule_Schematic": {
       "name": "Sandbike Storage Unit",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Vehicle(Ground)_SandBikeTreads_Schematic": {
       "name": "Sandbike Treads ",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Vehicle_SandbikeChoamFuelEfficientPSU2_Schematic": {
       "name": "SandbikeChoamPSUFuelEfficient2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_Vehicle_SandbikeChoamWindshield_Schematic": {
       "name": "Sandbike Windshield",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_WeaponMod_BattleRifleCombatSights_Schematic": {
       "name": "Karpov-38 Combat Sight",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_WeaponMod_SMGCombatSights_Schematic": {
       "name": "Savoy & Mirt M11 Combat Sight",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T2_WeaponMod_SmugShot1x5Scope2_Schematic": {
@@ -26451,41 +26451,41 @@
       "name": "CHOAM Assault Armor",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Armor_CHOAM_Scout_Schematic": {
       "name": "CHOAM Scout",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Clothing_ArrakeenStillsuit_Schematic": {
       "name": "Arrakeen Stillsuit 03",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_MeleeWeapon_Dirk1_Schematic": {
       "name": "Dirk1",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_T3_MeleeWeapon_Kindjal2_Schematic": {
       "name": "Atreides Honed Kindjal",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_T3_MeleeWeapon_Rapier_Schematic": {
       "name": "Atreides Rapier",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -26527,7 +26527,7 @@
     "D_T3_Placeable_CompactThumper_Schematic": {
       "name": "Compact Thumper",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
@@ -26535,28 +26535,28 @@
       "name": "Rafiq Snubnose Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_RangedWeapon_MaulaPistol2_Schematic": {
       "name": "Maula Pistol MK l",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_RangedWeapon_Scattergun1_Schematic": {
       "name": "GRDA 44 Scattergun",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_RangedWeapon_SmugglerRifle1_Schematic": {
       "name": "JABAL Spitdart Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_SocialClothing_CaladanCasual_Schematic": {
@@ -26724,7 +26724,7 @@
       "name": "CHOAM Stillsuit 03",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_UtilityClothing_RusticCraftsman_Schematic": {
@@ -26738,84 +26738,84 @@
       "name": "SandbikeLeathers",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle(Ground)_ChoamBuggy_Set_Schematic": {
       "name": "CHOAM Dune Buggy",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle(Ground)_SandBikeBoostModule_Schematic": {
       "name": "Sandbike Booster",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamBackHull_Schematic": {
       "name": "Buggy Back Hull",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamBackInventory_Schematic": {
       "name": "Buggy Inventory Module 1",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamBoost_Schematic": {
       "name": "BuggyChoamBoost",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamChassis_Schematic": {
       "name": "Buggy Chassis",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamEngine_Schematic": {
       "name": "Buggy Engine",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamFrontHull_Schematic": {
       "name": "Buggy Front Hull",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamPSU_Schematic": {
       "name": "Buggy PSU",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamShield_Schematic": {
       "name": "Buggy Shield Module 1",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_BuggyChoamTreads_Schematic": {
       "name": "Buggy Treads",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_LightOrniChoamBody1_Schematic": {
@@ -26878,70 +26878,70 @@
       "name": "Sandbike Armored Hull 2",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_SandbikeChoamBackInventory2_Schematic": {
       "name": "Sandbike Back Inventory 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_SandbikeChoamExplorationTreads2_Schematic": {
       "name": "Sandbike Exploration Treads 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_SandbikeChoamFuelEfficienctEngine2_Schematic": {
       "name": "Sandbike Fuel Efficient Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_SandbikeChoamPerformanceTreads2_Schematic": {
       "name": "Sandbike Performance Treads 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_SandbikeChoamScanner2_Schematic": {
       "name": "Sandbike Scanner",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_Vehicle_SandbikeChoamSpeedEngine2_Schematic": {
       "name": "Sandbike Speed Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_ChoamMaula1x5Scope2_Schematic": {
       "name": "Maula Pistol 1.5x Sight",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_ChoamMaulaBarrelFire1_Schematic": {
       "name": "Maula Pistol Igniter",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_CombatSights_Schematic": {
       "name": "Maula Pistol Combat Sight",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_ExplosiveGel_Schematic": {
@@ -26955,14 +26955,14 @@
       "name": "Karpov-38 1.5x Sight",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_HarkHeavyPistolQuickScope1_Schematic": {
       "name": "Rafiq Snubnose Combat Sight",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_PoisonCoat_Schematic": {
@@ -26976,7 +26976,7 @@
       "name": "GRDA 44 Fire Igniter",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T3_WeaponMod_SmugDMRQuickScope2_Schematic": {
@@ -27004,14 +27004,14 @@
       "name": "CHOAM Heavy Armor",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Clothing_ArrakeenStillsuit_Schematic": {
       "name": "Arrakeen Stillsuit 04",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Decoration_ChoamLighting_Schematic": {
@@ -27039,27 +27039,27 @@
       "name": "Literjon 05",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Literjon_06_Schematic": {
       "name": "Literjon 06",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_MeleeWeapon_ChoamSword0_Schematic": {
       "name": "CHOAM Sword Mark I",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_T4_MeleeWeapon_ShortSword2_Schematic": {
       "name": "Atreides Honed Short Sword",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -27088,42 +27088,42 @@
       "name": "BattleRifle2",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_RangedWeapon_LMG1_Schematic": {
       "name": "LMG1",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_RangedWeapon_Scattergun3_Schematic": {
       "name": "GRDA 44 Scattergun MK II",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_RangedWeapon_Shotgun2_Schematic": {
       "name": "Shotgun2",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_RangedWeapon_SMG2_Schematic": {
       "name": "Savoy & Mirt M11 MK l Disruptor",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_RangedWeapon_SMG4_Schematic": {
       "name": "Savoy & Mirt M11 MK II Disruptor",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_SocialClothing_ArrakeenFormals_Schematic": {
@@ -27158,7 +27158,7 @@
       "name": "XX_T4_SpiceConsumables_Schematic",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Structure_Stakingunit_Schematic": {
@@ -27171,7 +27171,7 @@
     "T4_Structure_Thumper1_Schematic": {
       "name": "Thumper",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
@@ -27179,7 +27179,7 @@
       "name": "CHOAM Stillsuit 04",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_UtilityClothing_ThopterG-Suit_Schematic": {
@@ -27193,42 +27193,42 @@
       "name": "XX_NU_Scout OrnithopterTwo",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle(Air)_MediumOrnithopter_Set_Schematic": {
       "name": "XX_NU_Assault Ornithopter",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle(Air)_MediumOrnithopterBooster/Thruster_Schematic": {
       "name": "XX_NU_Assault Ornithopter Booster",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle(Air)_MediumOrnithopterHeatSensor_Schematic": {
       "name": "XX_NU_Assault Ornithopter HeatSensor",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle(Air)_MediumOrnithopterTailHullI_Schematic": {
       "name": "XX_NU_Assault Ornithopter TailHullI",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle(Air)_OrnithopterBoostModule_Schematic": {
       "name": "OrnithopterBoostModule",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle(Ground)_Crawler_Set_Schematic": {
@@ -27242,98 +27242,98 @@
       "name": "Buggy Armored Treads 2",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggyChoamArmoredTurretBackHull2_Schematic": {
       "name": "Buggy Armored Turret Back Hull 2",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggyChoamExplorationTreads2_Schematic": {
       "name": "Buggy Exploration Treads 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggyChoamFuelChassis2_Schematic": {
       "name": "Buggy Fuel Efficient Chassis 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggyChoamMiningTurret_Schematic": {
       "name": "Buggy Mining Turret 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggyChoamStealthEngine2_Schematic": {
       "name": "Buggy Stealth Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerArmoredTreads2_Schematic": {
       "name": "Buggy Armored Treads 2",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerArmoredTurretBackHull2_Schematic": {
       "name": "Buggy Armored Turret Back Hull 2",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerExplorationTreads2_Schematic": {
       "name": "Buggy Exploration Treads 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerFuelChassis2_Schematic": {
       "name": "Buggy Fuel Efficient Chassis 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerMiningTurret2_Schematic": {
       "name": "Buggy Mining Turret 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerShield1_Schematic": {
       "name": "Buggy Shield Module 1",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_BuggySmugglerStealthEngine2_Schematic": {
       "name": "Buggy Stealth Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_LightOrniAtreidesArmoredCockpit2_Schematic": {
       "name": "Light Thopter Armored Cockpit",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_LightOrniAtreidesCombatScanner2_Schematic": {
@@ -27375,7 +27375,7 @@
       "name": "Light Thopter Armored Cockpit",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_LightOrniChoamBoost2_Schematic": {
@@ -27424,7 +27424,7 @@
       "name": "Light Thopter Armored Cockpit",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_LightOrniSmugglerBody_Schematic": {
@@ -27585,28 +27585,28 @@
       "name": "Sandbike Armored Treads 2",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_SandbikeChoamFuelChassis2_Schematic": {
       "name": "Sandbike Fuel Chassis 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_SandbikeChoamStealthChassis2_Schematic": {
       "name": "Sandbike Stealth Chassis 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_SandbikeChoamStealthEngine2_Schematic": {
       "name": "Sandbike Stealth Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_Vehicle_SandcrawlerChoamContainer_Schematic": {
@@ -27620,35 +27620,35 @@
       "name": "Atreides LMG Explosive Gel",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_WeaponMod_AtreLMGQuickScope1_Schematic": {
       "name": "Atreides LMG Combat Sight",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_WeaponMod_AtreSMGBarrelFire2_Schematic": {
       "name": "Savoy & Mirt M11 Fire Igniter",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_WeaponMod_AtreSMGMagQuickLoader2_Schematic": {
       "name": "Savoy & Mirt M11 Quick Loader",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_WeaponMod_HarkARBarrelFire2_Schematic": {
       "name": "Karpov-38 Fire Igniter",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T4_WeaponMod_SmugShotMagCharger2_Schematic": {
@@ -27669,28 +27669,28 @@
       "name": "Atreides Light Armor",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Armor_AtreidesScout_Schematic": {
       "name": "Atreides Scout Armor",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Armor_HarkonnenAssault_Schematic": {
       "name": "HarkonnenAssault",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Armor_HarkonnenScout_Schematic": {
       "name": "HarkonnenScout",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Armor_SmugglerAssault_Schematic": {
@@ -27711,7 +27711,7 @@
       "name": "Arrakeen Stillsuit 05",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Clothing_AtreidesDressUniform_Schematic": {
@@ -27725,27 +27725,27 @@
       "name": "Literjon 07",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_MeleeWeapon_Blade2_Schematic": {
       "name": "Blade2",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_T5_MeleeWeapon_Dirk2_Schematic": {
       "name": "Dirk2",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "D_T5_MeleeWeapon_Kindjal3_Schematic": {
       "name": "Atreides Hardened Kindjal",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -27760,7 +27760,7 @@
       "name": "Hajra Literjon Mk1",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_MiscEquipment_PowerPack3_Schematic": {
@@ -27773,7 +27773,7 @@
     "D_T5_Placeable_LongDurationThumper_Schematic": {
       "name": "Long Duration Thumper",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
@@ -27788,63 +27788,63 @@
       "name": "Rafiq Snubnose MK l Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_HeavyPistol3_Schematic": {
       "name": "Rafiq Snubnose MK Il Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_LMG2_Schematic": {
       "name": "LMG2",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_MaulaPistol3_Schematic": {
       "name": "Maula Pistol MK ll",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_MaulaPistol4_Schematic": {
       "name": "MK III Maula Pistol",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_Scattergun2_Schematic": {
       "name": "GRDA 44 MK l Scattergun",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_Scattergun4_Schematic": {
       "name": "GRDA 44 Scattergun MK III",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_SmugglerRifle2_Schematic": {
       "name": "JABAL Spitdart MK l Rifle",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_RangedWeapon_SmugglerRifle3_Schematic": {
       "name": "JABAL Spitdart Rifle MK II",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_SocialClothing_AtreidesDressUniform_Schematic": {
@@ -27907,7 +27907,7 @@
       "name": "CHOAM Stillsuit 05",
       "stack_max": 1,
       "category": "schematics/armor/stillsuits",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_UtilityClothing_PrimitiveFremenStillsuit_Schematic": {
@@ -27935,56 +27935,56 @@
       "name": "Scout Ornithopter Dash Wings",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_LightOrnithopterSpiceSniffer_Schematic": {
       "name": "XX_NU_Scout OrnithopterSpiceSniffer",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_LightOrnithopterTopUtilityCockpitorBodyHull_Schematic": {
       "name": "XX_NU_Scout OrnithopterTopUtility",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_MediumOrnithopterDashWings_Schematic": {
       "name": "XX_NU_Assault Ornithopter DashWings",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_MediumOrnithopterLightDartGun_Schematic": {
       "name": "XX_NU_Assault Ornithopter LightDart",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_MediumOrnithopterThreeSeaterCockpit_Schematic": {
       "name": "XX_NUAssault Ornithopter Three",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_OrnithopterLasgun_Schematic": {
       "name": "Ornithopter Lasgun",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_OrnithopterRocketLauncher_Schematic": {
       "name": "Ornithopter Rocket Launcher",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_PowerModule_Schematic": {
@@ -28005,28 +28005,28 @@
       "name": "XX_NU_Carrier Ornithopter Engine",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_TransportOrnithopterPowerSupplyUnit_Schematic": {
       "name": "XX_NU_Carrier Ornithopter PSU",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_TransportOrnithopterSideHulls_Schematic": {
       "name": "XX_NU_Carrier Ornithopter Side",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Air)_TransportOrnithopterTailHulls_Schematic": {
       "name": "XX_NU_Carrier Ornithopter Tail",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle(Ground)_GrenadeLauncherExtension_Schematic": {
@@ -28061,98 +28061,98 @@
       "name": "Buggy Back Inventory 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggyChoamFuelEfficientPSU2_Schematic": {
       "name": "Buggy Fuel Efficient PSU 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggyChoamHazardBackHull2_Schematic": {
       "name": "Buggy Hazard-Guard Back Hull",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggyChoamHazardFrontHull2_Schematic": {
       "name": "Buggy Hazard-Guard Front Hull",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggyChoamRocketTurret2_Schematic": {
       "name": "Buggy Rocket Turret 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggyChoamSpeedEngine2_Schematic": {
       "name": "Buggy Speed Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggyChoamStealthChassis2_Schematic": {
       "name": "Buggy Stealth Chassis 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerBackInventory2_Schematic": {
       "name": "Buggy Back Inventory 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerFuelEfficientPSU2_Schematic": {
       "name": "Buggy Fuel Efficient PSU 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerHazardBackHull2_Schematic": {
       "name": "Buggy Hazard-Guard Back Hull",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerHazardFrontHull2_Schematic": {
       "name": "Buggy Hazard-Guard Front Hull",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerRocketTurret2_Schematic": {
       "name": "Buggy Rocket Turret 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerSpeedEngine2_Schematic": {
       "name": "Buggy Speed Engine 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_BuggySmugglerStealthChassis2_Schematic": {
       "name": "Buggy Stealth Chassis 2",
       "stack_max": 1,
       "category": "schematics/vehicles/buggy",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_LightOrniAtreidesFuelEfficientChassis2_Schematic": {
@@ -28250,7 +28250,7 @@
       "name": "Medium Thopter Armored Cockpit",
       "stack_max": 1,
       "category": "schematics/armor/lightarmor",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_MediumOrniChoamBoost1_Schematic": {
@@ -28327,21 +28327,21 @@
       "name": "Sandbike Exploration Treads 3",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_SandbikeChoamFuelEfficientEngine3_Schematic": {
       "name": "Sandbike Fuel Efficient Engine 3",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_SandbikeChoamFuelEfficientPSU3_Schematic": {
       "name": "Sandbike Fuel Efficient PSU 3",
       "stack_max": 1,
       "category": "schematics/vehicles/sandbike",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_Vehicle_TankChoamCockpit_Schematic": {
@@ -28404,21 +28404,21 @@
       "name": "Atreides LMG Firing Charger",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_AtreLMGMagQuickLoader1_Schematic": {
       "name": "Atreides LMG Quick Loader",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_AutoMode_Schematic": {
       "name": "Maula Pistol Full Auto Converter",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_BurstMode_Schematic": {
@@ -28432,28 +28432,28 @@
       "name": "Maula Pistol Quick Loader",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_HarkARMagQuickLoader2_Schematic": {
       "name": "Karpov-38 Quick Loader",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_HarkHeavyPistolMagQuickLoader1_Schematic": {
       "name": "Rafiq Snubnose Quick Loader",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_ScattergunMagQuickLoader1_Schematic": {
       "name": "GRDA 44 Quick Loader",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_T5_WeaponMod_SmugDMRMagQuickLoader2_Schematic": {
@@ -28467,7 +28467,7 @@
       "name": "Savoy & Mirt M11 MK III Disruptor",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_TankChassisSchematic": {
@@ -28523,77 +28523,77 @@
       "name": "Karpov-38 Poison Coater",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_BattleRifle_SemiAuto_Schematic": {
       "name": "Karpov-38 Semi-Auto Coverter",
       "stack_max": 1,
       "category": "schematics/weapons/battlerifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_HeavyPistol_BurstMode_Schematic": {
       "name": "Rafiq Snubnose Burst Modifier",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_HeavyPistol_Sights_Schematic": {
       "name": "Rafiq Snubnose 1.5x Sight",
       "stack_max": 1,
       "category": "schematics/weapons/pistol",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_Rifle_ExplosiveBarrel_Schematic": {
       "name": "Rifle - Explosive Barrel",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_Rifle_Sights_Schematic": {
       "name": "JABAL Spitdart 1.5x Sight",
       "stack_max": 1,
       "category": "schematics/weapons/heavyrifle",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_ScatterGun_ExplosiveBarrel_Schematic": {
       "name": "Scatter Gun - Explosive Barrel",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_ScatterGun_FullAuto_Schematic": {
       "name": "GRDA 44 Full Auto Converter",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_ScatterGun_Sights_Schematic": {
       "name": "GRDA 44 Combat Sight",
       "stack_max": 1,
       "category": "schematics/weapons/shotgun",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_SMG_BurstMode_Schematic": {
       "name": "Savoy & Mirt M11 Burst Modifier",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeaponMod_SMG_PoisonBarrel_Schematic": {
       "name": "Savoy & Mirt M11 Poison Coater",
       "stack_max": 1,
       "category": "schematics/weapons/smg",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_WeldingMaterial3Schematic": {
@@ -28628,181 +28628,181 @@
       "name": "XXNOTUSED_OrnithopterLightChassis_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightChassis_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightChassis_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightLocomotion_5_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightLocomotion_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightLocomotion_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightLocomotion_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightGenerator_5_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightGenerator_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightGenerator_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightGenerator_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightEngine_5_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightEngine_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightEngine_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightEngine_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightHullFront_5_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightHullFront_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightHullFront_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightHullFront_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightHullBack_5_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightHullBack_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightHullBack_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightHullBack_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightBoost_5_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightBoost_5",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightBoost_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightBoost_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterLightLauncher_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterLightLauncher_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumChassis_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumChassis_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumGenerator_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumGenerator_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumEngine_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumEngine_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumLocomotion_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumLocomotion_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumHull_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumHull_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumHullFront_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumHullFront_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumHullBack_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumHullBack_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumBoost_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumBoost_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "D_OrnithopterMediumLauncher_6_Schematic": {
       "name": "XXNOTUSED_OrnithopterMediumLauncher_6",
       "stack_max": 1,
       "category": "schematics/vehicles/lightornithopter",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "UniqueThumper_02_Schematic": {
       "name": "Clapper Mk2",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
     "Stilltent_Unique_01_Schematic": {
       "name": "Double-sealed Stilltent",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
@@ -28830,14 +28830,14 @@
     "UniqueThumper_03_Schematic": {
       "name": "Clapper Mk3",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/utility/deployables",
       "tradeable": false,
       "is_schematic": true
     },
     "UniqueSword_05_Damasteel_Schematic": {
       "name": "Damasteel Sword",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/longblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -29019,7 +29019,7 @@
     "Crysknife_Schematic": {
       "name": "Unfixed Crysknife Schematic",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
@@ -29104,7 +29104,7 @@
       "name": "Experimental Toxin-Absorption Pills",
       "stack_max": 1,
       "category": "schematics/consumables",
-      "tradeable": true,
+      "tradeable": false,
       "is_schematic": true
     },
     "QualityLevelTest_Schematic": {
@@ -29117,14 +29117,14 @@
     "DualBlades_1_Schematic": {
       "name": "Adept Dual Blades",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },
     "DualBlades_2_Schematic": {
       "name": "Regis Dual Blades",
       "stack_max": 1,
-      "category": "schematics/variants",
+      "category": "schematics/weapons/shortblades",
       "tradeable": false,
       "is_schematic": true
     },

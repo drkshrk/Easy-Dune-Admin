@@ -20,6 +20,10 @@ All notable changes to Easy Dune Admin are documented here.
 - Added local-only item icon pack support through `/data/item-icons` or `static/item-icons`, with the actual icon assets ignored from Git and Docker builds so Easy Dune Admin does not redistribute Dune: Awakening game art.
 - Added a Developer-only Item Icon Pack Utility that reports present/missing local icon filenames, local search paths, source catalog paths, related templates, and a copyable missing-icon manifest.
 - Added the same RedBlink-inspired visual item catalog picker to Item Grants so operators can select local-icon item cards directly into the normal RedBlink grant form.
+- Added an Item Edits Augment Diff Workbench that captures before/after raw item stats JSON, highlights changed paths, and copies verified augment-driven values into the existing raw JSON path editor.
+- Added an Item Edits Augment StatRolls helper for the observed `FAugmentItemStats.1.StatRolls` path, including a readout for the server-normalized `AugmentItemHash` field when present.
+- Added an Admin augment grant form for granting individual augment items or augment schematics through RedBlink's normal item grant command, so operators can create before/after augment test cases for Item Edits research.
+- Added a Developer-only read-only specialization diagnostic that compares pawn-ID and controller-ID track rows, purchased keystone counts, and live specialization table columns before changing XP/maxer write behavior.
 - Added an original `base-schematic.png` fallback icon for schematic/blueprint catalog entries that do not have an exact local icon match.
 - Added an original `base-augment.png` fallback icon for augment catalog entries that do not have an exact local icon match.
 - Added an original `base-unknown.png` question-mark fallback icon for all remaining catalog entries without an exact local icon match.
@@ -36,9 +40,20 @@ All notable changes to Easy Dune Admin are documented here.
 - Marked item-side garment, weapon, and utility catalog rows as tradeable so the market seeder can include those families when their categories resolve to exchange masks.
 - Marked schematic armor, weapon, utility, and vehicle rows plus item-side vehicle rows as tradeable, keeping patents, variants, templates, licenses, and augment categories opt-in.
 - Moved consumable schematic rows out of the variant bucket into `schematics/consumables` and marked consumable item/schematic categories tradeable for market seeding.
+- Marked low-value false-schematic rows non-tradeable when faction/vendor or vehicle-like schematic names only resolved to the generic 2500 Solari market fallback at the default 5x multiplier.
+- Added an Admin market cleanup button that drops NPC exchange listings for catalog-marked unsafe templates without touching player-owned listings.
+- Marked remaining weapon-side catalog rows non-tradeable when they only resolved to the generic 2500 Solari fallback price, including NPC-only Ghola knives and tierless weapon schematic/mod rows.
+- Corrected market seed category masks for short and long blades so melee blades no longer seed under the ranged weapon branch.
+- Corrected ranged weapon market seed category masks so guns and projectors seed under the exchange ranged branch before their weapon subtype instead of appearing only in leaf-specific browser buckets.
+- Corrected market seed category masks for ammunition and deployables, removed generic 2500 Solari consumable schematics such as Fuel Mk2 from seeding, raised augment schematic prices by 6x, and stocked 20 thumpers plus 20 each of the `Stilltent` and `Stilltent_Unique_01` item templates in deployables.
+- Added duplicate ammunition seed rows at the direct ammunition parent mask and corrected the Ammunition branch code so rockets, missiles, and incendiary gel live under the exchange Ammunition branch instead of the Ranged branch or a dead legacy subtype mask.
+- Changed the preset market exchange selector to list observed non-Global exchange IDs first and push Global to the bottom so admins do not accidentally seed the invisible/default Global market.
+- Moved blade weapon schematics out of the variant bucket into short-blade and long-blade schematic categories while keeping them non-tradeable until individually vetted.
 - Preserved host file ownership when Docker-mode catalog edits save `data/easy-dune-item-catalog.json`, plus documented the `chown` repair for catalogs saved by older root-owned containers.
 - Reduced authenticated navbar button width by tightening horizontal padding, with an additional compact rule for lower-resolution layouts.
 - Fixed Docker-mode Dune Status listener checks by running status through a short-lived host-network helper container with the listener-probe tools RedBlink expects, avoiding false `MISSING` reports caused by checking `localhost` from inside the Easy Dune Admin bridge-network container.
+- Clarified Developer specialization XP/maxer warnings and added start-output messages so live-broken research writes do not look silently successful or stalled while we identify the correct live storage path.
+- Removed stale Developer-only specialization/class/progression character dropdown population from the Admin page loader.
 - Updated version strings to `0.8.6-beta`.
 
 ## 0.8.4-beta

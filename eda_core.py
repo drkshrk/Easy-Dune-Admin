@@ -3910,7 +3910,7 @@ def get_market_exchanges():
     LEFT JOIN observed_orders o
         ON o.exchange_id = c.exchange_id
     ORDER BY
-        CASE WHEN c.exchange_id = (SELECT exchange_id FROM global_exchange) THEN 0 ELSE 1 END,
+        CASE WHEN c.exchange_id = (SELECT exchange_id FROM global_exchange) THEN 1 ELSE 0 END,
         c.exchange_id;
     """
 
@@ -3928,6 +3928,7 @@ def get_market_exchanges():
                 "order_count": parts[3],
                 "npc_order_count": parts[4],
                 "player_order_count": parts[5],
+                "is_global": parts[1] == "Global",
             }
         )
 
@@ -4330,6 +4331,120 @@ END $$;
 
 def clear_market_npc_listings():
     return run_psql_script(build_market_clear_npc_sql(), timeout=120)
+
+
+UNSAFE_MARKET_SCHEMATIC_TERMS = (
+    "harkonnen",
+    "atreides",
+    "arakeen",
+    "arrakeen",
+    "choam",
+    "vehicle",
+    "ornithopter",
+    "thopter",
+    "sandbike",
+    "buggy",
+    "sandcrawler",
+    "crawler",
+)
+
+
+def unsafe_market_template_ids():
+    """
+    Return non-tradeable templates that should not stay listed.
+
+    This includes faction/vendor/vehicle false schematics and weapon-side rows
+    discovered during catalog cleanup that only resolve to the generic 2500
+    Solari fallback at the default 5x market multiplier. These can crash the
+    client when claimed from the exchange.
+    """
+    root, _, _ = load_eda_item_catalog()
+    items = root.get("items") or {}
+    template_ids = []
+    for template_id, item in items.items():
+        if item.get("tradeable") is not False:
+            continue
+
+        category = str(item.get("category", "") or "")
+        haystack = f"{template_id} {item.get('name', '')} {item.get('category', '')}".casefold()
+        if market_seed.list_price(item, template_id, MARKET_PRICE_MULTIPLIER) != 2500:
+            continue
+
+        is_false_schematic = item.get("is_schematic") and any(
+            term in haystack for term in UNSAFE_MARKET_SCHEMATIC_TERMS
+        )
+        is_base_price_weapon = category.startswith(("items/weapons/", "schematics/weapons/"))
+        if not (is_false_schematic or is_base_price_weapon):
+            continue
+
+        template_ids.append(template_id)
+
+    return sorted(template_ids, key=str.casefold)
+
+
+def build_drop_unsafe_market_npc_sql():
+    """
+    Remove NPC exchange listings for catalog-marked unsafe templates.
+
+    This intentionally targets NPC orders only. Player-owned orders are left in
+    place until an admin chooses a separate destructive cleanup path because
+    deleting those can destroy a real player's listed item without compensation.
+    """
+    template_ids = unsafe_market_template_ids()
+    if not template_ids:
+        return "SELECT 'No unsafe market template ids found in the Easy Dune Admin catalog.' AS status;"
+
+    values_sql = ",\n        ".join(
+        f"({market_seed.sql_literal(template_id)})" for template_id in template_ids
+    )
+    return f"""
+BEGIN;
+CREATE TEMP TABLE unsafe_market_templates (template_id TEXT PRIMARY KEY) ON COMMIT DROP;
+INSERT INTO unsafe_market_templates (template_id)
+VALUES
+        {values_sql};
+
+WITH target_orders AS MATERIALIZED (
+    SELECT
+        o.id,
+        o.item_id,
+        o.template_id
+    FROM dune.dune_exchange_orders o
+    JOIN unsafe_market_templates u
+        ON u.template_id = o.template_id
+    WHERE o.is_npc_order = TRUE
+),
+deleted_sell_orders AS (
+    DELETE FROM dune.dune_exchange_sell_orders s
+    USING target_orders t
+    WHERE s.order_id = t.id
+    RETURNING s.order_id
+),
+deleted_orders AS (
+    DELETE FROM dune.dune_exchange_orders o
+    USING target_orders t
+    WHERE o.id = t.id
+    RETURNING o.id, o.item_id, o.template_id
+),
+deleted_items AS (
+    DELETE FROM dune.items i
+    USING deleted_orders d
+    WHERE d.item_id IS NOT NULL
+      AND i.id = d.item_id
+    RETURNING i.id
+)
+SELECT
+    (SELECT COUNT(*) FROM unsafe_market_templates)::text AS unsafe_template_count,
+    (SELECT COUNT(*) FROM target_orders)::text AS npc_orders_found,
+    (SELECT COUNT(*) FROM deleted_sell_orders)::text AS sell_orders_deleted,
+    (SELECT COUNT(*) FROM deleted_orders)::text AS exchange_orders_deleted,
+    (SELECT COUNT(*) FROM deleted_items)::text AS backing_items_deleted;
+COMMIT;
+"""
+
+
+def drop_unsafe_market_npc_listings():
+    return run_psql_script(build_drop_unsafe_market_npc_sql(), timeout=120)
 
 
 def get_characters(include_offline=True):
@@ -6317,6 +6432,146 @@ GROUP BY
     sp.player_controller_id,
     sp.online_status,
     sp.life_state;
+"""
+
+
+def build_inspect_specialization_state_sql(character_actor_id):
+    """
+    Build read-only specialization diagnostics for one selected character.
+
+    The write helpers above were based on the pawn actor ID path observed in
+    community research. Live servers can prove that assumption wrong, so this
+    report intentionally compares pawn and controller IDs before we change
+    any more progression state.
+    """
+    actor_id = int(character_actor_id)
+
+    return f"""
+WITH selected_player AS (
+    SELECT
+        ps.character_name,
+        ps.player_pawn_id,
+        ps.player_controller_id,
+        ps.funcom_id,
+        ps.online_status,
+        ps.life_state
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+       OR ps.player_controller_id = {actor_id}::bigint
+    ORDER BY
+        CASE WHEN ps.player_pawn_id = {actor_id}::bigint THEN 0 ELSE 1 END,
+        ps.character_name
+    LIMIT 1
+)
+SELECT
+    'selected_player' AS section,
+    character_name,
+    player_pawn_id,
+    player_controller_id,
+    funcom_id,
+    online_status,
+    life_state
+FROM selected_player;
+
+SELECT
+    'specialization_tracks_columns' AS section,
+    column_name,
+    data_type,
+    udt_name,
+    is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'dune'
+  AND table_name = 'specialization_tracks'
+ORDER BY ordinal_position;
+
+SELECT
+    'purchased_specialization_keystones_columns' AS section,
+    column_name,
+    data_type,
+    udt_name,
+    is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'dune'
+  AND table_name = 'purchased_specialization_keystones'
+ORDER BY ordinal_position;
+
+WITH selected_player AS (
+    SELECT
+        ps.player_pawn_id,
+        ps.player_controller_id
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+       OR ps.player_controller_id = {actor_id}::bigint
+    ORDER BY
+        CASE WHEN ps.player_pawn_id = {actor_id}::bigint THEN 0 ELSE 1 END,
+        ps.character_name
+    LIMIT 1
+)
+SELECT
+    'tracks_by_pawn_id' AS section,
+    st.player_id,
+    st.track_type::text AS track_type,
+    st.xp_amount,
+    st.level
+FROM selected_player sp
+JOIN dune.specialization_tracks st
+    ON st.player_id = sp.player_pawn_id
+ORDER BY st.track_type::text;
+
+WITH selected_player AS (
+    SELECT
+        ps.player_pawn_id,
+        ps.player_controller_id
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+       OR ps.player_controller_id = {actor_id}::bigint
+    ORDER BY
+        CASE WHEN ps.player_pawn_id = {actor_id}::bigint THEN 0 ELSE 1 END,
+        ps.character_name
+    LIMIT 1
+)
+SELECT
+    'tracks_by_controller_id' AS section,
+    st.player_id,
+    st.track_type::text AS track_type,
+    st.xp_amount,
+    st.level
+FROM selected_player sp
+JOIN dune.specialization_tracks st
+    ON st.player_id = sp.player_controller_id
+ORDER BY st.track_type::text;
+
+WITH selected_player AS (
+    SELECT
+        ps.player_pawn_id,
+        ps.player_controller_id
+    FROM dune.player_state ps
+    WHERE ps.player_pawn_id = {actor_id}::bigint
+       OR ps.player_controller_id = {actor_id}::bigint
+    ORDER BY
+        CASE WHEN ps.player_pawn_id = {actor_id}::bigint THEN 0 ELSE 1 END,
+        ps.character_name
+    LIMIT 1
+)
+SELECT
+    'keystone_counts' AS section,
+    sp.player_pawn_id,
+    COUNT(DISTINCT psk_pawn.keystone_id) AS pawn_id_keystones,
+    sp.player_controller_id,
+    COUNT(DISTINCT psk_controller.keystone_id) AS controller_id_keystones
+FROM selected_player sp
+LEFT JOIN dune.purchased_specialization_keystones psk_pawn
+    ON psk_pawn.player_id = sp.player_pawn_id
+LEFT JOIN dune.purchased_specialization_keystones psk_controller
+    ON psk_controller.player_id = sp.player_controller_id
+GROUP BY
+    sp.player_pawn_id,
+    sp.player_controller_id;
+
+SELECT
+    'specialization_keystones_map_count' AS section,
+    COUNT(*) AS discovered_keystone_rows
+FROM dune.specialization_keystones_map;
 """
 
 

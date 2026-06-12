@@ -461,7 +461,7 @@ Developer-only progression tools. These directly edit progression-related data a
 
 <form id="specializationXpForm">
     <div class="warning experimental">
-        WIP / unconfirmed: Specialization XP is separate from character level XP. Specialization rows use the character pawn actor ID. Each track appears capped at <b>{{ "{:,}".format(specialization_max_xp) }}</b> XP / level 100.
+        WIP / live-broken research path: Specialization XP is separate from character level XP. The current writer was built around the character pawn actor ID, but live testing shows XP/max may not land where the game reads it. Use Inspect Specialization State first, then compare pawn/controller rows before trusting XP or max output. Each track appears capped at <b>{{ "{:,}".format(specialization_max_xp) }}</b> XP / level 100.
     </div>
 
     <label>Character</label>
@@ -483,6 +483,22 @@ Developer-only progression tools. These directly edit progression-related data a
     <input type="number" name="xp_amount" id="xpAmount" min="1" max="{{ specialization_max_xp }}" step="1" value="1000" required>
 
     <button type="submit">Give Specialization XP</button>
+</form>
+
+<form id="specializationInspectForm">
+    <div class="warning info">
+        Read-only diagnostic. Shows selected player IDs, specialization table columns, track rows keyed by pawn ID, track rows keyed by controller ID, and purchased-keystone counts so we can repair the XP/max writer against the live schema.
+    </div>
+
+    <label>Character</label>
+    <select id="specializationInspectCharacterSelect" onchange="fillSpecializationInspectActorId()">
+        <option value="">Loading characters...</option>
+    </select>
+
+    <label>Character Actor ID or Player Controller ID</label>
+    <input type="text" name="character_actor_id" id="specializationInspectActorId" required>
+
+    <button type="submit">Inspect Specialization State</button>
 </form>
 
 <form id="specializationGrantAllForm">
@@ -738,6 +754,7 @@ async function loadDeveloperCharacters() {
     fillCharacterSelect("starterClassCharacterSelect", chars);
     fillCharacterSelect("prescienceCharacterSelect", chars);
     fillCharacterSelect("xpCharacterSelect", chars);
+    fillCharacterSelect("specializationInspectCharacterSelect", chars);
     fillCharacterSelect("specializationGrantAllCharacterSelect", chars);
     fillCharacterSelect("specializationMaxCharacterSelect", chars);
     fillCharacterSelect("specializationResetCharacterSelect", chars);
@@ -1011,11 +1028,22 @@ specializationXpForm.addEventListener("submit", async function(event) {
 
     const amount = document.getElementById("xpAmount").value || "0";
     const track = document.getElementById("xpTrackType").value || "selected";
-    if (!confirm(`Add ${amount} ${track} specialization XP to this character? Developer-only progression edit. Continue?`)) {
+    if (!confirm(`Add ${amount} ${track} specialization XP to this character? This writer is still live-broken research and may not affect the in-game specialization UI. This may take some time. Wait for output confirmation. Continue?`)) {
         return;
     }
 
-    await postForm("/api/give-specialization-xp", specializationXpForm);
+    await postForm("/api/give-specialization-xp", specializationXpForm, {
+        startMessage: `Starting specialization XP write for ${track}. This may take some time. Wait for output confirmation.`
+    });
+});
+
+const specializationInspectForm = document.getElementById("specializationInspectForm");
+specializationInspectForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    await postForm("/api/inspect-specialization-state", specializationInspectForm, {
+        startMessage: "Inspecting specialization state. This is read-only and may take some time. Wait for output confirmation."
+    });
 });
 
 const specializationGrantAllForm = document.getElementById("specializationGrantAllForm");
@@ -1026,18 +1054,22 @@ specializationGrantAllForm.addEventListener("submit", async function(event) {
         return;
     }
 
-    await postForm("/api/grant-all-specialization-tracks", specializationGrantAllForm);
+    await postForm("/api/grant-all-specialization-tracks", specializationGrantAllForm, {
+        startMessage: "Starting specialization track-row grant. This may take some time. Wait for output confirmation."
+    });
 });
 
 const specializationMaxForm = document.getElementById("specializationMaxForm");
 specializationMaxForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    if (!confirm("Max all specialization tracks to level 100 and grant discovered specialization keystones for this character? Developer-only progression edit. Continue?")) {
+    if (!confirm("Max all specialization tracks to level 100 and grant discovered specialization keystones for this character? This writer is still live-broken research and may not affect the in-game specialization UI. This may take some time. Wait for output confirmation. Continue?")) {
         return;
     }
 
-    await postForm("/api/max-specialization", specializationMaxForm);
+    await postForm("/api/max-specialization", specializationMaxForm, {
+        startMessage: "Starting specialization max write. This may take some time. Wait for output confirmation."
+    });
 });
 
 const specializationResetForm = document.getElementById("specializationResetForm");
@@ -1049,7 +1081,9 @@ specializationResetForm.addEventListener("submit", async function(event) {
         return;
     }
 
-    await postForm("/api/reset-specialization", specializationResetForm);
+    await postForm("/api/reset-specialization", specializationResetForm, {
+        startMessage: `Starting specialization reset for ${track}. This may take some time. Wait for output confirmation.`
+    });
 });
 
 const progressionPresetForm = document.getElementById("progressionPresetForm");
