@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en" data-addon-id="eda-catalog-editor">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDA Catalog Editor</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #070604; color: #f2d899; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; min-height: 100vh; background: radial-gradient(circle at 16% 16%, rgba(166, 105, 35, .26), transparent 30rem), linear-gradient(135deg, #080604, #15100a 58%, #050403); }
+    main { display: grid; gap: 14px; }
+    section { border: 1px solid rgba(214, 164, 77, .48); background: rgba(8, 7, 5, .9); padding: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, .42); }
+    h1, h2, h3 { margin: 0 0 10px; color: #ffe7ad; }
+    p { color: #d4c5a7; line-height: 1.45; }
+    label { display: grid; gap: 6px; color: #cdbb95; font-weight: 800; }
+    input, select, textarea { width: 100%; border: 1px solid rgba(214, 164, 77, .35); background: rgba(0, 0, 0, .45); color: #f8e6bf; padding: 9px 10px; font: inherit; }
+    textarea { min-height: 82px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+    input[type="checkbox"] { width: auto; }
+    button { border: 1px solid #f1d38a; background: #d6a44d; color: #090604; padding: 9px 12px; font-weight: 900; cursor: pointer; }
+    button.secondary { background: rgba(214, 164, 77, .08); color: #ffe7ad; }
+    button.danger { border-color: #d65a42; background: #5a1711; color: #ffd8cf; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .badge { display: inline-block; border: 1px solid rgba(214, 164, 77, .4); padding: 2px 8px; color: #ffe7ad; background: rgba(214, 164, 77, .1); }
+    .status { border: 1px solid rgba(108, 151, 200, .55); background: rgba(13, 33, 55, .78); color: #d2e8ff; padding: 10px 12px; }
+    .ok { border-color: rgba(99, 181, 127, .65); background: rgba(30, 76, 48, .72); color: #d8f0c8; }
+    .error { border-color: rgba(200, 77, 63, .7); background: rgba(75, 17, 12, .82); color: #ffd6d1; }
+    .muted { color: #bba98b; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, 280px) minmax(140px, 220px); gap: 10px; }
+    .workspace { display: grid; grid-template-columns: minmax(380px, 1.1fr) minmax(360px, .9fr); gap: 14px; align-items: start; }
+    .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; max-height: 64vh; overflow: auto; padding-right: 4px; }
+    .item-card { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 98px; border: 1px solid rgba(214, 164, 77, .25); background: rgba(4, 4, 3, .68); padding: 10px; text-align: left; color: inherit; }
+    .item-card.selected { border-color: #e2b75e; background: rgba(119, 75, 28, .55); }
+    .item-card.changed { box-shadow: inset 3px 0 0 #7dd38a; }
+    .item-card strong { display: block; color: #ffe7ad; font-size: 17px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-card span { display: block; color: #bba98b; font-size: 13px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .icon-tile { width: 68px; height: 68px; border: 1px solid rgba(214, 164, 77, .28); background: radial-gradient(circle at center, rgba(214, 164, 77, .25), rgba(0,0,0,.9) 62%); display: grid; place-items: center; color: #f4d990; font-weight: 1000; overflow: hidden; }
+    .icon-tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .editor-grid .wide { grid-column: 1 / -1; }
+    .check-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .check-row label { display: flex; flex-direction: row; gap: 6px; align-items: center; }
+    .diff-list { max-height: 180px; overflow: auto; border: 1px solid rgba(214, 164, 77, .25); padding: 10px; background: rgba(0,0,0,.28); font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 12px; white-space: pre-wrap; }
+    @media (max-width: 980px) { .workspace { grid-template-columns: 1fr; } .filters { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>EDA Catalog Editor</h1>
+      <p>Browse the bundled Easy Dune Admin item catalog, make local metadata corrections, then export a full replacement JSON or a compact patch file. This addon currently saves edits in this browser until RedBlink exposes addon-owned file storage.</p>
+      <p><span class="badge">No RedBlink permissions</span> <span class="badge">Local edits + export</span> <span class="badge">Catalog source: EDA 0.8.8-beta</span></p>
+      <div id="status" class="status">Loading catalog...</div>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <button id="exportCatalog" type="button">Export Full Catalog JSON</button>
+        <button id="exportPatch" type="button" class="secondary">Export Patch JSON</button>
+        <label class="secondary-file">Import Catalog/Patch JSON
+          <input id="importFile" type="file" accept="application/json,.json">
+        </label>
+        <button id="resetLocal" type="button" class="danger">Reset Local Edits</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="filters">
+        <label>Search
+          <input id="search" type="search" placeholder="lasgun, stilltent, schematic, template id...">
+        </label>
+        <label>Category
+          <select id="categoryFilter"><option value="">All Categories</option></select>
+        </label>
+        <label>Flags
+          <select id="flagFilter">
+            <option value="">All Items</option>
+            <option value="changed">Changed only</option>
+            <option value="tradeable">Tradeable</option>
+            <option value="untradeable">Untradeable</option>
+            <option value="schematic">Schematics</option>
+            <option value="augment">Augments</option>
+            <option value="missing-icon">Missing local icon</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section>
+        <h2>Visual Item Selector</h2>
+        <p id="countLine" class="muted">No items loaded.</p>
+        <div id="catalogGrid" class="catalog-grid"></div>
+      </section>
+
+      <section>
+        <h2>Catalog Entry</h2>
+        <div id="emptyEditor" class="muted">Select an item card to edit it.</div>
+        <form id="editorForm" hidden>
+          <div class="editor-grid">
+            <label class="wide">Template ID
+              <input id="templateId" readonly>
+            </label>
+            <label class="wide">Display Name
+              <input id="name">
+            </label>
+            <label class="wide">Category
+              <input id="category" list="categoryList">
+              <datalist id="categoryList"></datalist>
+            </label>
+            <label>Tier
+              <input id="tier" type="number" step="1">
+            </label>
+            <label>Rarity
+              <input id="rarity">
+            </label>
+            <label>Stack Max
+              <input id="stack_max" type="number" min="1" step="1">
+            </label>
+            <label>Vendor Price
+              <input id="vendor_price" type="number" min="0" step="1">
+            </label>
+            <label>Volume
+              <input id="volume" type="number" min="0" step="0.001">
+            </label>
+            <label>Max Durability
+              <input id="max_durability" type="number" min="-1" step="0.001">
+            </label>
+            <label>Decayed Max Durability
+              <input id="decayed_max_durability" type="number" min="-1" step="0.001">
+            </label>
+            <label class="wide">Icon Source
+              <input id="icon" placeholder="GUI/Textures/.../T_UI_Icon...png">
+            </label>
+            <div class="wide check-row">
+              <label><input id="tradeable" type="checkbox"> Tradeable</label>
+              <label><input id="is_schematic" type="checkbox"> Schematic</label>
+              <label><input id="is_augment" type="checkbox"> Augment</label>
+              <label><input id="is_gradeable" type="checkbox"> Gradeable</label>
+            </div>
+            <label class="wide">Raw Extra Fields JSON
+              <textarea id="extraJson" spellcheck="false"></textarea>
+            </label>
+          </div>
+          <div class="toolbar" style="margin-top: 12px;">
+            <button type="submit">Save Local Edit</button>
+            <button id="revertItem" type="button" class="secondary">Revert Item</button>
+            <button id="copyTemplate" type="button" class="secondary">Copy Template ID</button>
+          </div>
+        </form>
+        <h3 style="margin-top: 14px;">Local Patch Preview</h3>
+        <div id="diffPreview" class="diff-list">No local edits yet.</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const CATALOG_URL = "./catalog.json";
+    const STORAGE_KEY = "eda-catalog-editor.patch.v1";
+    const BASE_FIELDS = new Set(["name", "category", "tradeable", "stack_max", "vendor_price", "volume", "tier", "rarity", "max_durability", "decayed_max_durability", "icon", "is_schematic", "is_augment", "is_gradeable"]);
+
+    const statusEl = document.getElementById("status");
+    const gridEl = document.getElementById("catalogGrid");
+    const countLineEl = document.getElementById("countLine");
+    const searchEl = document.getElementById("search");
+    const categoryFilterEl = document.getElementById("categoryFilter");
+    const flagFilterEl = document.getElementById("flagFilter");
+    const formEl = document.getElementById("editorForm");
+    const emptyEditorEl = document.getElementById("emptyEditor");
+    const diffPreviewEl = document.getElementById("diffPreview");
+    const categoryListEl = document.getElementById("categoryList");
+
+    let originalCatalog = null;
+    let catalog = null;
+    let patch = { items: {}, names: {} };
+    let selectedTemplateId = "";
+
+    function escapeHtml(value) {
+      return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+    function clone(value) { return JSON.parse(JSON.stringify(value)); }
+    function itemInitials(name, templateId) {
+      const words = String(name || templateId || "?").replace(/[_-]+/g, " ").trim().split(/\s+/).filter(Boolean);
+      return words.slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "?";
+    }
+    function boolValue(value) { return value === true || value === "true" || value === "1" || value === 1; }
+    function optionalNumber(value, integer = false) {
+      const text = String(value ?? "").trim();
+      if (!text) return undefined;
+      const number = Number(text);
+      if (!Number.isFinite(number)) throw new Error(`Invalid number: ${text}`);
+      return integer ? Math.trunc(number) : number;
+    }
+    function loadPatch() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        patch = { items: parsed.items || {}, names: parsed.names || {} };
+      } catch {
+        patch = { items: {}, names: {} };
+      }
+    }
+    function savePatch() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(patch));
+    }
+    function applyPatch() {
+      catalog = clone(originalCatalog);
+      catalog.items = catalog.items || {};
+      catalog.names = catalog.names || {};
+      for (const [templateId, entry] of Object.entries(patch.items || {})) {
+        if (entry === null) delete catalog.items[templateId];
+        else catalog.items[templateId] = { ...(catalog.items[templateId] || {}), ...entry };
+      }
+      for (const [templateId, name] of Object.entries(patch.names || {})) {
+        if (name === null) delete catalog.names[templateId];
+        else catalog.names[templateId] = name;
+      }
+    }
+    function changedTemplateIds() {
+      return new Set([...Object.keys(patch.items || {}), ...Object.keys(patch.names || {})]);
+    }
+    function itemRows() {
+      const items = catalog?.items || {};
+      return Object.entries(items).map(([templateId, item]) => ({ templateId, item }));
+    }
+    function displayName(templateId, item) {
+      return item?.name || catalog?.names?.[templateId] || templateId;
+    }
+    function categories() {
+      return Array.from(new Set(itemRows().map(({ item }) => String(item.category || "uncategorized")))).sort((a, b) => a.localeCompare(b));
+    }
+    function iconFor(templateId, item) {
+      if (item?.is_augment || /augment/i.test(String(item?.category || ""))) return "./base-augment.png";
+      if (item?.is_schematic || /schematic/i.test(`${templateId} ${item?.category || ""}`)) return "./base-schematic.png";
+      return "";
+    }
+    function renderCategoryOptions() {
+      const current = categoryFilterEl.value;
+      const opts = categories();
+      categoryFilterEl.innerHTML = `<option value="">All Categories (${itemRows().length.toLocaleString()})</option>` + opts.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+      categoryFilterEl.value = opts.includes(current) ? current : "";
+      categoryListEl.innerHTML = opts.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
+    }
+    function matchesFlag(templateId, item) {
+      const flag = flagFilterEl.value;
+      if (!flag) return true;
+      if (flag === "changed") return changedTemplateIds().has(templateId);
+      if (flag === "tradeable") return item.tradeable === true;
+      if (flag === "untradeable") return item.tradeable === false;
+      if (flag === "schematic") return item.is_schematic === true || /schematic/i.test(`${templateId} ${item.category || ""}`);
+      if (flag === "augment") return item.is_augment === true || /augment/i.test(`${templateId} ${item.category || ""}`);
+      if (flag === "missing-icon") return !item.icon;
+      return true;
+    }
+    function visibleRows() {
+      const query = searchEl.value.trim().toLowerCase();
+      const category = categoryFilterEl.value;
+      return itemRows().filter(({ templateId, item }) => {
+        if (category && item.category !== category) return false;
+        if (!matchesFlag(templateId, item)) return false;
+        if (!query) return true;
+        const haystack = [templateId, displayName(templateId, item), item.category, item.icon, item.rarity, item.tier].join(" ").toLowerCase();
+        return haystack.includes(query);
+      }).sort((a, b) => displayName(a.templateId, a.item).localeCompare(displayName(b.templateId, b.item)));
+    }
+    function renderGrid() {
+      const rows = visibleRows();
+      const changed = changedTemplateIds();
+      countLineEl.textContent = `${rows.length.toLocaleString()} visible of ${itemRows().length.toLocaleString()} catalog entries. ${changed.size.toLocaleString()} locally edited.`;
+      if (!rows.length) {
+        gridEl.innerHTML = `<p class="muted">No catalog entries match the current filters.</p>`;
+        return;
+      }
+      const shown = rows.slice(0, 320);
+      gridEl.innerHTML = shown.map(({ templateId, item }) => {
+        const name = displayName(templateId, item);
+        const icon = iconFor(templateId, item);
+        return `<button class="item-card ${selectedTemplateId === templateId ? "selected" : ""} ${changed.has(templateId) ? "changed" : ""}" type="button" data-template-id="${escapeHtml(templateId)}">
+          <span class="icon-tile">${icon ? `<img src="${icon}" alt="">` : escapeHtml(itemInitials(name, templateId))}</span>
+          <span>
+            <strong title="${escapeHtml(name)}">${escapeHtml(name)}</strong>
+            <span title="${escapeHtml(templateId)}">${escapeHtml(templateId)}</span>
+            <span>${escapeHtml(item.category || "uncategorized")}</span>
+            <span>T${escapeHtml(item.tier ?? "?")} | ${escapeHtml(item.rarity || "Unknown rarity")} | Stack ${escapeHtml(item.stack_max ?? "?")}</span>
+          </span>
+        </button>`;
+      }).join("");
+      if (rows.length > shown.length) {
+        gridEl.insertAdjacentHTML("beforeend", `<p class="muted">Showing first ${shown.length.toLocaleString()} matches. Narrow the filter for more.</p>`);
+      }
+    }
+    function selectItem(templateId) {
+      selectedTemplateId = templateId;
+      const item = catalog.items[templateId];
+      emptyEditorEl.hidden = true;
+      formEl.hidden = false;
+      document.getElementById("templateId").value = templateId;
+      document.getElementById("name").value = displayName(templateId, item);
+      document.getElementById("category").value = item.category || "";
+      document.getElementById("tier").value = item.tier ?? "";
+      document.getElementById("rarity").value = item.rarity ?? "";
+      document.getElementById("stack_max").value = item.stack_max ?? "";
+      document.getElementById("vendor_price").value = item.vendor_price ?? "";
+      document.getElementById("volume").value = item.volume ?? "";
+      document.getElementById("max_durability").value = item.max_durability ?? "";
+      document.getElementById("decayed_max_durability").value = item.decayed_max_durability ?? "";
+      document.getElementById("icon").value = item.icon || "";
+      document.getElementById("tradeable").checked = item.tradeable === true;
+      document.getElementById("is_schematic").checked = item.is_schematic === true;
+      document.getElementById("is_augment").checked = item.is_augment === true;
+      document.getElementById("is_gradeable").checked = item.is_gradeable === true;
+      const extra = {};
+      for (const [key, value] of Object.entries(item)) {
+        if (!BASE_FIELDS.has(key)) extra[key] = value;
+      }
+      document.getElementById("extraJson").value = Object.keys(extra).length ? JSON.stringify(extra, null, 2) : "";
+      renderGrid();
+    }
+    function formItem() {
+      const extraText = document.getElementById("extraJson").value.trim();
+      const extra = extraText ? JSON.parse(extraText) : {};
+      const item = {
+        ...extra,
+        name: document.getElementById("name").value.trim() || selectedTemplateId,
+        category: document.getElementById("category").value.trim() || "uncategorized",
+        tradeable: document.getElementById("tradeable").checked,
+      };
+      for (const [field, integer] of [["tier", true], ["stack_max", true], ["vendor_price", true], ["volume", false], ["max_durability", false], ["decayed_max_durability", false]]) {
+        const value = optionalNumber(document.getElementById(field).value, integer);
+        if (value !== undefined) item[field] = value;
+      }
+      const rarity = document.getElementById("rarity").value.trim();
+      if (rarity) item.rarity = rarity;
+      const icon = document.getElementById("icon").value.trim();
+      if (icon) item.icon = icon;
+      if (document.getElementById("is_schematic").checked) item.is_schematic = true;
+      if (document.getElementById("is_augment").checked) item.is_augment = true;
+      if (document.getElementById("is_gradeable").checked) item.is_gradeable = true;
+      return item;
+    }
+    function saveCurrentItem(event) {
+      event.preventDefault();
+      if (!selectedTemplateId) return;
+      try {
+        const item = formItem();
+        patch.items[selectedTemplateId] = item;
+        patch.names[selectedTemplateId] = item.name;
+        savePatch();
+        applyPatch();
+        renderCategoryOptions();
+        selectItem(selectedTemplateId);
+        renderDiff();
+        statusEl.className = "status ok";
+        statusEl.textContent = `Saved local edit for ${selectedTemplateId}. Export the catalog or patch when ready.`;
+      } catch (error) {
+        statusEl.className = "status error";
+        statusEl.textContent = error.message || String(error);
+      }
+    }
+    function revertCurrentItem() {
+      if (!selectedTemplateId) return;
+      delete patch.items[selectedTemplateId];
+      delete patch.names[selectedTemplateId];
+      savePatch();
+      applyPatch();
+      renderCategoryOptions();
+      selectItem(selectedTemplateId);
+      renderDiff();
+      statusEl.className = "status ok";
+      statusEl.textContent = `Reverted local edit for ${selectedTemplateId}.`;
+    }
+    function renderDiff() {
+      const changed = changedTemplateIds();
+      if (!changed.size) {
+        diffPreviewEl.textContent = "No local edits yet.";
+        return;
+      }
+      diffPreviewEl.textContent = JSON.stringify({ changed: changed.size, patch }, null, 2);
+    }
+    function downloadJson(filename, value) {
+      const blob = new Blob([JSON.stringify(value, null, 2) + "\n"], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+    async function importJsonFile(file) {
+      if (!file) return;
+      const imported = JSON.parse(await file.text());
+      if (imported.items && imported.names) {
+        if (confirm("Import full catalog JSON and replace the local working catalog?")) {
+          originalCatalog = clone(imported);
+          patch = { items: {}, names: {} };
+        }
+      } else if (imported.patch || imported.changed) {
+        patch = imported.patch || { items: imported.items || {}, names: imported.names || {} };
+      } else {
+        patch = { items: imported.items || {}, names: imported.names || {} };
+      }
+      savePatch();
+      applyPatch();
+      renderCategoryOptions();
+      renderGrid();
+      renderDiff();
+      statusEl.className = "status ok";
+      statusEl.textContent = `Imported ${file.name}.`;
+    }
+    async function loadCatalog() {
+      try {
+        const response = await fetch(CATALOG_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Catalog returned HTTP ${response.status}.`);
+        originalCatalog = await response.json();
+        loadPatch();
+        applyPatch();
+        renderCategoryOptions();
+        renderGrid();
+        renderDiff();
+        statusEl.className = "status ok";
+        statusEl.textContent = `Loaded ${itemRows().length.toLocaleString()} catalog entries. Local edits are saved in this browser.`;
+      } catch (error) {
+        statusEl.className = "status error";
+        statusEl.textContent = error.message || String(error);
+      }
+    }
+
+    gridEl.addEventListener("click", (event) => {
+      const card = event.target.closest(".item-card");
+      if (card) selectItem(card.dataset.templateId);
+    });
+    formEl.addEventListener("submit", saveCurrentItem);
+    document.getElementById("revertItem").addEventListener("click", revertCurrentItem);
+    document.getElementById("copyTemplate").addEventListener("click", () => selectedTemplateId && navigator.clipboard?.writeText(selectedTemplateId));
+    searchEl.addEventListener("input", renderGrid);
+    categoryFilterEl.addEventListener("change", renderGrid);
+    flagFilterEl.addEventListener("change", renderGrid);
+    document.getElementById("exportCatalog").addEventListener("click", () => downloadJson("easy-dune-item-catalog.edited.json", catalog));
+    document.getElementById("exportPatch").addEventListener("click", () => downloadJson("easy-dune-item-catalog.patch.json", { generated_at: new Date().toISOString(), changed: changedTemplateIds().size, patch }));
+    document.getElementById("resetLocal").addEventListener("click", () => {
+      if (!confirm("Clear all local catalog edits in this browser?")) return;
+      patch = { items: {}, names: {} };
+      savePatch();
+      applyPatch();
+      selectedTemplateId = "";
+      formEl.hidden = true;
+      emptyEditorEl.hidden = false;
+      renderCategoryOptions();
+      renderGrid();
+      renderDiff();
+      statusEl.className = "status ok";
+      statusEl.textContent = "Local edits cleared.";
+    });
+    document.getElementById("importFile").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      importJsonFile(file).catch((error) => {
+        statusEl.className = "status error";
+        statusEl.textContent = error.message || String(error);
+      }).finally(() => { event.target.value = ""; });
+    });
+    loadCatalog();
+  </script>
+</body>
+</html>

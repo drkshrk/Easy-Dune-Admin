@@ -461,7 +461,7 @@ Developer-only progression tools. These directly edit progression-related data a
 
 <form id="specializationXpForm">
     <div class="warning experimental">
-        WIP / live-broken research path: Specialization XP is separate from character level XP. The current writer was built around the character pawn actor ID, but live testing shows XP/max may not land where the game reads it. Use Inspect Specialization State first, then compare pawn/controller rows before trusting XP or max output. Each track appears capped at <b>{{ "{:,}".format(specialization_max_xp) }}</b> XP / level 100.
+        RedBlink v1.3.16 specialization path: sets one specialization track through <b>dune admin specialization-xp</b> using the selected character name plus actor ID. This is separate from character level XP and RedBlink creates a database backup before writes. Each track appears capped at <b>{{ "{:,}".format(specialization_max_xp) }}</b> XP / level 100.
     </div>
 
     <label>Character</label>
@@ -479,8 +479,11 @@ Developer-only progression tools. These directly edit progression-related data a
         {% endfor %}
     </select>
 
-    <label>XP To Add</label>
-    <input type="number" name="xp_amount" id="xpAmount" min="1" max="{{ specialization_max_xp }}" step="1" value="1000" required>
+    <label>Level Value To Set</label>
+    <input type="number" name="level" id="xpLevel" min="0" max="100" step="1" value="100" required>
+
+    <label>XP Value To Set</label>
+    <input type="number" name="xp_amount" id="xpAmount" min="0" max="{{ specialization_max_xp }}" step="1" value="{{ specialization_max_xp }}" required>
 
     <button type="submit">Give Specialization XP</button>
 </form>
@@ -518,6 +521,10 @@ Developer-only progression tools. These directly edit progression-related data a
 </form>
 
 <form id="specializationMaxForm">
+    <div class="warning experimental">
+        Uses RedBlink v1.3.16 <b>dune admin specialization-max</b> with keystone granting enabled. This is the preferred maxer path for current RedBlink stacks.
+    </div>
+
     <label>Character</label>
     <select id="specializationMaxCharacterSelect" onchange="fillSpecializationMaxActorId()">
         <option value="">Loading characters...</option>
@@ -1027,13 +1034,14 @@ specializationXpForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
     const amount = document.getElementById("xpAmount").value || "0";
+    const level = document.getElementById("xpLevel").value || "0";
     const track = document.getElementById("xpTrackType").value || "selected";
-    if (!confirm(`Add ${amount} ${track} specialization XP to this character? This writer is still live-broken research and may not affect the in-game specialization UI. This may take some time. Wait for output confirmation. Continue?`)) {
+    if (!confirm(`Set ${track} specialization to level ${level} / XP ${amount} for this character through RedBlink v1.3.16? This may take some time. Wait for output confirmation. Continue?`)) {
         return;
     }
 
     await postForm("/api/give-specialization-xp", specializationXpForm, {
-        startMessage: `Starting specialization XP write for ${track}. This may take some time. Wait for output confirmation.`
+        startMessage: `Starting RedBlink specialization XP write for ${track}. This may take some time. Wait for output confirmation.`
     });
 });
 
@@ -1063,12 +1071,12 @@ const specializationMaxForm = document.getElementById("specializationMaxForm");
 specializationMaxForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    if (!confirm("Max all specialization tracks to level 100 and grant discovered specialization keystones for this character? This writer is still live-broken research and may not affect the in-game specialization UI. This may take some time. Wait for output confirmation. Continue?")) {
+    if (!confirm("Max all specialization tracks to level 100 and grant discovered specialization keystones through RedBlink v1.3.16? This may take some time. Wait for output confirmation. Continue?")) {
         return;
     }
 
     await postForm("/api/max-specialization", specializationMaxForm, {
-        startMessage: "Starting specialization max write. This may take some time. Wait for output confirmation."
+        startMessage: "Starting RedBlink specialization max write. This may take some time. Wait for output confirmation."
     });
 });
 

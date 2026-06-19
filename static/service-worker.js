@@ -1,4 +1,4 @@
-const EDA_CACHE_VERSION = "easy-dune-admin-0.8.6-beta-augment-statrolls-helper";
+const EDA_CACHE_VERSION = "easy-dune-admin-0.8.8-beta-redblink-1-3-16";
 
 // Cache only static app-shell assets. Authenticated pages and API responses
 // stay network-first so sensitive admin data is not intentionally stored for

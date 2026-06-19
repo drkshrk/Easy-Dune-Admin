@@ -1,0 +1,97 @@
+diff --git a/console/web/src/features/addons/AddonsPanel.tsx b/console/web/src/features/addons/AddonsPanel.tsx
+--- a/console/web/src/features/addons/AddonsPanel.tsx
++++ b/console/web/src/features/addons/AddonsPanel.tsx
+@@
+     setNotice(null);
+     try {
+       const [result, installedResult] = await Promise.all([addonsApi.community(), addonsApi.installed()]);
+-      setAddons(result.addons || []);
+-      setAddonCount((result.addons || []).length);
+-      setInstalled(installedResult.addons || []);
++      const communityAddons = result.addons || [];
++      const installedAddons = installedResult.addons || [];
++      setAddons(communityAddons);
++      setAddonCount(new Set([...communityAddons.map((addon) => addon.id), ...installedAddons.map((addon) => addon.id)]).size);
++      setInstalled(installedAddons);
+       setInstalledLoaded(true);
+     } catch (err) {
+       setNotice({ title: "Addons Unavailable", message: formatAddonError(err), tone: "fail" });
+@@
+   useEffect(() => {
+     if (!installedLoaded) return;
+     setPinnedAddons((current) => current
+       .map((item) => {
+         const installedAddon = installed.find((addon) => addon.id === item.id && addon.enabled);
+         return installedAddon ? { id: installedAddon.id, name: installedAddon.name, entryPath: installedAddon.entryPath, enabled: installedAddon.enabled } : null;
+       })
+-      .filter((item): item is PinnedAddon => Boolean(item)));
+-  }, [installed, installedLoaded, setPinnedAddons]);
++      .filter((item): item is PinnedAddon => Boolean(item))
++      .concat(installed
++        .filter((addon) => addon.enabled && !addons.some((communityAddon) => communityAddon.id === addon.id))
++        .filter((addon) => !current.some((item) => item.id === addon.id))
++        .map((addon) => ({ id: addon.id, name: addon.name, entryPath: addon.entryPath, enabled: addon.enabled }))));
++  }, [addons, installed, installedLoaded, setPinnedAddons]);
+@@
+-  const rows = addons.map((addon) => {
++  const installedOnlyRows = installed
++    .filter((addon) => !addons.some((communityAddon) => communityAddon.id === addon.id))
++    .map((addon) => ({
++      id: addon.id,
++      name: addon.name,
++      description: addon.description,
++      author: addon.author,
++      version: addon.version,
++      sourceUrl: "",
++      manifestUrl: "",
++      permissions: addon.permissions
++    }));
++  const rows = [...addons, ...installedOnlyRows].map((addon) => {
+     const installedAddon = installedById.get(addon.id);
+     return { ...addon, status: installedAddon ? installedAddon.status || "Installed" : "Available" };
+-  });
++  }).sort((left, right) => left.name.localeCompare(right.name));
+@@
+-      <td><AddonNameCell addon={row} /></td>
++      <td>{installedAddon?.enabled
++        ? <button className="addon-source-link addon-open-link" type="button" onClick={() => setOpenAddonId(openAddonId === installedAddon.id ? "" : installedAddon.id)}>{row.name}</button>
++        : <AddonNameCell addon={row} />}</td>
+       <td><AddonDescriptionCell value={row.description} expanded={Boolean(expandedDescriptions[row.id])} onToggle={() => setExpandedDescriptions((current) => ({ ...current, [row.id]: !current[row.id] }))} /></td>
+       <td>{row.author}</td>
+       <td>{row.version}</td>
+diff --git a/console/web/src/styles.css b/console/web/src/styles.css
+--- a/console/web/src/styles.css
++++ b/console/web/src/styles.css
+@@
+ .addon-source-link { color: var(--accent); font-weight: 800; text-decoration: none; }
+.addon-source-link:hover { color: #f1c96f; text-decoration: underline; }
++.addon-open-link { width: auto; min-height: 0; border: 0; background: transparent; padding: 0; text-align: left; }
+ .addon-permissions-list { display: flex; flex-wrap: wrap; gap: 6px; max-width: 240px; }
+diff --git a/console/api/src/db.js b/console/api/src/db.js
+--- a/console/api/src/db.js
++++ b/console/api/src/db.js
+@@
+-export function rowsResult(result) {
++function normalizeQueryResult(result) {
++  if (!Array.isArray(result)) return result;
++  return [...result].reverse().find((entry) => Array.isArray(entry?.fields) && entry.fields.length) ||
++    [...result].reverse().find((entry) => Array.isArray(entry?.rows)) ||
++    result[result.length - 1] ||
++    { fields: [], rows: [], rowCount: 0, command: "" };
++}
++
++export function rowsResult(result) {
++  const normalized = normalizeQueryResult(result);
++  const fields = Array.isArray(normalized.fields) ? normalized.fields : [];
++  const rows = Array.isArray(normalized.rows) ? normalized.rows : [];
+   return {
+-    columns: result.fields.map((field) => ({ name: field.name, dataTypeId: field.dataTypeID })),
+-    rows: result.rows,
+-    rowCount: result.rowCount ?? result.rows.length,
+-    command: result.command || ""
++    columns: fields.map((field) => ({ name: field.name, dataTypeId: field.dataTypeID })),
++    rows,
++    rowCount: normalized.rowCount ?? rows.length,
++    command: normalized.command || ""
+   };
+ }

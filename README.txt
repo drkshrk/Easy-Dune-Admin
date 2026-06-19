@@ -7,8 +7,8 @@ self-hosted Docker stack.
 Status
 ------
 
-Panel version: 0.8.6-beta
-Target RedBlink Stack: v1.3.3
+Panel version: 0.8.8-beta
+Target RedBlink Stack: v1.3.16
 License: GPLv3
 Platform: Linux
 Python: 3.11+
@@ -127,21 +127,21 @@ Item Grants:
 - Admin-only set character level tool using the same level XP curve
 - Admin-only skill point grant that adds usable skill points without changing
   character level XP
-- Admin-only live unspent skill point setter using RedBlink v1.3.3's dune admin
+- Admin-only live unspent skill point setter using RedBlink v1.3.16's dune admin
   skill-points / SkillsSetUnspentSkillPoints RabbitMQ command. This is an
   experimental compare-path that sets the current unspent value; it may not
   change total earned skill points.
 - Admin-only bulk skill-module presets for catalog-validated skill
-  key/capstone and ability unlock testing through RedBlink v1.3.3's dune admin
+  key/capstone and ability unlock testing through RedBlink v1.3.16's dune admin
   skill-module helper
 - Item grants target the selected player/account inventory path and do not use
   map partition IDs
-- WIP/live-broken Developer-only specialization tools for Combat, Crafting,
-  Gathering, Exploration, and Sabotage tracks. The current writer still
-  targets the character pawn actor ID, but live testing shows XP/max may not
-  be landing where the game reads it; use Inspect Specialization State to
-  compare pawn/controller rows before relying on these tools.
-- Developer-only specialization reset for one track or all tracks plus keystones
+- Developer-only specialization XP setter and maxer for Combat, Crafting,
+  Gathering, Exploration, and Sabotage tracks through RedBlink v1.3.16's
+  dune admin specialization-xp and dune admin specialization-max helpers,
+  which create database backups before writes.
+- Developer-only legacy specialization inspection/reset tools for one track
+  or all tracks plus keystones while augment/stat research continues.
 - WIP/experimental Developer-only Class Progression preset dropdown for
   observed trainer/class unlock tag bundles. Currently appears nonfunctional
   for actual in-game class unlocks because the account tags alone are not
@@ -194,7 +194,10 @@ Server Management:
 - Gameplay services: Survival, Deep Desert, Overmap
 - Infrastructure services: Gateway, Director, Text Router
 - Map spawn controls
-- RedBlink v1.3.3 battlegroup overview controls:
+- RedBlink v1.3.16 Dune Docker Console controls:
+  - dune console status
+  - dune console restart
+- RedBlink v1.3.16 battlegroup overview controls:
   - dune status
   - dune ready
   - dune version
@@ -202,25 +205,25 @@ Server Management:
   - dune ps
   - dune servers
   - dune doctor
-- RedBlink v1.3.3 map runtime controls:
+- RedBlink v1.3.16 map runtime controls:
   - dune maps list
   - dune maps mode
   - dune maps set <map> dynamic
   - dune maps set <map> always-on
   - dune maps reconcile
-- RedBlink v1.3.3 autoscaler controls:
+- RedBlink v1.3.16 autoscaler controls:
   - dune autoscaler status
   - dune autoscaler logs
   - dune autoscaler start|stop|restart
-- RedBlink v1.3.3 Sietch and memory controls:
+- RedBlink v1.3.16 Sietch and memory controls:
   - dune sietches list|show|dimensions|sync|validate
   - dune memory status|list-maps|set|unset
-- RedBlink v1.3.3 update check/status controls:
+- RedBlink v1.3.16 update check/status controls:
   - dune self-update check|list
   - dune update check
   - dune update auto status
   - dune restart-schedule status
-- RedBlink v1.3.3 admin helpers:
+- RedBlink v1.3.16 admin helpers:
   - dune admin players
   - dune admin player-location
   - dune admin refill-water
@@ -230,11 +233,21 @@ Server Management:
   - dune admin kick
   - dune admin vehicle-list
   - dune admin item-search
+  - dune admin item-list
+  - dune admin award-xp
+  - dune admin specialization-xp
+  - dune admin specialization-max
+  - dune admin clean-inventory
+  - dune admin reset-progression
+  - dune admin broadcast-restart-warning
   - dune admin history
 
-RedBlink v1.3.3 currently exposes one grant-template, scout-ornithopter-mk6.
-Easy Dune Admin's Medium Ornithopter kit uses the normal RedBlink item grant
-command as a bundled workflow rather than a RedBlink grant-template.
+RedBlink v1.3.16 includes Dune Docker Console and Community Addons support.
+Easy Dune Admin remains a separate companion panel for now, but the addon model
+is a useful future integration path. RedBlink currently exposes one
+grant-template, scout-ornithopter-mk6. Easy Dune Admin's Medium Ornithopter kit
+uses the normal RedBlink item grant command as a bundled workflow rather than a
+RedBlink grant-template.
 
 Deep Desert:
 - Dual PvP/PvE status
@@ -258,7 +271,12 @@ Infrastructure:
 - Guided RedBlink installer
 - Browser-based host shell
 - Open Shell + dune init
-- Open Shell + dune manager
+- Open Shell + dune manager, which starts or reports RedBlink v1.3.16's
+  Dune Docker Console
+- Easy Dune Admin port switcher for Docker installs, guarded by confirmation
+  and .env updates
+- RedBlink Console addon installer for the native EDA Exchange Bot
+  market-preview slice
 
 Mobile / PWA:
 - Progressive Web App metadata for install-to-home-screen support on phones
@@ -372,7 +390,7 @@ Browse to:
 
 http://SERVER-IP:8089
 
-Docker is the primary supported install method as of 0.8.6-beta. Runtime
+Docker is the primary supported install method as of 0.8.8-beta. Runtime
 webadmin state is stored in the named Docker volume easy-dune-admin-data, so
 normal rebuilds preserve users.db, roles, and logs. Do not run
 docker compose down -v unless you intentionally want to reset the webadmin.
@@ -485,6 +503,21 @@ Optional high-trust infrastructure features:
 export ENABLE_HOST_COMMAND_RUNNER=1
 export ENABLE_STACK_INSTALLER=1
 export ENABLE_HOST_SHELL=1
+export ENABLE_SELF_UPDATE=1
+
+With ENABLE_SELF_UPDATE=1, Infrastructure can update, clean reinstall, clean
+uninstall, or change the published EDA_PORT for Docker-style installs. The port
+switcher updates .env, rebuilds/recreates the Easy Dune Admin Docker service,
+and then expects you to reopen the panel on the new port.
+
+The RedBlink Console addon installer writes a native eda-exchange-bot addon
+under RedBlink's runtime/addons/installed directory. This does not replace the
+standalone Easy Dune Admin panel. The EDA Exchange Bot addon previews Easy
+Dune Admin's seed plan and runs one-shot market seed, buyback, clear-NPC, and
+unsafe-listing cleanup actions through RedBlink's permissioned database:write
+addon bridge. RedBlink keeps DB credentials and creates the database backup
+before write SQL runs. See docs/REDBLINK_ADDON_STRATEGY.md for the
+addon/cherry-pick plan.
 
 Optional RedBlink installer target override:
 
@@ -611,7 +644,7 @@ Upgrade Notes
 
 Before replacing a running copy:
 
-cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.6-beta
+cp -a ~/dune-admin-web ~/dune-admin-web.backup-before-0.8.8-beta
 
 Preserve local runtime data:
 
@@ -660,9 +693,11 @@ Release Notes
 
 See CHANGELOG.md for full release history.
 
-Current highlight for 0.8.6-beta: Easy Dune Admin now adds an admin-only Item
-Edits workspace, visual item catalog selection, local icon-pack support, and
-catalog editing tools for deeper item-stat and grant workflow research.
+Current highlight for 0.8.8-beta: Easy Dune Admin now targets RedBlink v1.3.16,
+adds Dune Docker Console integration controls, and can install a native
+RedBlink addon slice that previews and runs EDA exchange seed/buyback actions
+through RedBlink's permissioned addon bridge while the standalone panel remains
+fully supported.
 
 Looking ahead: faction manipulation tools are a likely future focus after
 faction membership and the related database state can be captured and tested

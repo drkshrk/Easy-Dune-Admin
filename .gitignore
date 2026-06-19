@@ -16,6 +16,8 @@ users.db
 webadmin.pid
 webadmin.mode
 FETCH_HEAD
+local-development.md
+redblink-addons/*/dist/
 
 # Local research/import artifacts. Keep source zips, CSV database dumps, and
 # unpacked reference repos out of releases unless a specific file is deliberately

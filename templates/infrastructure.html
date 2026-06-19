@@ -174,6 +174,43 @@ The updater refuses to run when local Git changes are present, when the running 
 
 {% if installation_capabilities.self_update %}
 <div class="box">
+<h2>Easy Dune Admin Port</h2>
+
+<div class="warning warn">
+Changes the published Easy Dune Admin browser port by updating <b>EDA_PORT</b> in <b>.env</b>, then rebuilding/recreating the Docker service. The current browser tab may disconnect; reopen the panel on the new port after output confirmation.
+</div>
+
+{% if enable_self_update and (not installation_capabilities.is_docker or easy_dune_host_dir) %}
+<form id="easyDunePortForm">
+    <input type="hidden" name="confirmation" id="easyDunePortConfirmation">
+    <label>Browser Port</label>
+    <input type="number" name="port" id="easyDunePortInput" min="1024" max="65535" step="1" value="{{ eda_port }}" required>
+    <button type="submit" class="danger">Switch Easy Dune Admin Port</button>
+</form>
+{% elif installation_capabilities.is_docker and not easy_dune_host_dir %}
+<p>Port switcher needs <b>EASY_DUNE_HOST_DIR</b> set to the absolute host path of this Easy Dune Admin checkout.</p>
+{% else %}
+<p>Port switcher is disabled. Enable with <b>ENABLE_SELF_UPDATE=1</b>.</p>
+{% endif %}
+</div>
+{% endif %}
+
+{% if installation_capabilities.redblink_addons %}
+<div class="box">
+<h2>RedBlink Console Addon</h2>
+
+<div class="warning info">
+Installs or updates the native <b>EDA Exchange Bot</b> addon in RedBlink v1.3.16's Dune Docker Console Addons section. This slice previews Easy Dune Admin's exchange seed plan and runs seed/buyback actions through RedBlink's permissioned database bridge. It installs disabled with no permissions pre-approved so RedBlink Console can review the requested database access. Easy Dune Admin remains available as a standalone panel too.
+</div>
+
+<form id="redblinkAddonInstallForm">
+    <button type="submit">Install / Update EDA Exchange Bot</button>
+</form>
+</div>
+{% endif %}
+
+{% if installation_capabilities.self_update %}
+<div class="box">
 <h2>Easy Dune Admin Uninstall</h2>
 
 <div class="warning danger">
@@ -335,7 +372,7 @@ Enable with <b>ENABLE_STACK_INSTALLER=1</b>.
 </button>
 
 <button type="button" onclick="startTerminalWithCommand('cd {{ redblink_install_dir }} && dune manager')">
-    Open Shell and Run dune manager
+    Open Shell and Start Dune Docker Console
 </button>
 
 <form class="installerStepForm">
@@ -344,7 +381,7 @@ Enable with <b>ENABLE_STACK_INSTALLER=1</b>.
 </form>
 
 <p class="small-note">
-Installer sudo commands use <b>sudo -n</b>. If passwordless sudo is not configured, they will fail cleanly instead of hanging. The Funcom self-host token/config flow is interactive. Use <b>Open Shell and Run dune init</b> or a normal SSH session for that step.
+Installer sudo commands use <b>sudo -n</b>. If passwordless sudo is not configured, they will fail cleanly instead of hanging. The Funcom self-host token/config flow is interactive. Use <b>Open Shell and Run dune init</b> or a normal SSH session for that step. In RedBlink v1.3.16, <b>dune manager</b> starts or reports the Dune Docker Console.
 Use the full shell if the guided step cannot handle the interaction.
 </p>
 </div>
@@ -457,6 +494,38 @@ if (easyDuneCleanUninstallForm) {
 
         document.getElementById("easyDuneCleanUninstallConfirmation").value = typed;
         await postForm("/api/easy-dune-admin-clean-uninstall", easyDuneCleanUninstallForm);
+    });
+}
+
+const easyDunePortForm = document.getElementById("easyDunePortForm");
+if (easyDunePortForm) {
+    easyDunePortForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const port = document.getElementById("easyDunePortInput").value || "";
+        const typed = prompt(`Switch Easy Dune Admin to port ${port}? This updates .env, rebuilds Docker, and may disconnect this tab. This may take some time. Wait for output confirmation. Type SWITCH PORT to continue.`);
+        if (typed !== "SWITCH PORT") {
+            showOutput("Port switch cancelled.", easyDunePortForm);
+            return;
+        }
+
+        document.getElementById("easyDunePortConfirmation").value = typed;
+        await postForm("/api/easy-dune-admin-port", easyDunePortForm, {
+            startMessage: `Starting Easy Dune Admin port switch to ${port}. This may take some time. Wait for output confirmation.`
+        });
+    });
+}
+
+const redblinkAddonInstallForm = document.getElementById("redblinkAddonInstallForm");
+if (redblinkAddonInstallForm) {
+    redblinkAddonInstallForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        if (!confirm("Install or update the native EDA Exchange Bot addon inside RedBlink Dune Docker Console Addons? This writes an addon manifest/page and market seed plan JSON into the RedBlink runtime/addons folder. The addon requests database:read and database:write, but installs disabled with no permissions pre-approved for community review. This may take some time. Wait for output confirmation.")) return;
+
+        await postForm("/api/redblink-addon-install", redblinkAddonInstallForm, {
+            startMessage: "Installing native RedBlink Console addon EDA Exchange Bot. This may take some time. Wait for output confirmation."
+        });
     });
 }
 

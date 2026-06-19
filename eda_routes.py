@@ -1431,6 +1431,60 @@ def api_easy_dune_admin_clean_uninstall():
         return jsonify({"ok": False, "error": f"Easy Dune Admin clean uninstall failed: {exc}"}), 500
 
 
+@app.route("/api/easy-dune-admin-port", methods=["POST"])
+def api_easy_dune_admin_port():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    if not current_installation_capabilities()["self_update"]:
+        return jsonify({"ok": False, "error": "Easy Dune Admin port switching is available only in Linux Host or Docker mode"}), 403
+
+    if not ENABLE_SELF_UPDATE:
+        return jsonify({"ok": False, "error": "Easy Dune Admin port switching disabled; set ENABLE_SELF_UPDATE=1"}), 403
+
+    try:
+        port = int(request.form.get("port", "").strip())
+    except ValueError:
+        return jsonify({"ok": False, "error": "port must be a whole number"}), 400
+
+    if port < 1024 or port > 65535:
+        return jsonify({"ok": False, "error": "port must be between 1024 and 65535"}), 400
+
+    confirmation = request.form.get("confirmation", "").strip()
+    if confirmation != "SWITCH PORT":
+        return jsonify({"ok": False, "error": "type SWITCH PORT to confirm"}), 400
+
+    try:
+        timeout = 90 if current_installation_capabilities()["is_docker"] else 900
+        output = run_infra_command(easy_dune_port_switch_command(port), timeout=timeout, cwd=BASE_DIR)
+        log_action(session["user"], f"changed Easy Dune Admin Docker port to {port}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Easy Dune Admin port switch failed: {exc}"}), 500
+
+
+@app.route("/api/redblink-addon-install", methods=["POST"])
+def api_redblink_addon_install():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    if not current_installation_capabilities()["redblink_addons"]:
+        return jsonify({"ok": False, "error": "RedBlink addon install is available only in Linux Host or Docker mode"}), 403
+
+    try:
+        output = install_redblink_easy_dune_addon()
+        log_action(session["user"], "installed native RedBlink Easy Dune Admin addon")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"RedBlink addon install failed: {exc}"}), 500
+
+
 
 
 @app.route("/api/dashboard-metrics")
@@ -1933,14 +1987,52 @@ def api_give_specialization_xp():
 
     character_actor_id = request.form.get("character_actor_id", "").strip()
     track_type = request.form.get("track_type", "").strip()
+    level = request.form.get("level", "100").strip()
     xp_amount = request.form.get("xp_amount", "").strip()
 
     try:
-        sql = build_give_specialization_xp_sql(character_actor_id, track_type, xp_amount)
-        output = run_psql(sql, timeout=60)
+        if track_type not in SPECIALIZATION_XP_TRACKS:
+            return jsonify({"ok": False, "error": "invalid specialization track"}), 400
+        try:
+            level_value = int(level)
+            xp_value = int(xp_amount)
+        except ValueError:
+            return jsonify({"ok": False, "error": "level and XP must be numbers"}), 400
+        if level_value < 0 or level_value > 100:
+            return jsonify({"ok": False, "error": "level must be between 0 and 100"}), 400
+        if xp_value < 0 or xp_value > SPECIALIZATION_MAX_XP:
+            return jsonify({"ok": False, "error": f"XP must be between 0 and {SPECIALIZATION_MAX_XP}"}), 400
+
+        character = character_for_actor_id(character_actor_id)
+        if not character:
+            return jsonify({"ok": False, "error": "character not found for actor/controller id"}), 404
+        character_name = character.get("character_name", "").strip()
+        if not character_name:
+            return jsonify({"ok": False, "error": "character name not found"}), 400
+
+        output = run_command(
+            [
+                "env",
+                "DUNE_ADMIN_ASSUME_YES=1",
+                str(DUNE_SCRIPT),
+                "admin",
+                "specialization-xp",
+                character_name,
+                "--track",
+                track_type,
+                "--level",
+                str(level_value),
+                "--xp",
+                str(xp_value),
+                "--actor-id",
+                character_actor_id,
+                "--yes",
+            ],
+            timeout=180,
+        )
         log_action(
             session["user"],
-            f"give {xp_amount} {track_type} XP to actor {character_actor_id}",
+            f"RedBlink specialization-xp level {level_value} xp {xp_value} {track_type} for actor {character_actor_id}",
         )
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
@@ -1957,9 +2049,29 @@ def api_max_specialization():
     character_actor_id = request.form.get("character_actor_id", "").strip()
 
     try:
-        sql = build_max_specialization_sql(character_actor_id)
-        output = run_psql_script(sql, timeout=60)
-        log_action(session["user"], f"max specialization tracks and keystones for actor {character_actor_id}")
+        character = character_for_actor_id(character_actor_id)
+        if not character:
+            return jsonify({"ok": False, "error": "character not found for actor/controller id"}), 404
+        character_name = character.get("character_name", "").strip()
+        if not character_name:
+            return jsonify({"ok": False, "error": "character name not found"}), 400
+
+        output = run_command(
+            [
+                "env",
+                "DUNE_ADMIN_ASSUME_YES=1",
+                str(DUNE_SCRIPT),
+                "admin",
+                "specialization-max",
+                character_name,
+                "--grant-keystones",
+                "--actor-id",
+                character_actor_id,
+                "--yes",
+            ],
+            timeout=180,
+        )
+        log_action(session["user"], f"RedBlink specialization-max tracks and keystones for actor {character_actor_id}")
         return jsonify({"ok": True, "output": output})
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Specialization max failed: {exc}"}), 500
@@ -2823,6 +2935,31 @@ def api_battlegroup_command():
         return jsonify({"ok": False, "error": f"Battlegroup command failed: {exc}"}), 500
 
 
+@app.route("/api/console-command", methods=["POST"])
+def api_console_command():
+    if not logged_in():
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    if not is_admin():
+        return jsonify({"ok": False, "error": "permission denied"}), 403
+
+    action = request.form.get("action", "").strip()
+    allowed = {
+        "status": {"cmd": [str(DUNE_SCRIPT), "console", "status"], "timeout": 60},
+        "restart": {"cmd": [str(DUNE_SCRIPT), "console", "restart"], "timeout": 300},
+    }
+
+    spec = allowed.get(action)
+    if not spec:
+        return jsonify({"ok": False, "error": "invalid console action"}), 400
+
+    try:
+        output = run_command(spec["cmd"], timeout=spec["timeout"])
+        log_action(session["user"], f"dune console {action}")
+        return jsonify({"ok": True, "output": output})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Dune Docker Console command failed: {exc}"}), 500
+
+
 @app.route("/api/autoscaler-command", methods=["POST"])
 def api_autoscaler_command():
     if not logged_in():
@@ -3000,6 +3137,7 @@ def api_redblink_admin_command():
     skill_level = request.form.get("skill_level", "").strip()
     kick_scope = request.form.get("kick_scope", "single").strip()
     force_kick = request.form.get("force", "").strip() == "1"
+    minutes = request.form.get("minutes", "").strip()
 
     def validate_float_value(raw_value, label):
         try:
@@ -3016,16 +3154,54 @@ def api_redblink_admin_command():
         cmd = [str(DUNE_SCRIPT), "admin", "vehicle-list"]
     elif action == "history":
         cmd = [str(DUNE_SCRIPT), "admin", "history"]
+    elif action == "item_list":
+        cmd = [str(DUNE_SCRIPT), "admin", "item-list"]
+        if query:
+            cmd.append(query)
     elif action == "player_location":
         if not player_id:
             return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
         cmd = [str(DUNE_SCRIPT), "admin", "player-location", player_id]
+    elif action == "award_xp":
+        if not player_id:
+            return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+        try:
+            xp_value = int(amount)
+        except ValueError:
+            return jsonify({"ok": False, "error": "XP amount must be a whole number"}), 400
+        if xp_value <= 0 or xp_value > CHARACTER_MAX_XP:
+            return jsonify({"ok": False, "error": f"XP amount must be between 1 and {CHARACTER_MAX_XP}"}), 400
+        cmd = [
+            "env",
+            "DUNE_ADMIN_ASSUME_YES=1",
+            str(DUNE_SCRIPT),
+            "admin",
+            "award-xp",
+            player_id,
+            str(xp_value),
+        ]
     elif action == "refill_water":
         if not player_id:
             return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
         cmd = ["env", "DUNE_ADMIN_ASSUME_YES=1", str(DUNE_SCRIPT), "admin", "refill-water", player_id]
         if amount:
             cmd.append(amount)
+    elif action == "clean_inventory":
+        if not player_id:
+            return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+        cmd = ["env", "DUNE_ADMIN_ASSUME_YES=1", str(DUNE_SCRIPT), "admin", "clean-inventory", player_id]
+    elif action == "reset_progression":
+        if not player_id:
+            return jsonify({"ok": False, "error": "missing player/FLS id"}), 400
+        cmd = ["env", "DUNE_ADMIN_ASSUME_YES=1", str(DUNE_SCRIPT), "admin", "reset-progression", player_id]
+    elif action == "broadcast_restart_warning":
+        try:
+            warning_minutes = int(minutes or amount)
+        except ValueError:
+            return jsonify({"ok": False, "error": "minutes must be a whole number"}), 400
+        if warning_minutes < 1 or warning_minutes > 1440:
+            return jsonify({"ok": False, "error": "minutes must be between 1 and 1440"}), 400
+        cmd = [str(DUNE_SCRIPT), "admin", "broadcast-restart-warning", str(warning_minutes)]
     elif action == "item_search":
         if not query:
             return jsonify({"ok": False, "error": "missing search query"}), 400

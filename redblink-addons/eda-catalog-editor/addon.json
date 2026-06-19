@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "eda-catalog-editor",
+  "name": "EDA Catalog Editor",
+  "description": "Visual Easy Dune Admin item catalog browser and local edit/export tool for RedBlink Dune Docker Console.",
+  "author": "n00bGames",
+  "version": "0.8.8-beta",
+  "type": "ui",
+  "entry": {
+    "navigation": "EDA Catalog Editor",
+    "path": "web/index.html"
+  },
+  "permissions": {}
+}

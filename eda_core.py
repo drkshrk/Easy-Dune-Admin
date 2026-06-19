@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 Easy Dune Admin
-Panel version: 0.8.6-beta
-RedBlink stack compatibility target: v1.3.3
+Panel version: 0.8.8-beta
+RedBlink stack compatibility target: v1.3.16
 
-0.8.6-beta RedBlink v1.3.3 support:
-- Updates RedBlink stack target to v1.3.3.
+0.8.8-beta RedBlink v1.3.16 support:
+- Updates RedBlink stack target to v1.3.16.
 - Adds Server Management controls for dune maps runtime modes.
 - Adds controls for dynamic vs always-on map runtime behavior.
 - Adds map reconcile command.
@@ -25,7 +25,9 @@ SECURITY NOTES
 """
 
 import json
+import hashlib
 import os
+import shutil
 import sqlite3
 import subprocess
 import select
@@ -39,7 +41,7 @@ import threading
 import time
 import psutil
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import Flask, redirect, render_template, request, session, jsonify, has_request_context, send_from_directory
@@ -56,8 +58,8 @@ import market_seed
 # CONFIGURABLE VALUES
 # =========================================================
 
-PANEL_VERSION = "0.8.6-beta"
-REDBLINK_STACK_VERSION = "v1.3.3"
+PANEL_VERSION = "0.8.8-beta"
+REDBLINK_STACK_VERSION = "v1.3.16"
 
 # RedBlink stack path. Change this if your install lives elsewhere.
 DUNE_ROOT = Path(
@@ -74,12 +76,12 @@ DUNE_SCRIPT = DUNE_ROOT / "runtime/scripts/dune"
 ITEMS_FILE = DUNE_ROOT / "runtime/data/admin-items.json"
 
 # RedBlink skill-module catalog. This feeds the Admin Panel dropdown for the
-# v1.3.3 `dune admin skill-module` helper. If RedBlink changes the catalog
+# v1.3.16 `dune admin skill-module` helper. If RedBlink changes the catalog
 # shape later, keep the browser-facing labels conservative and validate again
 # before allowing writes.
 SKILL_MODULES_FILE = DUNE_ROOT / "runtime/data/admin-skill-modules.json"
 
-# RedBlink v1.3.3 vehicle spawn templates. These are used by the admin panel's
+# RedBlink v1.3.16 vehicle spawn templates. These are used by the admin panel's
 # "spawn in front of player" helper and should match runtime/data/admin-vehicles.json
 # in the RedBlink stack. If RedBlink adds new vehicles/templates later, add them
 # here after confirming the exact id/template values with `dune admin vehicle-list`
@@ -116,6 +118,7 @@ EASY_DUNE_RUNTIME_HELPER_IMAGE = os.environ.get(
     "EASY_DUNE_RUNTIME_HELPER_IMAGE",
     f"easy-dune-admin:{PANEL_VERSION}",
 )
+EDA_PORT = int(os.environ.get("EDA_PORT", "8089"))
 EDA_BUILD_REVISION = os.environ.get("EDA_BUILD_REVISION", "unknown").strip()
 EDA_BUILD_DIRTY = os.environ.get("EDA_BUILD_DIRTY", "unknown").strip()
 
@@ -1599,6 +1602,7 @@ def inject_template_globals():
         "easy_dune_project_dir": str(EASY_DUNE_SOURCE_DIR),
         "easy_dune_host_dir": EASY_DUNE_HOST_DIR,
         "easy_dune_updater_image": EASY_DUNE_UPDATER_IMAGE,
+        "eda_port": EDA_PORT,
         "eda_build_revision": EDA_BUILD_REVISION,
         "eda_build_dirty": EDA_BUILD_DIRTY,
         "redblink_repo_url": REDBLINK_REPO_URL,
@@ -1866,6 +1870,7 @@ def current_installation_capabilities():
         "is_docker": mode == "docker",
         "is_hyperv": mode == "hyperv",
         "redblink_commands": True,
+        "redblink_addons": mode in ("linux", "docker"),
         "stack_installer": mode == "linux",
         "browser_shell": mode in ("linux", "docker"),
         "host_diagnostics": mode == "linux",
@@ -1968,7 +1973,7 @@ def parse_redblink_sietch_list(output):
     """
     Parse `dune sietches list` into a map-name keyed lookup.
 
-    RedBlink v1.3.3 columns:
+    RedBlink v1.3.16 columns:
     MAP, MAX DIMENSIONS, ACTIVE DIMENSIONS, MEMORY, TYPE
     """
     rows = {}
@@ -4537,6 +4542,23 @@ def get_characters(include_offline=True):
 
     except Exception:
         return []
+
+
+def character_for_actor_id(character_actor_id):
+    """Resolve one panel actor/controller id to the character row RedBlink CLI expects."""
+    wanted = str(character_actor_id or "").strip()
+    if not wanted:
+        return None
+
+    for character in get_characters(include_offline=True):
+        if wanted in (
+            str(character.get("character_actor_id") or "").strip(),
+            str(character.get("player_controller_id") or "").strip(),
+            str(character.get("player_state_id") or "").strip(),
+        ):
+            return character
+
+    return None
 
 
 def _run_psql_tsv(sql, timeout=15):
@@ -9712,6 +9734,61 @@ echo "Clean uninstall complete. The host checkout remains on disk and can be del
 """
 
 
+def easy_dune_port_switch_script(project_dir, port, rebuild_script="./rebuild_docker.sh"):
+    """Build a guarded script that updates EDA_PORT and recreates the Docker package."""
+    project_dir = shlex.quote(str(project_dir))
+    rebuild_script = shlex.quote(str(rebuild_script))
+    port = int(port)
+    return f"""
+set -euo pipefail
+cd {project_dir}
+
+echo "Easy Dune Admin port switch"
+echo "Project directory: {project_dir}"
+echo "New browser port: {port}"
+echo
+
+if [ ! -f docker-compose.yml ]; then
+    echo "ERROR: docker-compose.yml was not found. Run this from the Easy Dune Admin Docker checkout."
+    exit 2
+fi
+
+if [ ! -f .env ]; then
+    if [ -f .env.docker.example ]; then
+        cp .env.docker.example .env
+        echo "Created .env from .env.docker.example."
+    else
+        touch .env
+        echo "Created a new .env file."
+    fi
+fi
+
+if grep -q '^EDA_PORT=' .env; then
+    sed -i 's/^EDA_PORT=.*/EDA_PORT={port}/' .env
+else
+    printf '\\nEDA_PORT={port}\\n' >> .env
+fi
+
+echo ".env now contains:"
+grep '^EDA_PORT=' .env || true
+echo
+
+if [ ! -f {rebuild_script} ]; then
+    echo "ERROR: rebuild_docker.sh was not found."
+    exit 2
+fi
+
+chmod +x {rebuild_script} docker/entrypoint.sh 2>/dev/null || true
+
+echo "Rebuilding Docker image and restarting Easy Dune Admin on port {port}..."
+FOLLOW_LOGS=0 {rebuild_script}
+
+echo
+echo "Port switch complete. Open Easy Dune Admin at:"
+echo "http://<server-ip>:{port}"
+"""
+
+
 def easy_dune_self_update_command():
     """
     Build the mode-aware Easy Dune Admin self-update command.
@@ -9947,6 +10024,482 @@ echo "The web panel will disconnect when the uninstaller removes the Easy Dune A
             str(EASY_DUNE_SOURCE_DIR / "docker-compose.yml"),
         ),
     ]
+
+
+def easy_dune_port_switch_command(port):
+    """Build the mode-aware command for changing Easy Dune Admin's published Docker port."""
+    mode = current_installation_mode()
+
+    if mode == "docker":
+        host_dir = EASY_DUNE_HOST_DIR.strip()
+        if not host_dir or not host_dir.startswith("/"):
+            return [
+                "bash",
+                "-lc",
+                (
+                    "echo 'ERROR: Docker port switch needs EASY_DUNE_HOST_DIR set "
+                    "to the absolute host path of this Easy Dune Admin checkout.'; exit 2"
+                ),
+            ]
+
+        updater_name = "easy-dune-admin-port-switcher"
+        port_script = easy_dune_port_switch_script("/work", port, "./rebuild_docker.sh")
+        updater_inner_command = f"""
+apk add --no-cache bash git docker-cli-compose >/tmp/easy-dune-admin-port-switch-apk.log 2>&1
+cat >/tmp/easy-dune-admin-port-switch.sh <<'EDA_PORT_SWITCH_SCRIPT'
+{port_script}
+EDA_PORT_SWITCH_SCRIPT
+bash /tmp/easy-dune-admin-port-switch.sh
+"""
+        docker_cmd = f"""
+set -euo pipefail
+echo "Starting detached Easy Dune Admin port switcher..."
+echo "Host checkout: {shlex.quote(host_dir)}"
+echo "New browser port: {int(port)}"
+echo
+
+docker rm -f {updater_name} >/dev/null 2>&1 || true
+docker run --rm -d \\
+    --name {updater_name} \\
+    -v /var/run/docker.sock:/var/run/docker.sock \\
+    -v {shlex.quote(host_dir)}:/work \\
+    -w /work \\
+    {shlex.quote(EASY_DUNE_UPDATER_IMAGE)} \\
+    sh -lc {shlex.quote(updater_inner_command)}
+
+echo
+echo "Port switch started. Follow progress from the Docker host with:"
+echo "docker logs -f {updater_name}"
+echo
+echo "The web panel will move to port {int(port)} after the container is recreated."
+"""
+        return ["bash", "-lc", docker_cmd]
+
+    return [
+        "bash",
+        "-lc",
+        easy_dune_port_switch_script(
+            EASY_DUNE_SOURCE_DIR,
+            port,
+            str(EASY_DUNE_SOURCE_DIR / "rebuild_docker.sh"),
+        ),
+    ]
+
+
+def install_redblink_easy_dune_addon():
+    """
+    Install/update a lightweight native RedBlink Dune Docker Console addon.
+
+    RedBlink v1.3.16 addons are static UI bundles under runtime/addons and use
+    the Console's permissioned postMessage bridge for database work. This slice
+    packages Easy Dune Admin's exchange seed plan and write controls while
+    leaving credentials and backup behavior inside RedBlink's Console API.
+    """
+    addon_id = "eda-exchange-bot"
+    addon_root = DUNE_ROOT / "runtime" / "addons"
+    addon_dir = addon_root / "installed" / addon_id
+    web_dir = addon_dir / "web"
+    state_file = addon_root / "state.json"
+    addon_source_dir = Path(__file__).resolve().parent / "redblink-addons" / addon_id
+
+    if addon_dir.exists():
+        shutil.rmtree(addon_dir)
+    web_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest = {
+        "schemaVersion": 1,
+        "id": addon_id,
+        "name": "EDA Exchange Bot",
+        "description": "Easy Dune Admin exchange seeder controls for RedBlink Dune Docker Console.",
+        "author": "n00bGames",
+        "version": PANEL_VERSION,
+        "type": "ui",
+        "entry": {
+            "navigation": "EDA Exchange Bot",
+            "path": "web/index.html",
+        },
+        "permissions": {"database": ["read", "write"]},
+    }
+
+    plan = build_market_seed_plan(MARKET_PRICE_MULTIPLIER)
+    plan_summary = market_seed.summary(plan, MARKET_PRICE_MULTIPLIER)
+    collapsed = {}
+    for row in plan:
+        key = (
+            row["template_id"],
+            row["display_name"],
+            row["kind"],
+            row["stack_size"],
+            row["price"],
+            row["category_mask"],
+            row["category_depth"],
+            row["quality_level"],
+        )
+        collapsed.setdefault(
+            key,
+            {
+                "template_id": row["template_id"],
+                "display_name": row["display_name"],
+                "kind": row["kind"],
+                "stack_size": row["stack_size"],
+                "price": row["price"],
+                "category_mask": row["category_mask"],
+                "category_depth": row["category_depth"],
+                "quality_level": row["quality_level"],
+                "special_boost": bool(row.get("special_boost")),
+                "listings": 0,
+            },
+        )["listings"] += 1
+
+    category_counts = {}
+    for row in plan:
+        key = f"{row['category_mask']} / depth {row['category_depth']}"
+        category_counts[key] = category_counts.get(key, 0) + 1
+
+    market_payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "panel_version": PANEL_VERSION,
+        "price_multiplier": MARKET_PRICE_MULTIPLIER,
+        "market_bot_class": MARKET_BOT_CLASS,
+        "summary": plan_summary,
+        "category_counts": [
+            {"category": key, "listings": value}
+            for key, value in sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))
+        ],
+        "unsafe_template_ids": unsafe_market_template_ids(),
+        "rows": sorted(
+            collapsed.values(),
+            key=lambda row: (row["kind"], str(row["display_name"]).casefold(), row["template_id"], row["category_mask"]),
+        ),
+        "notes": [
+            "Generated from Easy Dune Admin's local item catalog and market seeder rules.",
+            "Write actions run through RedBlink's permissioned database:write addon bridge.",
+            "RedBlink Console keeps DB credentials and creates the backup before write SQL runs.",
+            "RedBlink v1.3.16 includes multi-statement result normalization; automated sweeps remain standalone until RedBlink exposes an addon scheduler.",
+        ],
+    }
+
+    addon_html = f"""<!doctype html>
+<html lang="en" data-addon-id="eda-exchange-bot">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDA Exchange Bot</title>
+  <style>
+    :root {{
+      color-scheme: dark;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #070604;
+      color: #f2d899;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      padding: 18px;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(181, 111, 30, .28), transparent 32rem),
+        linear-gradient(135deg, #090705, #16110a 55%, #050403);
+    }}
+    main {{
+      display: grid;
+      gap: 14px;
+    }}
+    .summary-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }}
+    .metric {{
+      border: 1px solid rgba(214, 164, 77, .35);
+      background: rgba(214, 164, 77, .08);
+      padding: 12px;
+    }}
+    .metric strong {{
+      display: block;
+      color: #ffe7ad;
+      font-size: 24px;
+      line-height: 1.1;
+    }}
+    .metric span {{
+      color: #cdbb95;
+      font-size: 12px;
+      text-transform: uppercase;
+    }}
+    section {{
+      border: 1px solid rgba(214, 164, 77, .55);
+      background: rgba(8, 7, 5, .88);
+      padding: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    }}
+    h1, h2 {{ margin: 0 0 10px; color: #ffe7ad; }}
+    p {{ color: #d4c5a7; line-height: 1.5; }}
+    input, select {{
+      width: min(360px, 100%);
+      border: 1px solid rgba(214, 164, 77, .35);
+      background: rgba(0, 0, 0, .45);
+      color: #f8e6bf;
+      padding: 10px 12px;
+      margin: 0 8px 8px 0;
+    }}
+    button {{
+      border: 1px solid #f1d38a;
+      background: #d6a44d;
+      color: #090604;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }}
+    button:disabled {{ opacity: .55; cursor: wait; }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: rgba(0, 0, 0, .3);
+    }}
+    th, td {{
+      border-bottom: 1px solid rgba(214, 164, 77, .25);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }}
+    th {{
+      color: #f5d98c;
+      background: rgba(214, 164, 77, .12);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }}
+    .status {{
+      border: 1px solid rgba(108, 151, 200, .55);
+      background: rgba(13, 33, 55, .78);
+      color: #d2e8ff;
+      padding: 10px 12px;
+    }}
+    .error {{
+      border-color: rgba(200, 77, 63, .7);
+      background: rgba(75, 17, 12, .82);
+      color: #ffd6d1;
+    }}
+    .badge {{
+      display: inline-block;
+      border: 1px solid rgba(214, 164, 77, .4);
+      padding: 2px 8px;
+      color: #ffe7ad;
+      background: rgba(214, 164, 77, .1);
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>EDA Exchange Bot</h1>
+      <p>A native RedBlink Console addon slice generated from Easy Dune Admin's exchange seeder. It previews the market seed plan from EDA's catalog and uses RedBlink's permissioned database bridge for write actions.</p>
+      <p><span class="badge">Permission: database:write</span> <span class="badge">Backups stay in RedBlink Console</span></p>
+    </section>
+    <section>
+      <h2>Market Seed Preview</h2>
+      <p>Shows what Easy Dune Admin would seed into the exchange before any database write. Use this to verify coverage, category masks, prices, and unsafe-category cleanup direction inside RedBlink's addon UX.</p>
+      <div id="status" class="status">Ready.</div>
+      <div id="summary" class="summary-grid"></div>
+    </section>
+    <section>
+      <h2>Seed Rows</h2>
+      <input id="filter" type="search" placeholder="Filter template, name, kind, mask...">
+      <select id="kindFilter"><option value="">All kinds</option></select>
+      <div id="table"></div>
+    </section>
+  </main>
+  <script>
+    const statusEl = document.getElementById("status");
+    const summaryEl = document.getElementById("summary");
+    const tableEl = document.getElementById("table");
+    const filterEl = document.getElementById("filter");
+    const kindFilterEl = document.getElementById("kindFilter");
+    let payload = null;
+
+    function escapeHtml(value) {{
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }}
+
+    function formatNumber(value) {{
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toLocaleString() : String(value ?? "");
+    }}
+
+    function renderSummary(data) {{
+      const summary = data.summary || {{}};
+      const metrics = [
+        ["Listings", summary.listings],
+        ["Unique rows", data.rows.length],
+        ["Resources", summary.resource_listings],
+        ["Schematics", summary.schematic_listings],
+        ["Equippables", summary.equippable_listings],
+        ["Ammunition", summary.ammunition_listings],
+        ["Consumables", summary.consumable_listings],
+        ["Multiplier", `${{data.price_multiplier}}x`],
+      ];
+      summaryEl.innerHTML = metrics.map(([label, value]) => `<div class="metric"><strong>${{escapeHtml(formatNumber(value))}}</strong><span>${{escapeHtml(label)}}</span></div>`).join("");
+    }}
+
+    function renderKinds(rows) {{
+      const current = kindFilterEl.value;
+      const kinds = Array.from(new Set(rows.map(row => row.kind))).sort();
+      kindFilterEl.innerHTML = `<option value="">All kinds</option>${{kinds.map(kind => `<option value="${{escapeHtml(kind)}}">${{escapeHtml(kind)}}</option>`).join("")}}`;
+      kindFilterEl.value = kinds.includes(current) ? current : "";
+    }}
+
+    function visibleRows() {{
+      if (!payload) return [];
+      const query = filterEl.value.trim().toLowerCase();
+      const kind = kindFilterEl.value;
+      return payload.rows.filter(row => {{
+        if (kind && row.kind !== kind) return false;
+        if (!query) return true;
+        return [
+          row.template_id,
+          row.display_name,
+          row.kind,
+          row.category_mask,
+          row.category_depth,
+          row.price,
+          row.stack_size
+        ].some(value => String(value ?? "").toLowerCase().includes(query));
+      }});
+    }}
+
+    function renderRows() {{
+      const rows = visibleRows();
+      if (!rows.length) {{
+        tableEl.innerHTML = "<p>No seed rows match the current filter.</p>";
+        return;
+      }}
+      const shown = rows.slice(0, 250);
+      tableEl.innerHTML = `<table>
+        <thead><tr><th>Name</th><th>Template</th><th>Kind</th><th>Listings</th><th>Stack</th><th>Price</th><th>Mask</th><th>Depth</th></tr></thead>
+        <tbody>${{shown.map(row => `<tr>
+          <td>${{escapeHtml(row.display_name)}}</td>
+          <td>${{escapeHtml(row.template_id)}}</td>
+          <td>${{escapeHtml(row.kind)}}</td>
+          <td>${{escapeHtml(formatNumber(row.listings))}}</td>
+          <td>${{escapeHtml(formatNumber(row.stack_size))}}</td>
+          <td>${{escapeHtml(formatNumber(row.price))}}</td>
+          <td>${{escapeHtml(row.category_mask)}}</td>
+          <td>${{escapeHtml(row.category_depth)}}</td>
+        </tr>`).join("")}}</tbody>
+      </table>`;
+      if (rows.length > shown.length) {{
+        tableEl.insertAdjacentHTML("beforeend", `<p>Showing first ${{shown.length.toLocaleString()}} of ${{rows.length.toLocaleString()}} matching unique rows. Narrow the filter for more detail.</p>`);
+      }}
+    }}
+
+    async function loadSeedPlan() {{
+      statusEl.className = "status";
+      statusEl.textContent = "Loading bundled Easy Dune Admin market seed plan...";
+      try {{
+        const response = await fetch("market-seed-plan.json", {{ cache: "no-store" }});
+        if (!response.ok) throw new Error(`Seed plan returned HTTP ${{response.status}}.`);
+        payload = await response.json();
+        renderSummary(payload);
+        renderKinds(payload.rows || []);
+        renderRows();
+        statusEl.textContent = `Generated ${{new Date(payload.generated_at).toLocaleString()}} from EDA ${{payload.panel_version}}. Write actions run through RedBlink's addon bridge.`;
+      }} catch (error) {{
+        statusEl.className = "status error";
+        statusEl.textContent = error.message || String(error);
+      }}
+    }}
+
+    filterEl.addEventListener("input", renderRows);
+    kindFilterEl.addEventListener("change", renderRows);
+    loadSeedPlan();
+  </script>
+</body>
+</html>
+"""
+
+    manifest_file = addon_dir / "addon.json"
+    index_file = web_dir / "index.html"
+    seed_plan_file = web_dir / "market-seed-plan.json"
+
+    source_manifest_file = addon_source_dir / "addon.json"
+    source_web_dir = addon_source_dir / "web"
+    source_index_file = addon_source_dir / "web" / "index.html"
+
+    if source_manifest_file.exists():
+        try:
+            source_manifest = json.loads(source_manifest_file.read_text(encoding="utf-8"))
+            if isinstance(source_manifest, dict):
+                manifest.update(source_manifest)
+        except Exception:
+            pass
+
+    # Keep install-time identity, version, and permissions authoritative even
+    # when the local addon source package is older than this EDA checkout.
+    manifest.update(
+        {
+            "id": addon_id,
+            "name": "EDA Exchange Bot",
+            "author": "n00bGames",
+            "version": PANEL_VERSION,
+            "type": "ui",
+            "entry": {"navigation": "EDA Exchange Bot", "path": "web/index.html"},
+            "permissions": {"database": ["read", "write"]},
+        }
+    )
+
+    manifest_file.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    if source_web_dir.exists():
+        for source_file in source_web_dir.iterdir():
+            if source_file.is_file() and source_file.name != seed_plan_file.name:
+                shutil.copyfile(source_file, web_dir / source_file.name)
+    elif source_index_file.exists():
+        shutil.copyfile(source_index_file, index_file)
+    else:
+        index_file.write_text(addon_html, encoding="utf-8")
+    seed_plan_file.write_text(json.dumps(market_payload, indent=2) + "\n", encoding="utf-8")
+
+    addon_hash = hashlib.sha256()
+    hash_files = [manifest_file] + sorted((path for path in web_dir.rglob("*") if path.is_file()), key=lambda path: str(path.relative_to(addon_dir)))
+    for file_path in hash_files:
+        addon_hash.update(str(file_path.relative_to(addon_dir)).replace("\\", "/").encode("utf-8"))
+        addon_hash.update(b"\0")
+        addon_hash.update(file_path.read_bytes())
+        addon_hash.update(b"\0")
+
+    try:
+        state = json.loads(state_file.read_text(encoding="utf-8"))
+        if not isinstance(state, dict):
+            state = {}
+    except Exception:
+        state = {}
+
+    state[addon_id] = {
+        **state.get(addon_id, {}),
+        "enabled": False,
+        "approvedPermissions": [],
+        "installedAt": datetime.now(timezone.utc).isoformat(),
+        "sha256": addon_hash.hexdigest(),
+        "installedBy": "easy-dune-admin",
+    }
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    state_file.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+
+    return (
+        "Easy Dune Admin native RedBlink addon installed/updated.\n"
+        f"Addon path: {addon_dir}\n"
+        "Console navigation: EDA Exchange Bot\n"
+        "Current slice: market seed and buyback controls\n"
+        "Requested permissions: database:read, database:write\n"
+        "Installed state: disabled; permissions are not pre-approved.\n"
+        "Refresh RedBlink Dune Docker Console, then open Addons to review, approve, and enable it."
+    )
 
 
 def prereq_report():

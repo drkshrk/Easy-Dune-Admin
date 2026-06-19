@@ -2,6 +2,35 @@
 
 All notable changes to Easy Dune Admin are documented here.
 
+## 0.8.8-beta
+
+### Changed
+
+- Updated the RedBlink stack target to v1.3.16 across panel metadata, docs, badges, service-worker cache key, and RedBlink addon copy.
+- Updated the bundled `EDA Exchange Bot` addon for RedBlink v1.3.16's built-in multi-statement `database.execute` result normalization.
+- Clarified that native RedBlink addon exchange sweeps remain manual until RedBlink exposes an addon scheduler or persistent task bridge.
+- Updated version strings to `0.8.8-beta`.
+
+## 0.8.7-beta
+
+### Added
+
+- Added RedBlink v1.3.10 Dune Docker Console controls for `dune console status` and `dune console restart`.
+- Added RedBlink v1.3.10 admin wrappers for `dune admin item-list`, `award-xp`, `clean-inventory`, `reset-progression`, and `broadcast-restart-warning`.
+- Added an Infrastructure port switcher that updates `EDA_PORT` in `.env` and rebuilds/recreates the Docker service.
+- Added a Linux/Docker-mode RedBlink Console addon installer that creates a disabled native `EDA Exchange Bot` addon inside RedBlink v1.3.10's `runtime/addons` area with no permissions pre-approved, generated from Easy Dune Admin's catalog and exchange seeder rules.
+- Added `docs/REDBLINK_ADDON_STRATEGY.md` to keep standalone Easy Dune Admin development separate from native RedBlink Console addon slices and to rank likely feature cherry-picks by permission risk.
+- Expanded the RedBlink addon strategy with a panel comparison and recommended addon test order: market seeder, visual catalog, player snapshot, unsafe cleanup report, augment viewer, broadcast presets, and read-only progression diagnostics.
+- Added `database:write` RedBlink addon bridge support to `EDA Exchange Bot` for one-shot NPC market seeding, buyback sweeps, EDA NPC listing clears, and unsafe NPC listing cleanup while RedBlink keeps DB credentials and backup behavior.
+- Added a RedBlink-backed exchange selector to `EDA Exchange Bot` so seeding and buyback target a discovered exchange ID instead of relying on a freeform numeric field or assuming Global.
+- Added a native `EDA Catalog Editor` addon slice with a visual item selector, structured catalog metadata editor, browser-local edit persistence, and full catalog/patch export for maintaining Easy Dune Admin's item catalog from inside RedBlink Console.
+
+### Changed
+
+- Updated the RedBlink stack target to v1.3.10 and routed Developer specialization XP/maxing through RedBlink's `dune admin specialization-xp` and `dune admin specialization-max` helpers instead of the older direct-SQL research writer.
+- Clarified Developer specialization XP/maxer warnings and added start-output messages so RedBlink-backed writes do not look silently successful or stalled.
+- Updated version strings to `0.8.7-beta`.
+
 ## 0.8.6-beta
 
 ### Added
@@ -52,7 +81,6 @@ All notable changes to Easy Dune Admin are documented here.
 - Preserved host file ownership when Docker-mode catalog edits save `data/easy-dune-item-catalog.json`, plus documented the `chown` repair for catalogs saved by older root-owned containers.
 - Reduced authenticated navbar button width by tightening horizontal padding, with an additional compact rule for lower-resolution layouts.
 - Fixed Docker-mode Dune Status listener checks by running status through a short-lived host-network helper container with the listener-probe tools RedBlink expects, avoiding false `MISSING` reports caused by checking `localhost` from inside the Easy Dune Admin bridge-network container.
-- Clarified Developer specialization XP/maxer warnings and added start-output messages so live-broken research writes do not look silently successful or stalled while we identify the correct live storage path.
 - Removed stale Developer-only specialization/class/progression character dropdown population from the Admin page loader.
 - Updated version strings to `0.8.6-beta`.
 

@@ -115,6 +115,24 @@ function ajaxConfirmationMessage(form, submitter) {
         return "Refill water containers for this player? This sends a live RedBlink admin command. This may take some time. Wait for output confirmation.";
     }
 
+    if (endpoint === "/api/redblink-admin-command" && action === "broadcast_restart_warning") {
+        const minutes = formFieldValue(form, "minutes") || "selected";
+        return `Broadcast a restart warning for ${minutes} minute(s)? This sends a live RedBlink admin command. This may take some time. Wait for output confirmation.`;
+    }
+
+    if (endpoint === "/api/redblink-admin-command" && action === "award_xp") {
+        const amount = formFieldValue(form, "amount") || "selected";
+        return `Award ${amount} character XP through RedBlink? This may take some time. Wait for output confirmation.`;
+    }
+
+    if (endpoint === "/api/redblink-admin-command" && ["clean_inventory", "reset_progression"].includes(action)) {
+        return `${buttonText}? This is a destructive RedBlink admin command and can remove player inventory or progression data. This may take some time. Wait for output confirmation.`;
+    }
+
+    if (endpoint === "/api/console-command" && action === "restart") {
+        return "Rebuild and restart Dune Docker Console? This does not restart the game battlegroup, but the console may briefly disconnect. This may take some time. Wait for output confirmation.";
+    }
+
     return "";
 }
 
